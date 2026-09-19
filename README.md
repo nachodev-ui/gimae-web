@@ -8,7 +8,7 @@ Sitio estático responsive para Gimae, grupo idol de Chile. Incluye Members con 
 - `dist/styles.css`: diseño, responsive y movimiento reducido.
 - `dist/content.js`: nombres, biografías, fotos y redes oficiales.
 - `dist/app.js`: perfiles, menú móvil y enlaces.
-- `dist/logo.webp`: versión optimizada del logo proporcionado.
+- `dist/images/`: retratos limpios, logos con transparencia, presentación de merch y catálogo original.
 
 No requiere instalación ni compilación. Publica el contenido de `dist` en cualquier hosting estático. Todos los recursos locales usan rutas relativas, por lo que funciona bajo `/gimae-web/` en GitHub Pages.
 
@@ -22,9 +22,11 @@ Abre `http://localhost:8000`.
 
 ## Contenido oficial
 
-En `dist/content.js`, reemplaza `null` por el nombre, biografía, foto y enlaces HTTPS de cada integrante. Agrega los enlaces del grupo en `socials`. Las redes sin URL aparecen como «Pronto» y no llevan a perfiles inventados. Los colores de las tarjetas son propuestas visuales, no colores oficiales de las integrantes.
+En `dist/content.js` están los nombres, colores y enlaces oficiales de Suki, Usi, Vewe y Vali, y las redes del grupo (Instagram, TikTok y Spotify). También están los cinco tipos de merch y sus precios en pesos chilenos, transcritos del catálogo suministrado.
 
-Los eventos, la tienda y el blog muestran estados de próxima publicación. No existen fechas, entradas, productos, precios ni artículos ficticios. Para incorporar los primeros anuncios, edita sus secciones en `dist/index.html`.
+Los retratos se limpiaron con edición de imágenes para eliminar las superposiciones de Instagram y otras personas. La presentación de merch es una reconstrucción ilustrativa basada en el catálogo; el modal permite consultar también la imagen original para comparar los diseños. Los logos se usan con transparencia real.
+
+Los eventos y el blog continúan mostrando estados de próxima publicación. Las consultas sobre stock, tallas y pedidos enlazan al Instagram oficial. No se afirman disponibilidad ni opciones de entrega no confirmadas.
 
 Esta versión no incluye pagos, carrito, CMS, cuentas ni formularios. Google Fonts es opcional: la página usa fuentes de sistema si no está disponible.
 

@@ -1,12 +1,101 @@
-// Reemplaza los valores null por la información oficial cuando esté disponible.
-// Las fotos pueden ser rutas relativas, por ejemplo: "images/nombre.webp".
-// Los enlaces deben ser URLs completas con https://.
+// Información oficial suministrada por Gimae. Precios en CLP.
 window.GIMAE = {
-  socials: { instagram: null, x: null, spotify: null },
-  members: [
-    { id: "01", name: null, color: "pink", photo: null, bio: null, socials: { instagram: null, x: null, spotify: null } },
-    { id: "02", name: null, color: "blue", photo: null, bio: null, socials: { instagram: null, x: null, spotify: null } },
-    { id: "03", name: null, color: "yellow", photo: null, bio: null, socials: { instagram: null, x: null, spotify: null } },
-    { id: "04", name: null, color: "purple", photo: null, bio: null, socials: { instagram: null, x: null, spotify: null } }
+  "socials": {
+    "instagram": "https://www.instagram.com/gimae_official",
+    "tiktok": "https://www.tiktok.com/@gimae_official",
+    "spotify": "https://open.spotify.com/artist/3fCnhznvLe2OnwRa3Rif4g"
+  },
+  "members": [
+    {
+      "id": "01",
+      "name": "Suki",
+      "color": "pink",
+      "colorLabel": "Rosado",
+      "photo": "images/suki.webp",
+      "handle": "@bunnidoru",
+      "socials": {
+        "instagram": "https://www.instagram.com/bunnidoru/"
+      }
+    },
+    {
+      "id": "02",
+      "name": "Usi",
+      "color": "red",
+      "colorLabel": "Rojo",
+      "photo": "images/usi.webp",
+      "handle": "@usi__chan",
+      "socials": {
+        "instagram": "https://www.instagram.com/usi__chan/"
+      }
+    },
+    {
+      "id": "03",
+      "name": "Vewe",
+      "color": "yellow",
+      "colorLabel": "Amarillo",
+      "photo": "images/vewe.webp",
+      "handle": "@novvewe",
+      "socials": {
+        "instagram": "https://www.instagram.com/novvewe/"
+      }
+    },
+    {
+      "id": "04",
+      "name": "Vali",
+      "color": "purple",
+      "colorLabel": "Morado",
+      "photo": "images/vali.webp",
+      "handle": "@vali_chuu",
+      "socials": {
+        "instagram": "https://www.instagram.com/vali_chuu/"
+      }
+    }
+  ],
+  "merch": [
+    {
+      "id": "01",
+      "name": "Poleras estampadas",
+      "note": "Tu color, tu member.",
+      "price": 15000,
+      "color": "pink",
+      "variants": true
+    },
+    {
+      "id": "02",
+      "name": "Lightstick",
+      "note": "Lleva tu brillo al escenario.",
+      "price": 8000,
+      "color": "purple"
+    },
+    {
+      "id": "03",
+      "name": "Llaveros",
+      "note": "Un pequeño amuleto idol.",
+      "price": 3000,
+      "color": "yellow"
+    },
+    {
+      "id": "04",
+      "name": "Chekis",
+      "note": "Un recuerdo en formato instantáneo.",
+      "prices": [
+        {
+          "label": "Individual",
+          "value": 4500
+        },
+        {
+          "label": "Grupal",
+          "value": 5000
+        }
+      ],
+      "color": "pink"
+    },
+    {
+      "id": "05",
+      "name": "Postales",
+      "note": "Un pedacito de nuestro universo.",
+      "price": 2000,
+      "color": "red"
+    }
   ]
 };
