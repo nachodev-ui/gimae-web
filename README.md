@@ -9,6 +9,7 @@ Sitio estático responsive para Gimae, grupo idol de Chile. Incluye Members con 
 - `dist/content.js`: nombres, biografías, fotos y redes oficiales.
 - `dist/app.js`: perfiles, menú móvil y enlaces.
 - `dist/cheki.js`: generador de chekis en canvas, encuadre, descarga y compartir.
+- `dist/gacha.js`: gacha gratuito, catálogo de cartas, rarezas y colección local.
 - `dist/images/`: retratos limpios, logos con transparencia, presentación de merch y catálogo original.
 
 No requiere instalación ni compilación. Publica el contenido de `dist` en cualquier hosting estático. Todos los recursos locales usan rutas relativas, por lo que funciona bajo `/gimae-web/` en GitHub Pages.
@@ -34,6 +35,10 @@ Esta versión no incluye pagos, carrito, CMS, cuentas ni formularios. Google Fon
 ## Generador de chekis
 
 La sección «Crea tu cheki» procesa la selfie únicamente en el navegador. Los nombres y colores se leen desde `dist/content.js`; para cambiar un tono, edita el campo `accent` de la integrante. El límite de archivo y las medidas del canvas están comentados al inicio de `dist/cheki.js`. No se envían ni guardan fotografías en ningún servidor.
+
+## Gacha de photocards
+
+La gacha contiene un catálogo editable de 12 cartas que reutilizan los cuatro retratos oficiales sin alterar los rostros. Probabilidades, límite diario opcional y nuevas cartas se configuran al inicio de `dist/gacha.js`. El álbum y los duplicados se guardan en `localStorage` cuando el navegador lo permite. Es un juego gratuito sin pagos, premios físicos ni relación con el stock de merch.
 
 ## Accesibilidad
 
