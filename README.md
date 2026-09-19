@@ -8,6 +8,7 @@ Sitio estático responsive para Gimae, grupo idol de Chile. Incluye Members con 
 - `dist/styles.css`: diseño, responsive y movimiento reducido.
 - `dist/content.js`: nombres, biografías, fotos y redes oficiales.
 - `dist/app.js`: perfiles, menú móvil y enlaces.
+- `dist/cheki.js`: generador de chekis en canvas, encuadre, descarga y compartir.
 - `dist/images/`: retratos limpios, logos con transparencia, presentación de merch y catálogo original.
 
 No requiere instalación ni compilación. Publica el contenido de `dist` en cualquier hosting estático. Todos los recursos locales usan rutas relativas, por lo que funciona bajo `/gimae-web/` en GitHub Pages.
@@ -29,6 +30,10 @@ Los retratos se limpiaron con edición de imágenes para eliminar las superposic
 Los eventos y el blog continúan mostrando estados de próxima publicación. Las consultas sobre stock, tallas y pedidos enlazan al Instagram oficial. No se afirman disponibilidad ni opciones de entrega no confirmadas.
 
 Esta versión no incluye pagos, carrito, CMS, cuentas ni formularios. Google Fonts es opcional: la página usa fuentes de sistema si no está disponible.
+
+## Generador de chekis
+
+La sección «Crea tu cheki» procesa la selfie únicamente en el navegador. Los nombres y colores se leen desde `dist/content.js`; para cambiar un tono, edita el campo `accent` de la integrante. El límite de archivo y las medidas del canvas están comentados al inicio de `dist/cheki.js`. No se envían ni guardan fotografías en ningún servidor.
 
 ## Accesibilidad
 

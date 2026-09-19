@@ -5,11 +5,14 @@ window.GIMAE = {
     "tiktok": "https://www.tiktok.com/@gimae_official",
     "spotify": "https://open.spotify.com/artist/3fCnhznvLe2OnwRa3Rif4g"
   },
+  // CHEKIS: "name" y "accent" alimentan automáticamente las opciones y la firma.
+  // Usa un color hexadecimal en "accent" si quieres ajustar el tono de una integrante.
   "members": [
     {
       "id": "01",
       "name": "Suki",
       "color": "pink",
+      "accent": "#e84694",
       "colorLabel": "Rosado",
       "photo": "images/suki.webp",
       "handle": "@bunnidoru",
@@ -21,6 +24,7 @@ window.GIMAE = {
       "id": "02",
       "name": "Usi",
       "color": "red",
+      "accent": "#df4d62",
       "colorLabel": "Rojo",
       "photo": "images/usi.webp",
       "handle": "@usi__chan",
@@ -32,6 +36,7 @@ window.GIMAE = {
       "id": "03",
       "name": "Vewe",
       "color": "yellow",
+      "accent": "#c99a18",
       "colorLabel": "Amarillo",
       "photo": "images/vewe.webp",
       "handle": "@novvewe",
@@ -43,6 +48,7 @@ window.GIMAE = {
       "id": "04",
       "name": "Vali",
       "color": "purple",
+      "accent": "#8f62bf",
       "colorLabel": "Morado",
       "photo": "images/vali.webp",
       "handle": "@vali_chuu",
