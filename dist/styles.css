@@ -64,3 +64,11 @@
 @media(max-width:880px){.shop-page .header nav{gap:9px}.nav-cart{justify-content:center;margin-top:5px}.shop-hero{grid-template-columns:1fr;padding-block:45px 65px}.shop-hero-art{width:min(650px,96%);margin:auto;order:-1}.shop-catalog{padding-bottom:75px}.cart-fab{right:15px;bottom:15px}.trust-grid{grid-template-columns:1fr 1fr}}
 @media(max-width:620px){.shop-hero-copy h1{font-size:clamp(2.5rem,12vw,3.7rem)}.shop-product-grid,.trust-grid{grid-template-columns:1fr}.shop-product-card{padding:21px}.shop-dialog{padding:47px 18px 25px}.cart-item{grid-template-columns:minmax(0,1fr) auto;gap:12px}.cart-item-actions{grid-column:1}.cart-line-total{grid-column:2;grid-row:1}.checkout-fields{grid-template-columns:1fr}.pending-order{align-items:flex-start;flex-direction:column}.order-contact-actions{display:grid}.order-contact-actions .button{text-align:center;width:100%}.cart-fab{padding:10px 13px;font-size:.82rem}.shop-hero-art{padding:12px;box-shadow:7px 10px 0 #f5d7e7}.shop-hero-art>span{font-size:.62rem}.order-code>strong{font-size:1.2rem}}
 @media(prefers-reduced-motion:reduce){.shop-toast,.shop-hero-art{transition:none;transform:none}.catalog-preview>img{transition:none}}
+
+/* =========================================================
+   AJUSTES DE ALINEACIÓN DE BOTONES
+   Mantén aquí los tamaños del CTA de compra y el centrado del gacha.
+   ========================================================= */
+.shop-buy-controls{grid-template-columns:minmax(72px,.65fr) minmax(152px,1.35fr)}
+.shop-buy-controls .add-cart{width:100%;min-width:0}
+.gacha-open{display:flex;width:max-content;margin-inline:auto}
