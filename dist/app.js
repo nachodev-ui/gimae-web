@@ -51,14 +51,6 @@ makeSocials($('#group-socials'), config.socials);
 if (Object.values(config.socials).some((value) => value && /^https:\/\//i.test(value) && safeUrl(value))) $('#social-note').hidden = true;
 $('.dialog-close').addEventListener('click', () => dialog.close());
 dialog.addEventListener('click', (event) => { if (event.target === dialog) { const b = dialog.getBoundingClientRect(); if (event.clientX < b.left || event.clientX > b.right || event.clientY < b.top || event.clientY > b.bottom) dialog.close(); } });
-const menu = $('.menu-toggle');
-function closeMenu() { menu.setAttribute('aria-expanded', 'false'); $('#navigation').classList.remove('open'); }
-menu.addEventListener('click', () => { const open = menu.getAttribute('aria-expanded') !== 'true'; menu.setAttribute('aria-expanded', String(open)); $('#navigation').classList.toggle('open', open); });
-$('#navigation').querySelectorAll('a').forEach(a => a.addEventListener('click', closeMenu));
-document.addEventListener('keydown', e => { if (e.key === 'Escape') closeMenu(); });
-document.addEventListener('click', e => { if (!e.target.closest('.header')) closeMenu(); });
-$('#year').textContent = new Date().getFullYear();
-
 const money = new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 });
 config.merch.forEach(product => {
   const card = document.createElement('article'); card.className = `product-card ${product.color}`;

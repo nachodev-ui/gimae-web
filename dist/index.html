@@ -7,7 +7,7 @@
   <meta name="description" content="Entra al universo de Gimae, grupo idol de Chile. Conoce a sus cuatro integrantes y encuentra novedades, eventos, merch y redes sociales.">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='10' fill='%23ef4e9a'/%3E%3Ctext x='16' y='24' text-anchor='middle' fill='white' font-family='sans-serif' font-weight='bold' font-size='27'%3Eg%3C/text%3E%3C/svg%3E">
   <link rel="stylesheet" href="styles.css">
-  <script src="content.js" defer></script><script src="app.js" defer></script><script src="cheki.js" defer></script><script src="gacha.js" defer></script>
+  <script src="content.js" defer></script><script src="nav.js" defer></script><script src="app.js" defer></script>
 </head>
 <body>
   <a class="skip" href="#main">Saltar al contenido</a>
@@ -15,7 +15,7 @@
   <header class="header">
     <a class="brand" href="#home" aria-label="Gimae, inicio"><img class="wordmark" src="images/logo-wordmark.webp" alt="Gimae!" width="220" height="88"></a>
     <button class="menu-toggle" aria-expanded="false" aria-controls="navigation">Menú <span aria-hidden="true">☰</span></button>
-    <nav id="navigation" aria-label="Principal"><a href="#members">Members</a><a href="#eventos">Eventos</a><a href="#merch">Merch</a><a href="#cheki">Crea tu cheki</a><a href="#gacha">Gacha</a><a href="#blog">Blog</a><a class="nav-club" href="#redes">Sigue el brillo <span aria-hidden="true">♡</span></a></nav>
+    <nav id="navigation" aria-label="Principal"><a href="#members">Members</a><a href="#eventos">Eventos</a><a href="#merch">Merch</a><a href="cheki.html">Crea tu cheki</a><a href="gacha.html">Gacha</a><a href="#blog">Blog</a><a class="nav-club" href="#redes">Sigue el brillo <span aria-hidden="true">♡</span></a></nav>
   </header>
   <main id="main">
     <section class="hero section-shell" id="home" aria-labelledby="hero-title">
@@ -40,63 +40,12 @@
       <div class="product-grid" id="product-grid"></div>
       <div class="merch-contact"><div><h3>¿Cuál se va contigo?</h3><p>Consulta disponibilidad, tallas y pedidos en nuestro Instagram.<br>Todos los precios están en pesos chilenos (CLP).</p></div><a class="button primary" href="https://www.instagram.com/gimae_official" target="_blank" rel="noopener noreferrer" aria-label="Consultar merch en Instagram (se abre en otra pestaña)">Consultar por Instagram <span aria-hidden="true">↗</span></a></div>
     </section>
-    <section class="cheki-section" id="cheki" aria-labelledby="cheki-title">
-      <div class="section-shell">
-        <div class="section-heading cheki-heading"><div><p class="eyebrow">04 / ESTUDIO CHEKI</p><h2 id="cheki-title">Tu momento idol,<br><em>en una cheki.</em></h2></div><p>Sube tu selfie, elige a tu integrante<br>y crea un recuerdo solo tuyo. ♡</p></div>
-        <div class="cheki-studio">
-          <form class="cheki-controls" id="cheki-form" novalidate>
-            <div class="cheki-field"><label for="cheki-photo"><span>1</span> Elige tu selfie</label><input id="cheki-photo" name="photo" type="file" accept="image/*" capture="user"><small>JPG, PNG o WebP · máximo 12 MB.</small></div>
-            <fieldset class="cheki-field"><legend><span>2</span> Tu integrante</legend><div class="cheki-members" id="cheki-members"></div></fieldset>
-            <div class="cheki-field"><label for="cheki-message"><span>3</span> Tu mensaje</label><div class="cheki-input-wrap"><input id="cheki-message" name="message" type="text" maxlength="40" value="¡Gracias por este momento!" autocomplete="off"><output id="cheki-message-count" for="cheki-message">27/40</output></div></div>
-            <div class="cheki-field"><label for="cheki-name"><span>4</span> Tu nombre o apodo <small>(opcional)</small></label><input id="cheki-name" name="fanName" type="text" maxlength="18" placeholder="Ej. Nacho" autocomplete="nickname"></div>
-            <div class="cheki-field cheki-framing"><label for="cheki-zoom"><span>5</span> Encuadre</label><input id="cheki-zoom" name="zoom" type="range" min="1" max="2.5" step="0.01" value="1" disabled><small>Arrastra la foto o usa las flechas sobre la vista previa.</small></div>
-            <label class="cheki-switch"><input id="cheki-stickers" type="checkbox" checked><span class="switch-track" aria-hidden="true"></span><span>Agregar corazones y estrellas</span></label>
-            <p class="cheki-error" id="cheki-error" role="alert" hidden></p>
-            <p class="cheki-privacy"><span aria-hidden="true">♡</span> Tu foto se procesa solo en este navegador. No se sube ni se guarda en ningún servidor.</p>
-          </form>
-          <div class="cheki-preview-panel">
-            <p class="cheki-preview-label">VISTA PREVIA · ARRASTRA PARA ENCUADRAR</p>
-            <div class="cheki-canvas-wrap" id="cheki-canvas-wrap"><canvas id="cheki-canvas" width="640" height="1020" tabindex="0" aria-label="Vista previa de tu cheki. Puedes mover la foto con las flechas del teclado."></canvas></div>
-            <p class="cheki-status" id="cheki-status" aria-live="polite">Sube una selfie para comenzar.</p>
-            <div class="cheki-actions"><button class="button primary" id="cheki-download" type="button" disabled>Descargar PNG <span aria-hidden="true">↓</span></button><button class="button cheki-secondary" id="cheki-share" type="button" disabled>Compartir <span aria-hidden="true">↗</span></button><button class="text-link cheki-reset" id="cheki-reset" type="button">Hacer otro <span aria-hidden="true">♡</span></button></div>
-          </div>
-        </div>
-      </div>
-    </section>
-    <section class="gacha-section" id="gacha" aria-labelledby="gacha-title">
-      <div class="section-shell">
-        <div class="section-heading gacha-heading"><div><p class="eyebrow">05 / GACHA DE PHOTOCARDS</p><h2 id="gacha-title">Abre un sobre.<br><em>Encuentra una estrella.</em></h2></div><p>Colecciona momentos de Suki, Usi, Vewe y Vali.<br>Cada carta vive solo en este dispositivo.</p></div>
-        <div class="gacha-layout">
-          <div class="gacha-machine">
-            <div class="rarity-legend" id="rarity-legend" aria-label="Probabilidades de rareza"></div>
-            <div class="gacha-stage" id="gacha-stage">
-              <div class="gacha-glow" aria-hidden="true"></div>
-              <div class="gacha-envelope" aria-hidden="true"><div class="envelope-back"></div><div class="envelope-card-mark">GIMAE!<small>CARTA IDOL</small></div><div class="envelope-flap"></div><div class="envelope-front"></div><div class="envelope-seal">♡</div></div>
-              <div class="gacha-reveal-slot" id="gacha-reveal-slot"></div>
-              <div class="gacha-confetti" id="gacha-confetti" aria-hidden="true"></div>
-            </div>
-            <p class="gacha-status" id="gacha-status" aria-live="polite">Tu próximo recuerdo está dentro del sobre.</p>
-            <button class="button primary gacha-open" id="gacha-open" type="button">Abrir sobre <span aria-hidden="true">✦</span></button>
-            <p class="gacha-daily" id="gacha-daily" hidden></p>
-            <p class="gacha-disclaimer">Juego digital gratuito: no usa dinero, no entrega productos físicos y no representa stock de merch.</p>
-          </div>
-          <div class="gacha-album">
-            <div class="album-top"><div><p class="eyebrow">TU ÁLBUM</p><h3>Photocards encontradas</h3></div><strong id="gacha-progress-text">0/12</strong></div>
-            <progress id="gacha-progress" value="0" max="12" aria-label="Progreso de la colección"></progress>
-            <p class="gacha-storage-note" id="gacha-storage-note" hidden>Tu navegador no permite guardar la colección. Podrás jugar, pero el progreso se perderá al cerrar la página.</p>
-            <div class="gacha-album-grid" id="gacha-album-grid"></div>
-            <button class="gacha-reset" id="gacha-reset" type="button">Reiniciar colección</button>
-          </div>
-        </div>
-      </div>
-    </section>
-    <section class="blog section-shell" id="blog" aria-labelledby="blog-title"><div class="section-heading"><div><p class="eyebrow">06 / DEAR DIARY</p><h2 id="blog-title">Nuestro <em>pequeño diario.</em></h2></div><span class="hand-note">Entre canciones y sueños ♡</span></div><div class="diary-card"><div class="diary-number" aria-hidden="true">Dear<br><em>you.</em><span>♡</span></div><div class="diary-copy"><span class="category">EL DIARIO DE GIMAE</span><h3>Hay historias que apenas comienzan.</h3><p>Ensayos, recuerdos y momentos detrás del escenario. Muy pronto compartiremos por aquí un poquito más de nosotras.</p><span class="diary-pending">La primera entrada está por llegar <span aria-hidden="true">✦</span></span></div></div></section>
-    <section class="social-section" id="redes" aria-labelledby="social-title"><div class="section-shell social-inner"><p class="eyebrow">07 / STAY CLOSE</p><h2 id="social-title">El escenario cambia.<br><em>La conexión se queda.</em> <span aria-hidden="true">♡</span></h2><p>Encuéntranos en tu rincón favorito de internet.</p><div class="social-links" id="group-socials"></div><p class="social-note" id="social-note">Las redes oficiales de Gimae, todas en un solo lugar.</p><span class="social-spark" aria-hidden="true">✧</span></div></section>
+    <section class="blog section-shell" id="blog" aria-labelledby="blog-title"><div class="section-heading"><div><p class="eyebrow">04 / DEAR DIARY</p><h2 id="blog-title">Nuestro <em>pequeño diario.</em></h2></div><span class="hand-note">Entre canciones y sueños ♡</span></div><div class="diary-card"><div class="diary-number" aria-hidden="true">Dear<br><em>you.</em><span>♡</span></div><div class="diary-copy"><span class="category">EL DIARIO DE GIMAE</span><h3>Hay historias que apenas comienzan.</h3><p>Ensayos, recuerdos y momentos detrás del escenario. Muy pronto compartiremos por aquí un poquito más de nosotras.</p><span class="diary-pending">La primera entrada está por llegar <span aria-hidden="true">✦</span></span></div></div></section>
+    <section class="social-section" id="redes" aria-labelledby="social-title"><div class="section-shell social-inner"><p class="eyebrow">05 / STAY CLOSE</p><h2 id="social-title">El escenario cambia.<br><em>La conexión se queda.</em> <span aria-hidden="true">♡</span></h2><p>Encuéntranos en tu rincón favorito de internet.</p><div class="social-links" id="group-socials"></div><p class="social-note" id="social-note">Las redes oficiales de Gimae, todas en un solo lugar.</p><span class="social-spark" aria-hidden="true">✧</span></div></section>
   </main>
   <footer class="footer section-shell"><a class="brand footer-brand" href="#home" aria-label="Gimae, inicio"><img class="wordmark" src="images/logo-wordmark.webp" alt="Gimae!" width="220" height="88"></a><p>Hecho de música, sueños y mucho amor.<br><span>© <span id="year">2026</span> Gimae · Chile</span></p><a class="back-top" href="#home">Volver arriba <span aria-hidden="true">↑</span></a></footer>
   <dialog id="member-dialog" aria-labelledby="dialog-title"><button class="dialog-close" aria-label="Cerrar perfil">×</button><div id="dialog-content"></div></dialog>
   <dialog id="catalog-dialog" aria-labelledby="catalog-title"><button id="close-catalog" class="dialog-close" aria-label="Cerrar catálogo">×</button><p class="eyebrow">GIMAE! / OFFICIAL MERCH</p><h2 id="catalog-title">La colección, de cerca.</h2><div class="catalog-controls" role="group" aria-label="Vista del catálogo"><button data-catalog-view="restored" aria-pressed="true">La colección</button><button data-catalog-view="original" aria-pressed="false">Catálogo original</button></div><img id="catalog-image" src="images/merch.webp" alt="Colección Gimae"><p class="catalog-footnote">Consulta disponibilidad y pedidos en <a href="https://www.instagram.com/gimae_official" target="_blank" rel="noopener noreferrer">@gimae_official ↗</a>.</p></dialog>
-  <dialog id="gacha-dialog" aria-labelledby="gacha-dialog-title"><button id="gacha-dialog-close" class="dialog-close" aria-label="Cerrar carta">×</button><p class="eyebrow">TU PHOTOCARD</p><h2 id="gacha-dialog-title">Una estrella en tu colección.</h2><div class="gacha-dialog-tilt" id="gacha-dialog-tilt"><div id="gacha-dialog-card"></div></div><p class="gacha-dialog-hint">Mueve el cursor o tu dedo sobre la carta para verla brillar.</p></dialog>
-  <noscript><p class="noscript-note">Integrantes: Suki (rosado), Usi (rojo), Vewe (amarillo) y Vali (morado). Activa JavaScript para ver sus perfiles, crear tu cheki y abrir sobres de photocards.</p></noscript>
+  <noscript><p class="noscript-note">Integrantes: Suki (rosado), Usi (rojo), Vewe (amarillo) y Vali (morado). Activa JavaScript para ver sus perfiles y la lista de precios.</p></noscript>
 </body>
 </html>

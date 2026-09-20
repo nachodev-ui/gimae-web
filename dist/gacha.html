@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#fff0f8">
+  <title>Gacha de Photocards — Gimae!</title>
+  <meta name="description" content="Abre sobres digitales gratuitos y completa tu álbum de photocards de Gimae.">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='10' fill='%23ef4e9a'/%3E%3Ctext x='16' y='24' text-anchor='middle' fill='white' font-family='sans-serif' font-weight='bold' font-size='27'%3Eg%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+  <script src="content.js" defer></script><script src="nav.js" defer></script><script src="gacha.js" defer></script>
+</head>
+<body class="tool-page gacha-page">
+  <a class="skip" href="#main">Saltar al contenido</a>
+  <div class="rainbow" aria-hidden="true"></div>
+  <header class="header">
+    <a class="brand" href="index.html" aria-label="Gimae, inicio"><img class="wordmark" src="images/logo-wordmark.webp" alt="Gimae!" width="220" height="88"></a>
+    <button class="menu-toggle" aria-expanded="false" aria-controls="navigation">Menú <span aria-hidden="true">☰</span></button>
+    <nav id="navigation" aria-label="Principal"><a href="index.html">Inicio</a><a href="index.html#members">Members</a><a href="index.html#merch">Merch</a><a href="cheki.html">Crea tu cheki</a><a href="gacha.html" aria-current="page">Gacha</a><a class="nav-club" href="index.html#redes">Sigue el brillo <span aria-hidden="true">♡</span></a></nav>
+  </header>
+  <main id="main" class="tool-page-main">
+    <section class="gacha-section" id="gacha" aria-labelledby="gacha-title">
+      <div class="section-shell">
+        <div class="section-heading gacha-heading"><div><p class="eyebrow">GACHA DE PHOTOCARDS</p><h1 id="gacha-title">Abre un sobre.<br><em>Encuentra una estrella.</em></h1></div><p>Colecciona momentos de Suki, Usi, Vewe y Vali.<br>Cada carta vive solo en este dispositivo.</p></div>
+        <div class="gacha-layout">
+          <div class="gacha-machine">
+            <div class="rarity-legend" id="rarity-legend" aria-label="Probabilidades de rareza"></div>
+            <div class="gacha-stage" id="gacha-stage">
+              <div class="gacha-glow" aria-hidden="true"></div>
+              <div class="gacha-envelope" aria-hidden="true"><div class="envelope-back"></div><div class="envelope-card-mark">GIMAE!<small>CARTA IDOL</small></div><div class="envelope-flap"></div><div class="envelope-front"></div><div class="envelope-seal">♡</div></div>
+              <div class="gacha-reveal-slot" id="gacha-reveal-slot"></div>
+              <div class="gacha-confetti" id="gacha-confetti" aria-hidden="true"></div>
+            </div>
+            <p class="gacha-status" id="gacha-status" aria-live="polite">Tu próximo recuerdo está dentro del sobre.</p>
+            <button class="button primary gacha-open" id="gacha-open" type="button">Abrir sobre <span aria-hidden="true">✦</span></button>
+            <p class="gacha-daily" id="gacha-daily" hidden></p>
+            <p class="gacha-disclaimer">Juego digital gratuito: no usa dinero, no entrega productos físicos y no representa stock de merch.</p>
+          </div>
+          <div class="gacha-album">
+            <div class="album-top"><div><p class="eyebrow">TU ÁLBUM</p><h2>Photocards encontradas</h2></div><strong id="gacha-progress-text">0/12</strong></div>
+            <progress id="gacha-progress" value="0" max="12" aria-label="Progreso de la colección"></progress>
+            <p class="gacha-storage-note" id="gacha-storage-note" hidden>Tu navegador no permite guardar la colección. Podrás jugar, pero el progreso se perderá al cerrar la página.</p>
+            <div class="gacha-album-grid" id="gacha-album-grid"></div>
+            <button class="gacha-reset" id="gacha-reset" type="button">Reiniciar colección</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+  <footer class="footer section-shell"><a class="brand footer-brand" href="index.html" aria-label="Gimae, inicio"><img class="wordmark" src="images/logo-wordmark.webp" alt="Gimae!" width="220" height="88"></a><p>Hecho de música, sueños y mucho amor.<br><span>© <span id="year">2026</span> Gimae · Chile</span></p><a class="back-top" href="index.html">Volver al inicio <span aria-hidden="true">↗</span></a></footer>
+  <dialog id="gacha-dialog" aria-labelledby="gacha-dialog-title"><button id="gacha-dialog-close" class="dialog-close" aria-label="Cerrar carta">×</button><p class="eyebrow">TU PHOTOCARD</p><h2 id="gacha-dialog-title">Una estrella en tu colección.</h2><div class="gacha-dialog-tilt" id="gacha-dialog-tilt"><div id="gacha-dialog-card"></div></div><p class="gacha-dialog-hint">Mueve el cursor o tu dedo sobre la carta para verla brillar.</p></dialog>
+  <noscript><p class="noscript-note">Activa JavaScript para abrir sobres y guardar tu álbum de photocards.</p></noscript>
+</body>
+</html>
