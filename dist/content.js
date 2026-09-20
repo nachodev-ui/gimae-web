@@ -14,16 +14,6 @@ window.GIMAE = {
     "musicStartsEnabled": true,
     "volume": 0.035
   },
-  // MEMBERS: activa o desactiva aquí los extras de la experiencia por color.
-  // rememberSelection queda en false para que cada visita comience con el tema grupal.
-  "MEMBER_EXPERIENCE": {
-    "enabled": true,
-    "hoverDelay": 120,
-    "rememberSelection": false,
-    "tilt3d": true,
-    "arrowNavigation": true,
-    "groupView": true
-  },
   // TIENDA: activa o desactiva aquí cada forma de entrega.
   // Deja cost y eta vacíos cuando todavía deban coordinarse; la interfaz mostrará "A coordinar".
   "SHIPPING": {
@@ -81,7 +71,6 @@ window.GIMAE = {
       "colorLabel": "Rosado",
       "photo": "images/suki.webp",
       "handle": "@bunnidoru",
-      "message": "COMPLETAR",
       "socials": {
         "instagram": "https://www.instagram.com/bunnidoru/"
       }
@@ -94,7 +83,6 @@ window.GIMAE = {
       "colorLabel": "Rojo",
       "photo": "images/usi.webp",
       "handle": "@usi__chan",
-      "message": "COMPLETAR",
       "socials": {
         "instagram": "https://www.instagram.com/usi__chan/"
       }
@@ -107,7 +95,6 @@ window.GIMAE = {
       "colorLabel": "Amarillo",
       "photo": "images/vewe.webp",
       "handle": "@novvewe",
-      "message": "COMPLETAR",
       "socials": {
         "instagram": "https://www.instagram.com/novvewe/"
       }
@@ -120,7 +107,6 @@ window.GIMAE = {
       "colorLabel": "Morado",
       "photo": "images/vali.webp",
       "handle": "@vali_chuu",
-      "message": "COMPLETAR",
       "socials": {
         "instagram": "https://www.instagram.com/vali_chuu/"
       }
