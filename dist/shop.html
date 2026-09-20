@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#fff8fc">
+  <title>Tienda oficial — Gimae!</title>
+  <meta name="description" content="Arma tu pedido de merch Gimae, revisa el total en pesos chilenos y elige una forma de pago disponible.">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='10' fill='%23ef4e9a'/%3E%3Ctext x='16' y='24' text-anchor='middle' fill='white' font-family='sans-serif' font-weight='bold' font-size='27'%3Eg%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+  <script src="content.js" defer></script><script src="nav.js" defer></script><script src="shop.js" defer></script>
+</head>
+<body class="tool-page shop-page">
+  <a class="skip" href="#main">Saltar al contenido</a>
+  <div class="rainbow" aria-hidden="true"></div>
+  <header class="header">
+    <a class="brand" href="index.html" aria-label="Gimae, inicio"><img class="wordmark" src="images/logo-wordmark.webp" alt="Gimae!" width="220" height="88"></a>
+    <button class="menu-toggle" aria-expanded="false" aria-controls="navigation">Menú <span aria-hidden="true">☰</span></button>
+    <nav id="navigation" aria-label="Principal"><a href="index.html">Inicio</a><a href="index.html#members">Members</a><a href="shop.html" aria-current="page">Tienda</a><a href="cheki.html">Crea tu cheki</a><a href="gacha.html">Gacha</a><button class="nav-cart" type="button" data-open-cart aria-haspopup="dialog">Carrito <span class="cart-count" aria-label="0 productos">0</span></button></nav>
+  </header>
+
+  <main id="main" class="tool-page-main">
+    <section class="shop-hero section-shell" aria-labelledby="shop-title">
+      <div class="shop-hero-copy"><p class="eyebrow">GIMAE! OFFICIAL SHOP</p><h1 id="shop-title">Elige tu tesoro.<br><em>Nosotras ponemos el brillo.</em></h1><p>Arma tu carrito con calma. Los precios se muestran en pesos chilenos y cualquier dato pendiente aparece claramente antes de pagar.</p><button class="button primary" type="button" data-open-cart>Ver carrito <span aria-hidden="true">♡</span></button></div>
+      <div class="shop-hero-art"><img src="images/merch.webp" alt="Colección de merch Gimae con poleras, lightstick, llaveros, chekis y postales" width="1536" height="1024"><span aria-hidden="true">GIMAE! GOODIES ✦</span></div>
+    </section>
+
+    <section class="shop-catalog section-shell" aria-labelledby="catalog-title">
+      <div class="section-heading"><div><p class="eyebrow">01 / CATÁLOGO</p><h2 id="catalog-title">Pequeños tesoros.<br><em>Grandes recuerdos.</em></h2></div><p>El total siempre se recalcula<br>desde el catálogo actual.</p></div>
+      <p class="shop-config-note" id="shop-config-note" role="status" hidden></p>
+      <div class="shop-product-grid" id="shop-product-grid"></div>
+    </section>
+
+    <section class="shop-trust" aria-labelledby="trust-title">
+      <div class="section-shell">
+        <div class="section-heading"><div><p class="eyebrow">02 / ANTES DE COMPRAR</p><h2 id="trust-title">Todo claro,<br><em>sin letra chica.</em></h2></div><p>Estas condiciones son plantillas<br>pendientes de revisión final.</p></div>
+        <div class="trust-grid">
+          <article><span aria-hidden="true">01</span><h3>Cómo comprar</h3><p>Agrega tus productos, revisa variantes y cantidades, elige entrega y completa solo tu nombre y un contacto. El pedido se confirma cuando el equipo de Gimae verifica disponibilidad y pago.</p></article>
+          <article><span aria-hidden="true">02</span><h3>Envíos y retiros</h3><p>Las modalidades habilitadas aparecen en el carrito. Costos, cobertura y plazos que no estén publicados se mostrarán como “A coordinar”. <strong>[PENDIENTE: definir zonas, costos y plazos]</strong></p></article>
+          <article><span aria-hidden="true">03</span><h3>Cambios y devoluciones</h3><p><strong>[PENDIENTE: definir condiciones, plazos y canal de atención]</strong>. Nada en esta plantilla limita los derechos que correspondan según la legislación chilena aplicable.</p></article>
+          <article><span aria-hidden="true">04</span><h3>Contacto</h3><p>Para confirmar un pedido o resolver dudas, utiliza únicamente los canales oficiales habilitados al finalizar la compra. <strong>[PENDIENTE: indicar horario de atención]</strong></p></article>
+        </div>
+        <p class="legal-review">Plantilla informativa: no constituye asesoría legal. Debe revisarse con un profesional, incluyendo Ley del Consumidor, tratamiento de datos personales y emisión de boleta o factura.</p>
+      </div>
+    </section>
+  </main>
+
+  <button class="cart-fab" type="button" data-open-cart aria-haspopup="dialog"><span aria-hidden="true">♡</span> Carrito <span class="cart-count" aria-label="0 productos">0</span></button>
+
+  <footer class="footer section-shell"><a class="brand footer-brand" href="index.html" aria-label="Gimae, inicio"><img class="wordmark" src="images/logo-wordmark.webp" alt="Gimae!" width="220" height="88"></a><p>Hecho de música, sueños y mucho amor.<br><span>© <span id="year">2026</span> Gimae · Chile</span></p><a class="back-top" href="#main">Volver arriba <span aria-hidden="true">↑</span></a></footer>
+
+  <dialog id="product-dialog" class="shop-dialog" aria-labelledby="product-dialog-title"><button class="dialog-close" type="button" data-close-dialog aria-label="Cerrar detalle">×</button><div id="product-dialog-content"></div></dialog>
+
+  <dialog id="cart-dialog" class="shop-dialog cart-dialog" aria-labelledby="cart-title">
+    <button class="dialog-close" type="button" data-close-dialog aria-label="Cerrar carrito">×</button>
+    <p class="eyebrow">TU PEDIDO</p><h2 id="cart-title">Carrito de merch</h2>
+    <p class="cart-storage-note" id="cart-storage-note" hidden>Tu navegador no permite guardar el carrito. Podrás continuar, pero se perderá al cerrar esta página.</p>
+    <div class="cart-items" id="cart-items"></div><p class="cart-empty" id="cart-empty">Tu carrito está esperando un poquito de magia. ♡</p>
+    <div class="cart-shipping"><label for="shipping-option">Entrega o despacho</label><select id="shipping-option"></select><small id="shipping-detail"></small></div>
+    <dl class="cart-totals"><div><dt>Subtotal</dt><dd id="cart-subtotal">$0</dd></div><div><dt>Entrega</dt><dd id="cart-shipping-cost">A coordinar</dd></div><div class="cart-total-row"><dt>Total productos</dt><dd id="cart-total">$0</dd></div></dl>
+    <p class="cart-total-note">Si el despacho tiene un costo todavía no publicado, se coordina antes de transferir o pagar.</p>
+    <div class="pending-order" id="pending-order" hidden><p>Tienes un pedido guardado solo en este navegador.</p><button class="text-link" id="reopen-order" type="button">Reabrir resumen <span aria-hidden="true">↗</span></button></div>
+    <p class="shop-error" id="cart-error" role="alert" hidden></p>
+    <button class="button primary cart-checkout" id="start-checkout" type="button">Continuar al pago <span aria-hidden="true">↗</span></button>
+  </dialog>
+
+  <dialog id="checkout-dialog" class="shop-dialog checkout-dialog" aria-labelledby="checkout-title">
+    <button class="dialog-close" type="button" data-close-dialog aria-label="Cerrar pago">×</button>
+    <p class="eyebrow">CHECKOUT SEGURO Y SIMPLE</p><h2 id="checkout-title">Confirma tus datos</h2>
+    <form id="checkout-form" novalidate>
+      <div class="checkout-fields"><label for="buyer-name">Nombre <input id="buyer-name" name="buyerName" type="text" maxlength="60" autocomplete="name" required></label><label for="buyer-contact">Contacto <input id="buyer-contact" name="buyerContact" type="text" maxlength="80" placeholder="Instagram, WhatsApp o correo" autocomplete="email" required></label></div>
+      <fieldset class="payment-methods"><legend>Forma de pago</legend><div id="payment-method-list"></div></fieldset>
+      <div class="paypal-conversion" id="paypal-conversion" hidden></div>
+      <p class="checkout-privacy">Tus datos no se envían ni guardan en un servidor de Gimae. Este dispositivo conserva el resumen para que puedas reabrirlo.</p>
+      <p class="paypal-risk" id="paypal-risk" hidden>PayPal se calcula en el navegador y el equivalente en USD es referencial. El equipo debe comprobar el monto y el estado del pago en PayPal antes de despachar.</p>
+      <p class="shop-error" id="checkout-error" role="alert" hidden></p>
+      <p class="checkout-status" id="checkout-status" aria-live="polite"></p>
+      <button class="button primary" id="prepare-payment" type="submit">Generar instrucciones <span aria-hidden="true">↗</span></button>
+      <div id="paypal-buttons" hidden></div>
+    </form>
+  </dialog>
+
+  <dialog id="order-dialog" class="shop-dialog order-dialog" aria-labelledby="order-title">
+    <button class="dialog-close" type="button" data-close-dialog aria-label="Cerrar resumen">×</button>
+    <p class="eyebrow">RESUMEN DEL PEDIDO</p><h2 id="order-title">Tu pedido quedó guardado</h2>
+    <div id="order-summary"></div>
+  </dialog>
+
+  <noscript><p class="noscript-note">Activa JavaScript para usar el carrito y preparar tu pedido. No procesamos tarjetas directamente en este sitio.</p></noscript>
+</body>
+</html>

@@ -5,12 +5,14 @@ Sitio estático responsive para Gimae, grupo idol de Chile. Incluye Members con 
 ## Estructura
 
 - `dist/index.html`: portada enfocada en el grupo, eventos, merch y redes.
+- `dist/shop.html`: tienda, carrito, checkout y textos informativos.
 - `dist/cheki.html`: estudio independiente para crear chekis digitales.
 - `dist/gacha.html`: gacha independiente y álbum de photocards.
 - `dist/styles.css`: diseño, responsive y movimiento reducido.
 - `dist/content.js`: nombres, biografías, fotos y redes oficiales.
 - `dist/app.js`: perfiles, catálogo de merch y enlaces de la portada.
-- `dist/nav.js`: menú móvil y año compartidos entre las tres páginas.
+- `dist/nav.js`: menú móvil y año compartidos entre las cuatro páginas.
+- `dist/shop.js`: carrito local, transferencia, PayPal opcional y resumen de pedido.
 - `dist/cheki.js`: generador de chekis en canvas, encuadre, descarga y compartir.
 - `dist/gacha.js`: gacha gratuito, catálogo de cartas, rarezas y colección local.
 - `dist/images/`: retratos limpios, logos con transparencia, presentación de merch y catálogo original.
@@ -43,9 +45,19 @@ La página `dist/cheki.html` procesa la selfie únicamente en el navegador. Los 
 
 La página `dist/gacha.html` contiene un catálogo editable de 12 cartas que reutilizan los cuatro retratos oficiales sin alterar los rostros. Probabilidades, límite diario opcional y nuevas cartas se configuran al inicio de `dist/gacha.js`. El álbum y los duplicados se guardan en `localStorage` cuando el navegador lo permite. Es un juego gratuito sin pagos, premios físicos ni relación con el stock de merch.
 
+## Tienda y pagos
+
+`dist/content.js` es la única fuente de productos y precios. En el mismo archivo se completan `SHIPPING`, `PAYMENT_METHODS`, `BANK_TRANSFER`, `PAYPAL_CLIENT_ID`, `PAYPAL_CURRENCY`, `CLP_PER_USD` y `ORDER_CONTACTS`. Los valores `COMPLETAR`, el stock vacío y PayPal desactivado son intencionales: no deben reemplazarse por datos inventados.
+
+El carrito guarda solo IDs, variantes y cantidades. Al cargar, `dist/shop.js` descarta referencias antiguas y recupera precios desde el catálogo. Los pedidos quedan únicamente en `localStorage`; no existe un backend que reserve stock o confirme pagos.
+
+PayPal usa USD porque CLP no figura en la lista oficial de monedas admitidas. La integración opcional carga el SDK solo al seleccionar PayPal. Al ser completamente cliente, el monto puede manipularse: antes de entregar un pedido se debe verificar en el panel de PayPal el estado, monto, moneda e ID de la operación. Para producción es preferible un enlace de pago administrado por PayPal o una integración con servidor que cree y capture órdenes.
+
+Una CSP es recomendable, pero debe probarse con Google Fonts y los dominios vigentes del SDK de PayPal antes de activarla. En GitHub Pages puede declararse mediante una etiqueta `meta`, aunque las cabeceras HTTP ofrecen mayor control cuando el hosting las permite.
+
 ## Accesibilidad
 
-Navegación por teclado, enlace para saltar al contenido, modal nativo con cierre mediante Escape y retorno del foco, control del menú móvil y soporte de `prefers-reduced-motion`.
+Navegación por teclado, enlace para saltar al contenido, modales nativos con cierre mediante Escape y retorno del foco, control del menú móvil y soporte de `prefers-reduced-motion`.
 
 ## Publicación
 

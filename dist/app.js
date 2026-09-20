@@ -52,7 +52,8 @@ if (Object.values(config.socials).some((value) => value && /^https:\/\//i.test(v
 $('.dialog-close').addEventListener('click', () => dialog.close());
 dialog.addEventListener('click', (event) => { if (event.target === dialog) { const b = dialog.getBoundingClientRect(); if (event.clientX < b.left || event.clientX > b.right || event.clientY < b.top || event.clientY > b.bottom) dialog.close(); } });
 const money = new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 });
-config.merch.forEach(product => {
+const productGrid = $('#product-grid');
+if (productGrid) config.merch.forEach(product => {
   const card = document.createElement('article'); card.className = `product-card ${product.color}`;
   const top = document.createElement('div'); top.className = 'product-top';
   const number = document.createElement('span'); number.className = 'product-number'; number.textContent = 'NO. ' + product.id;
@@ -71,7 +72,7 @@ config.merch.forEach(product => {
     config.members.forEach(member => { const color = document.createElement('span'); color.className = 'swatch ' + member.color; color.title = member.name + ' · ' + member.colorLabel; color.setAttribute('aria-label', color.title); colors.append(color); });
     card.append(colors);
   }
-  $('#product-grid').append(card);
+  productGrid.append(card);
 });
 const catalogDialog = $('#catalog-dialog');
 const catalogImage = $('#catalog-image');

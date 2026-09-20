@@ -1,4 +1,4 @@
-/* Navegación compartida por Inicio, Estudio Cheki y Gacha. */
+/* Navegación compartida por Inicio, Tienda, Estudio Cheki y Gacha. */
 (() => {
   'use strict';
   const menu = document.querySelector('.menu-toggle');

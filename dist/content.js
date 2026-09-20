@@ -5,6 +5,52 @@ window.GIMAE = {
     "tiktok": "https://www.tiktok.com/@gimae_official",
     "spotify": "https://open.spotify.com/artist/3fCnhznvLe2OnwRa3Rif4g"
   },
+  // TIENDA: activa o desactiva aquí cada forma de entrega.
+  // Deja cost y eta vacíos cuando todavía deban coordinarse; la interfaz mostrará "A coordinar".
+  "SHIPPING": {
+    "options": [
+      {
+        "id": "pickup",
+        "label": "Retiro en persona (a coordinar)",
+        "enabled": true,
+        "cost": null,
+        "eta": ""
+      },
+      {
+        "id": "instagram_shipping",
+        "label": "Envío a coordinar por Instagram",
+        "enabled": true,
+        "cost": null,
+        "eta": ""
+      }
+    ]
+  },
+  // CHECKOUT: cambia enabled a true o false sin modificar dist/shop.js.
+  "PAYMENT_METHODS": {
+    "bankTransfer": { "enabled": true, "label": "Transferencia bancaria" },
+    "paypal": { "enabled": false, "label": "PayPal" }
+  },
+  // TRANSFERENCIA: reemplaza únicamente los textos "COMPLETAR" con datos que decidas publicar.
+  // Nunca agregues claves, contraseñas, tokens ni información que no deba quedar en el repositorio público.
+  "BANK_TRANSFER": {
+    "accountHolder": "COMPLETAR",
+    "rut": "COMPLETAR",
+    "bank": "COMPLETAR",
+    "accountType": "COMPLETAR",
+    "accountNumber": "COMPLETAR",
+    "confirmationEmail": "COMPLETAR"
+  },
+  // PAYPAL: publica solo el Client ID. El secret NUNCA debe ir en este archivo.
+  // CLP_PER_USD es un tipo de cambio manual; actualízalo antes de habilitar PayPal.
+  "PAYPAL_CLIENT_ID": "COMPLETAR",
+  "PAYPAL_CURRENCY": "USD",
+  "CLP_PER_USD": null,
+  // CANALES: Instagram copia el mensaje y abre el perfil. WhatsApp requiere solo dígitos con código de país.
+  "ORDER_CONTACTS": {
+    "instagram": { "enabled": true, "url": "https://www.instagram.com/gimae_official" },
+    "whatsapp": { "enabled": false, "number": "" },
+    "email": { "enabled": false, "address": "" }
+  },
   // CHEKIS: "name" y "accent" alimentan automáticamente las opciones y la firma.
   // Usa un color hexadecimal en "accent" si quieres ajustar el tono de una integrante.
   "members": [
@@ -57,6 +103,10 @@ window.GIMAE = {
       }
     }
   ],
+  // PRODUCTOS: "stock": null muestra "Disponibilidad por confirmar".
+  // Reemplázalo por un entero cuando conozcas el stock. Para stock por variante usa,
+  // por ejemplo, "stockByVariant": { "01": 3, "02": 2 } con los IDs reales de variante.
+  // Cambia "active" a false para ocultar un producto sin borrar su información.
   "merch": [
     {
       "id": "01",
@@ -64,44 +114,58 @@ window.GIMAE = {
       "note": "Tu color, tu member.",
       "price": 15000,
       "color": "pink",
-      "variants": true
+      "active": true,
+      "stock": null,
+      "variantLabel": "Color / integrante",
+      "variantSource": "members"
     },
     {
       "id": "02",
       "name": "Lightstick",
       "note": "Lleva tu brillo al escenario.",
       "price": 8000,
-      "color": "purple"
+      "color": "purple",
+      "active": true,
+      "stock": null
     },
     {
       "id": "03",
       "name": "Llaveros",
       "note": "Un pequeño amuleto idol.",
       "price": 3000,
-      "color": "yellow"
+      "color": "yellow",
+      "active": true,
+      "stock": null
     },
     {
       "id": "04",
       "name": "Chekis",
       "note": "Un recuerdo en formato instantáneo.",
+      "variantLabel": "Tipo",
       "prices": [
         {
+          "id": "individual",
           "label": "Individual",
           "value": 4500
         },
         {
+          "id": "group",
           "label": "Grupal",
           "value": 5000
         }
       ],
-      "color": "pink"
+      "color": "pink",
+      "active": true,
+      "stock": null
     },
     {
       "id": "05",
       "name": "Postales",
       "note": "Un pedacito de nuestro universo.",
       "price": 2000,
-      "color": "red"
+      "color": "red",
+      "active": true,
+      "stock": null
     }
   ]
 };
