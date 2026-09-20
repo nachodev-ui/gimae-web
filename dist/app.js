@@ -28,11 +28,22 @@ const dialog = $('#member-dialog');
 function showMember(member, trigger) {
   const content = $('#dialog-content'); content.replaceChildren();
   dialog.dataset.color = member.color;
+  dialog.dataset.member = member.id;
+  if (member.theme) {
+    dialog.style.setProperty('--member-accent', member.theme.accent);
+    dialog.style.setProperty('--member-soft', member.theme.soft);
+    dialog.style.setProperty('--member-strong', member.theme.strong);
+    dialog.style.setProperty('--member-on-accent', member.theme.onAccent);
+  }
   const label = document.createElement('p'); label.className = 'eyebrow'; label.textContent = `GIMAE! / MEMBER ${member.id}`;
   const title = document.createElement('h2'); title.id = 'dialog-title'; title.textContent = member.name || `Member ${member.id}`;
   const bio = document.createElement('p'); bio.className = 'dialog-bio'; bio.textContent = member.handle;
   const color = document.createElement('p'); color.className = 'member-color'; color.textContent = member.colorLabel;
-  content.append(label, title, color, bio);
+  const message = document.createElement('p'); message.className = 'dialog-member-message';
+  const hasMessage = typeof member.message === 'string' && member.message.trim() && member.message.trim().toUpperCase() !== 'COMPLETAR';
+  message.textContent = hasMessage ? member.message.trim() : 'Mensaje pendiente de completar.';
+  message.classList.toggle('is-pending', !hasMessage);
+  content.append(label, title, color, bio, message);
   if (safeUrl(member.photo)) { const img = document.createElement('img'); img.src = safeUrl(member.photo); img.alt = member.name || `Integrante ${member.id}`; img.className = 'dialog-photo'; content.prepend(img); }
   const socials = document.createElement('div'); socials.className = 'member-socials'; makeSocials(socials, member.socials, true); content.append(socials);
   dialog.showModal(); document.body.classList.add('dialog-open');
@@ -40,10 +51,12 @@ function showMember(member, trigger) {
 }
 config.members.forEach((member) => {
   const button = document.createElement('button'); button.type = 'button'; button.className = `member-card ${member.color}`;
+  button.dataset.memberId = member.id;
   button.setAttribute('aria-haspopup', 'dialog'); button.setAttribute('aria-label', `Conocer a ${member.name || 'Member ' + member.id}`);
-  button.innerHTML = `<span class="card-top"><span>GIMAE! MEMBER</span><span>✦</span></span><span class="member-visual"><span class="member-number">${member.id}</span><span class="member-symbol" aria-hidden="true">✧</span><span class="member-reveal">${member.name ? 'MEET THE MEMBER' : 'A LITTLE MYSTERY'}</span></span><span class="member-bottom"><span><strong></strong><span class="member-caption"></span></span><span class="member-plus" aria-hidden="true">+</span></span>`;
+  button.setAttribute('aria-pressed', 'false');
+  button.innerHTML = `<span class="card-top"><span>GIMAE! MEMBER</span><span>✦</span></span><span class="member-visual"><span class="member-number">${member.id}</span><span class="member-symbol" aria-hidden="true">✧</span><span class="member-reveal">${member.name ? 'MEET THE MEMBER' : 'A LITTLE MYSTERY'}</span></span><span class="member-bottom"><span><strong></strong><span class="member-caption"><span class="member-card-chip" aria-hidden="true"></span><span class="member-caption-text"></span></span></span><span class="member-plus" aria-hidden="true">+</span></span>`;
   button.querySelector('strong').textContent = member.name || `Member ${member.id}`;
-  button.querySelector('.member-caption').textContent = member.colorLabel + ' · ' + member.handle;
+  button.querySelector('.member-caption-text').textContent = member.colorLabel + ' · ' + member.handle;
   if (safeUrl(member.photo)) { const img = document.createElement('img'); img.src = safeUrl(member.photo); img.alt = ''; img.loading = 'lazy'; button.querySelector('.member-visual').replaceChildren(img); }
   button.addEventListener('click', () => showMember(member, button)); $('#member-grid').append(button);
 });
