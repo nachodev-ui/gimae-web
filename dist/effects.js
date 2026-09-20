@@ -98,7 +98,10 @@
 
     const AudioContextClass = window.AudioContext || window.webkitAudioContext;
     const storageKey = 'gimae-music-enabled-v1';
+    const sessionKey = 'gimae-music-activated-v1';
+    const stepKey = 'gimae-music-step-v1';
     let wanted = settings.musicStartsEnabled !== false;
+    let resumeFromPreviousPage = false;
     let context = null;
     let master = null;
     let noiseBuffer = null;
@@ -112,6 +115,13 @@
       if (saved !== null) wanted = saved === 'true';
     } catch {
       // La preferencia seguirá funcionando durante esta visita.
+    }
+    try {
+      resumeFromPreviousPage = sessionStorage.getItem(sessionKey) === 'true';
+      const savedStep = Number(sessionStorage.getItem(stepKey));
+      if (Number.isInteger(savedStep) && savedStep >= 0) step = savedStep % 32;
+    } catch {
+      // La continuidad entre páginas es una mejora progresiva.
     }
 
     const button = document.createElement('button');
@@ -246,7 +256,10 @@
       }
       try {
         await context.resume();
+        if (context.state !== 'running') throw new Error('El navegador mantuvo el audio en pausa.');
         activated = true;
+        resumeFromPreviousPage = true;
+        try { sessionStorage.setItem(sessionKey, 'true'); } catch { /* Puede estar bloqueado. */ }
         master.gain.cancelScheduledValues(context.currentTime);
         master.gain.setValueAtTime(Math.max(master.gain.value, .0001), context.currentTime);
         master.gain.exponentialRampToValueAtTime(Math.min(.08, Math.max(.01, Number(settings.volume) || .035)), context.currentTime + .18);
@@ -255,7 +268,8 @@
         schedulerId = window.setInterval(scheduler, 25);
         scheduler();
       } catch {
-        wanted = false;
+        // Conserva la preferencia ON: la próxima interacción volverá a intentar.
+        activated = false;
       }
       updateButton();
     }
@@ -276,8 +290,13 @@
     button.addEventListener('click', () => {
       wanted = !wanted;
       remember();
-      if (wanted) startMusic();
-      else stopMusic();
+      if (wanted) {
+        startMusic();
+      } else {
+        resumeFromPreviousPage = false;
+        try { sessionStorage.removeItem(sessionKey); } catch { /* Puede estar bloqueado. */ }
+        stopMusic();
+      }
     });
 
     const removeUnlockListeners = () => {
@@ -306,10 +325,19 @@
 
     window.addEventListener('pagehide', () => {
       window.clearInterval(schedulerId);
+      if (wanted && activated) {
+        try {
+          sessionStorage.setItem(sessionKey, 'true');
+          sessionStorage.setItem(stepKey, String(step));
+        } catch { /* Puede estar bloqueado. */ }
+      }
       if (context && context.state !== 'closed') context.close().catch(() => {});
     }, { once: true });
 
     updateButton();
+    // Si la persona ya inició la música en esta pestaña, intenta retomarla
+    // al entrar a otra página sin exigir el ciclo manual OFF/ON.
+    if (wanted && resumeFromPreviousPage) window.requestAnimationFrame(() => startMusic());
   }
 
   setupCursorSparkles();
