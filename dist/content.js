@@ -60,6 +60,142 @@ window.GIMAE = {
     "whatsapp": { "enabled": false, "number": "" },
     "email": { "enabled": false, "address": "" }
   },
+  // AVATAR: todos los diálogos son locales y predefinidos. No se usa IA ni backend.
+  // "label" siempre queda visible para explicar la naturaleza del widget.
+  // IMÁGENES: reemplaza los WebP de dist/images/avatar/ conservando 768x768, transparencia y encuadre.
+  // Las bases usan <expresión>.webp y neutral/happy/excited requieren además <expresión>-mouth.webp.
+  "AVATAR_CONFIG": {
+    "enabled": true,
+    "name": "Suki",
+    "label": "Avatar animado · diálogos predefinidos",
+    "storageKey": "gimae.avatar.hidden"
+  },
+  // GUION DEL AVATAR:
+  // - text: ["variante 1", "variante 2"] elige una variante al azar.
+  // - text: [["parte 1", "parte 2"], ["otra variante"]] permite varias partes con "Siguiente".
+  // - Reemplaza los textos marcados COMPLETAR sin agregar datos personales no publicados.
+  // - {{members}}, {{events}}, {{merch}}, {{socials}} y {{instagram}} se rellenan desde este archivo.
+  "AVATAR_SCRIPT": {
+    "start": "welcome",
+    "nodes": {
+      "welcome": {
+        "id": "welcome",
+        "expression": "happy",
+        "text": [
+          "COMPLETAR: ¡Hola! Soy el avatar animado de Suki. Elige una opción para recorrer el sitio.",
+          "COMPLETAR: ¡Bienvenido al rincón de Gimae! ¿Qué parte del sitio quieres conocer?"
+        ],
+        "options": [
+          { "label": "Sobre el grupo", "target": "group" },
+          { "label": "Eventos", "target": "events" },
+          { "label": "Merch", "target": "merch" },
+          { "label": "Crear una cheki", "target": "cheki" },
+          { "label": "Gacha", "target": "gacha" },
+          { "label": "Redes oficiales", "target": "socials" },
+          { "label": "Despedirme", "target": "farewell" }
+        ]
+      },
+      "group": {
+        "id": "group",
+        "expression": "excited",
+        "text": [
+          [
+            "COMPLETAR: Las integrantes publicadas en el sitio son {{members}}.",
+            "COMPLETAR: Puedes visitar la sección Members para conocer sus perfiles y redes oficiales."
+          ],
+          [
+            "COMPLETAR: Gimae reúne a {{members}}.",
+            "COMPLETAR: Revisa sus tarjetas en la página principal para conocer la información oficial disponible."
+          ]
+        ],
+        "options": [
+          { "label": "Volver al menú", "target": "welcome" },
+          { "label": "Ver las redes", "target": "socials" }
+        ]
+      },
+      "events": {
+        "id": "events",
+        "expression": "thinking",
+        "text": [
+          [
+            "COMPLETAR: {{events}}",
+            "COMPLETAR: Para comprobar novedades también puedes visitar {{instagram}}."
+          ]
+        ],
+        "options": [
+          { "label": "Volver al menú", "target": "welcome" },
+          { "label": "Redes oficiales", "target": "socials" }
+        ]
+      },
+      "merch": {
+        "id": "merch",
+        "expression": "happy",
+        "text": [
+          [
+            "COMPLETAR: El catálogo configurado actualmente incluye {{merch}}.",
+            "COMPLETAR: La disponibilidad debe confirmarse mediante los canales oficiales antes de completar una compra."
+          ],
+          [
+            "COMPLETAR: Estos son los productos publicados en content.js: {{merch}}.",
+            "COMPLETAR: Si necesitas confirmar stock, revisa {{instagram}}."
+          ]
+        ],
+        "options": [
+          { "label": "Volver al menú", "target": "welcome" },
+          { "label": "Sobre las redes", "target": "socials" }
+        ]
+      },
+      "cheki": {
+        "id": "cheki",
+        "expression": "wink",
+        "text": [
+          "COMPLETAR: En Crea tu cheki puedes preparar una imagen desde tu navegador. La fotografía se procesa localmente y no se envía al sitio.",
+          "COMPLETAR: El estudio de chekis funciona directamente en tu dispositivo y permite descargar el resultado cuando esté listo."
+        ],
+        "options": [
+          { "label": "Volver al menú", "target": "welcome" },
+          { "label": "Conocer el gacha", "target": "gacha" }
+        ]
+      },
+      "gacha": {
+        "id": "gacha",
+        "expression": "excited",
+        "text": [
+          "COMPLETAR: El gacha del sitio es gratuito y guarda la colección únicamente en este dispositivo.",
+          "COMPLETAR: Puedes abrir sobres digitales y revisar el álbum local desde la página Gacha."
+        ],
+        "options": [
+          { "label": "Volver al menú", "target": "welcome" },
+          { "label": "Conocer las chekis", "target": "cheki" }
+        ]
+      },
+      "socials": {
+        "id": "socials",
+        "expression": "happy",
+        "text": [
+          [
+            "COMPLETAR: Las redes oficiales configuradas son {{socials}}.",
+            "COMPLETAR: Para novedades que todavía no aparezcan en el sitio, revisa {{instagram}}."
+          ]
+        ],
+        "options": [
+          { "label": "Volver al menú", "target": "welcome" },
+          { "label": "Eventos", "target": "events" }
+        ]
+      },
+      "farewell": {
+        "id": "farewell",
+        "expression": "shy",
+        "text": [
+          "COMPLETAR: ¡Gracias por visitar el sitio! Puedes minimizarme o cerrar la ventana cuando quieras.",
+          "COMPLETAR: ¡Nos vemos! Gracias por recorrer este pequeño rincón de Gimae."
+        ],
+        "options": [
+          { "label": "Volver a conversar", "target": "welcome" }
+        ]
+      }
+    }
+  },
   // CHEKIS: "name" y "accent" alimentan automáticamente las opciones y la firma.
   // Usa un color hexadecimal en "accent" si quieres ajustar el tono de una integrante.
   "members": [
