@@ -5,6 +5,15 @@ window.GIMAE = {
     "tiktok": "https://www.tiktok.com/@gimae_official",
     "spotify": "https://open.spotify.com/artist/3fCnhznvLe2OnwRa3Rif4g"
   },
+  // EFECTOS DEL SITIO: cambia cada flag a false para desactivar una función.
+  // La música es una composición sintetizada localmente; volume acepta valores de 0 a 0.08.
+  "EFFECTS": {
+    "cursorSparkles": true,
+    "stageTransitions": true,
+    "music": true,
+    "musicStartsEnabled": true,
+    "volume": 0.035
+  },
   // TIENDA: activa o desactiva aquí cada forma de entrega.
   // Deja cost y eta vacíos cuando todavía deban coordinarse; la interfaz mostrará "A coordinar".
   "SHIPPING": {
