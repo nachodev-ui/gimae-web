@@ -31,6 +31,37 @@
   // comprimir u oscurecer una franja también deforma nariz, cabello y rostro.
   // Mantener la ilustración estable produce un resultado más natural.
 
+  // WCAG 2 relative luminance in sRGB; all variants derive from existing site tokens.
+  const rgb = (hex) => /^#[0-9a-f]{6}$/i.test(String(hex))
+    ? hex.slice(1).match(/../g).map((channel) => parseInt(channel, 16)) : null;
+  const hex = (channels) => '#' + channels.map((c) => Math.round(c).toString(16).padStart(2, '0')).join('');
+  const mix = (a, b, weight) => a.map((channel, i) => Math.round(channel * (1 - weight) + b[i] * weight));
+  const luminance = (channels) => channels.map((channel) => {
+    const c = channel / 255;
+    return c <= .04045 ? c / 12.92 : ((c + .055) / 1.055) ** 2.4;
+  }).reduce((sum, channel, i) => sum + channel * [.2126, .7152, .0722][i], 0);
+  const contrast = (a, b) => (Math.max(luminance(a), luminance(b)) + .05)
+    / (Math.min(luminance(a), luminance(b)) + .05);
+  function avatarPalette(accent, ink = '#412d45') {
+    const base = rgb(accent) || rgb('#e84694');
+    const dark = rgb(ink) || rgb('#412d45');
+    const white = [255, 255, 255];
+    const soft = mix(base, white, .91);
+    // Deepen the existing hue only as much as needed for normal white text.
+    let strong = base;
+    for (let step = 0; step <= 100 && contrast(strong, white) < 4.6; step += 1) {
+      strong = mix(base, dark, step / 100);
+    }
+    const darkText = contrast(base, dark) >= 4.6;
+    const solid = darkText ? base : strong;
+    const onAccent = darkText ? dark : white;
+    return { accent: hex(base), soft: hex(soft), strong: hex(strong),
+      solid: hex(solid), onAccent: hex(onAccent), ink: hex(dark),
+      ratios: { solidText: contrast(solid, onAccent), text: contrast(soft, dark),
+        whiteButton: contrast(white, dark), focusOnWhite: contrast(strong, white),
+        focusOnSoft: contrast(strong, soft) } };
+  }
+
   const wait = (milliseconds) => new Promise((resolve) => window.setTimeout(resolve, milliseconds));
   const afterNextPaint = () => new Promise((resolve) => {
     const schedule = typeof window.requestAnimationFrame === 'function'
@@ -575,6 +606,10 @@
     window.__GIMAE_AVATAR_DEBUG__ = Object.freeze({ panel, renderer });
   }
 
+  function sukiAccent(config, name) {
+    return config.members?.find((member) => member?.name === name)?.accent;
+  }
+
   class AvatarDialogueWidget {
     constructor(siteConfig = {}) {
       this.siteConfig = siteConfig;
@@ -608,6 +643,7 @@
       this._onViewportChange = () => this._syncVisualViewport();
 
       this._build();
+      this.setAccent(sukiAccent(siteConfig, this.name));
       this.setDialogStyle(new URLSearchParams(location.search).get('avatar-style') || this.config.dialogStyle);
       if (typeof this._motionQuery.addEventListener === 'function') {
         this._motionQuery.addEventListener('change', this._onMotionPreferenceChange);
@@ -622,6 +658,9 @@
         window.visualViewport.addEventListener('scroll', this._onViewportChange, { passive: true });
       }
       this._observeDialogs();
+      this._onFocusChange = () => this._syncObstructions();
+      document.addEventListener('focusin', this._onFocusChange);
+      document.addEventListener('focusout', this._onFocusChange);
       if (this._readHiddenPreference()) this.host.hidden = true;
     }
 
@@ -789,6 +828,16 @@
       this.nameCharm.textContent = this.dialogStyle === 'pastel-sticker' ? '♡' : '✦';
       const select = document.getElementById('avatar-dialog-style');
       if (select) select.value = this.dialogStyle;
+      this._syncObstructions();
+    }
+
+    // Reusable for a future member switch; never changes the script or portrait.
+    setAccent(accent) {
+      const ink = getComputedStyle(document.documentElement).getPropertyValue('--ink').trim();
+      this.palette = avatarPalette(accent, ink);
+      const tokens = { '--accent': 'accent', '--accent-soft': 'soft', '--accent-strong': 'strong',
+        '--on-accent': 'onAccent', '--avatar-solid': 'solid' };
+      Object.entries(tokens).forEach(([property, key]) => this.host.style.setProperty(property, this.palette[key]));
     }
 
     _readHiddenPreference() {
@@ -847,6 +896,8 @@
         : 0;
       this.host.style.setProperty('--avatar-visible-height', `${Math.round(height)}px`);
       this.host.style.setProperty('--avatar-keyboard-inset', `${Math.round(keyboardInset)}px`);
+      this.host.classList.toggle('avatar-widget-host--compact', height < 520);
+      this._syncObstructions();
     }
 
     setMotionDisabled(disabled = true) {
@@ -860,24 +911,30 @@
       this._writeBooleanPreference(this.storageKey, hidden);
     }
 
+    _syncObstructions() {
+      if (!this.host) return;
+      const modalOpen = Boolean(document.querySelector('dialog[open]'));
+      const pastel = this.dialogStyle && this.dialogStyle !== 'default';
+      const menuOpen = pastel && Boolean(document.querySelector('.menu-toggle[aria-expanded="true"]'));
+      const field = document.activeElement;
+      const editingPage = pastel && window.innerWidth <= 700 && field
+        && !this.host.contains(field) && field.matches('input:not([type="button"]):not([type="checkbox"]):not([type="radio"]),textarea,[contenteditable="true"]');
+      const blocked = Boolean(modalOpen || menuOpen || editingPage);
+      this.host.classList.toggle('avatar-widget-host--modal-open', blocked);
+      this.host.inert = blocked;
+      this.host.setAttribute('aria-hidden', String(blocked));
+      if (blocked) {
+        if (this._isTyping) this.skipTypewriter();
+        else if (this.renderer) this.renderer.stopSpeaking();
+      }
+    }
+
     _observeDialogs() {
-      const sync = () => {
-        const modalOpen = Boolean(document.querySelector('dialog[open]'));
-        this.host.classList.toggle('avatar-widget-host--modal-open', modalOpen);
-        this.host.inert = modalOpen;
-        this.host.setAttribute('aria-hidden', String(modalOpen));
-        if (modalOpen) {
-          if (this._isTyping) this.skipTypewriter();
-          else if (this.renderer) this.renderer.stopSpeaking();
-        }
-      };
-      sync();
+      this._syncObstructions();
       if (typeof MutationObserver === 'function') {
-        this._dialogObserver = new MutationObserver(sync);
+        this._dialogObserver = new MutationObserver(() => this._syncObstructions());
         this._dialogObserver.observe(document.body, {
-          subtree: true,
-          attributes: true,
-          attributeFilter: ['open']
+          subtree: true, attributes: true, attributeFilter: ['open', 'aria-expanded']
         });
       }
     }
@@ -1159,6 +1216,11 @@
         if (!option || typeof option !== 'object' || !this.nodes[option.target]) return;
         const label = String(option.label || 'Continuar');
         const button = createButton(label, 'avatar-widget-option');
+        const charm = document.createElement('span');
+        charm.className = 'avatar-pastel-option-charm';
+        charm.setAttribute('aria-hidden', 'true');
+        charm.textContent = '♡';
+        button.prepend(charm);
         button.addEventListener('click', () => {
           Array.from(this.options.children).forEach((candidate) => { candidate.disabled = true; });
           void this.goTo(option.target, label);
@@ -1198,6 +1260,8 @@
       }
       if (this.renderer) this.renderer.destroy();
       document.body.classList.remove('avatar-widget-open');
+      document.removeEventListener('focusin', this._onFocusChange);
+      document.removeEventListener('focusout', this._onFocusChange);
       this.host.remove();
     }
   }
@@ -1211,6 +1275,7 @@
     window.GIMAE_AVATAR_WIDGET = widget;
   }
 
+  window.GIMAE_AVATAR_PALETTE = avatarPalette;
   window.AvatarRenderer = AvatarRenderer;
   window.AvatarDialogueWidget = AvatarDialogueWidget;
   window.GIMAE_AVATAR_EXPRESSIONS = EXPRESSIONS;

@@ -210,7 +210,7 @@ html{background:var(--paper);overflow-x:clip;scrollbar-color:#d594b6 var(--paper
   --accent-strong:var(--pink-dark);--on-accent:var(--ink);
   --avatar-angle:-2.5deg;--avatar-counter-angle:2.5deg;--avatar-label-angle:-3.5deg;
   --avatar-outline:6px;--avatar-inner-outline:2px;--avatar-cut:17px;
-  --avatar-box-radius:8px;--avatar-tail-size:76px;--avatar-portrait:260px;
+  --avatar-box-radius:8px;--avatar-tail-size:76px;--avatar-portrait:240px;
   --avatar-white:white;--avatar-paper:var(--paper);--avatar-ink:var(--ink);
   --avatar-shadow:color-mix(in srgb,var(--accent) 22%,transparent);
   --avatar-shape:polygon(var(--avatar-cut) 0,calc(100% - var(--avatar-cut)) 0,100% var(--avatar-cut),100% calc(100% - var(--avatar-cut)),calc(100% - var(--avatar-cut)) 100%,var(--avatar-cut) 100%,0 calc(100% - var(--avatar-cut)),0 var(--avatar-cut));
@@ -220,7 +220,7 @@ html{background:var(--paper);overflow-x:clip;scrollbar-color:#d594b6 var(--paper
   box-shadow:5px 8px 0 var(--avatar-shadow),0 14px 35px var(--avatar-shadow);
 }
 :where(.avatar-widget-host[data-dialog-style^="pastel-"]) .avatar-widget-content{grid-template-columns:155px minmax(0,1fr);flex-basis:380px;padding:8px 12px 0;isolation:isolate}
-:where(.avatar-widget-host[data-dialog-style^="pastel-"]) .avatar-widget-stage{width:225px;position:sticky;bottom:0;z-index:2;border:0;pointer-events:none;align-self:end;overflow:hidden}
+:where(.avatar-widget-host[data-dialog-style^="pastel-"]) .avatar-widget-stage{width:205px;position:sticky;bottom:0;z-index:2;border:0;pointer-events:none;align-self:end;overflow:hidden}
 :where(.avatar-widget-host[data-dialog-style^="pastel-"]) .avatar-widget-stage .avatar-renderer{width:var(--avatar-portrait);margin:0 0 -12px -20px;filter:drop-shadow(1px 0 0 var(--avatar-white)) drop-shadow(-1px 0 0 var(--avatar-white)) drop-shadow(0 -1px 0 var(--avatar-white))}
 :where(.avatar-widget-host[data-dialog-style^="pastel-"]) .avatar-widget-dialogue{padding:8px 10px 20px 52px;background:transparent}
 :where(.avatar-widget-host[data-dialog-style^="pastel-"]) .avatar-widget-history{max-height:58px;min-height:0;margin-bottom:20px;color:var(--avatar-ink);border-color:var(--accent-soft)}
@@ -255,10 +255,72 @@ html{background:var(--paper);overflow-x:clip;scrollbar-color:#d594b6 var(--paper
   --avatar-box-radius:25px;--avatar-shape:none;--avatar-tail-size:64px;
 }
 :where(.avatar-widget-host[data-dialog-style="pastel-sticker"]) .avatar-pastel-paper{
-  background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 3%,transparent) 50%,transparent 50%),linear-gradient(color-mix(in srgb,var(--accent) 3%,transparent) 50%,transparent 50%),linear-gradient(135deg,var(--avatar-white),var(--accent-soft));background-size:12px 12px,12px 12px,100% 100%;
+  background:linear-gradient(90deg,color-mix(in srgb,var(--avatar-white) 18%,transparent) 50%,transparent 50%),linear-gradient(color-mix(in srgb,var(--avatar-white) 18%,transparent) 50%,transparent 50%),linear-gradient(135deg,var(--avatar-white),var(--accent-soft));background-size:12px 12px,12px 12px,100% 100%;
 }
 :where(.avatar-widget-host[data-dialog-style="pastel-sticker"]) .avatar-widget-nameplate{clip-path:none;border-radius:9px 9px 12px 4px;padding-right:27px}
 :where(.avatar-widget-host[data-dialog-style="pastel-sticker"]) .avatar-widget-nameplate::before,
 :where(.avatar-widget-host[data-dialog-style="pastel-sticker"]) .avatar-widget-nameplate::after{content:'';position:absolute;right:-17px;top:4px;width:15px;height:19px;border:2px solid var(--avatar-white);background:var(--accent);border-radius:70% 20% 55% 20%;transform:rotate(-22deg);pointer-events:none}
 :where(.avatar-widget-host[data-dialog-style="pastel-sticker"]) .avatar-widget-nameplate::after{right:-29px;transform:rotate(22deg) scaleX(-1)}
 :where(.avatar-widget-host[data-dialog-style="pastel-sticker"]) .avatar-pastel-tail{left:-34px;bottom:24%;transform:rotate(-24deg)}
+
+/* AVATAR — RESPONSIVE & CONTRAST
+   --avatar-solid/--on-accent are paired by the WCAG helper in avatar.js.
+   White and ink are existing neutrals; accent hues come from members[].accent.
+   Focus uses the deeper accent with an opaque white separation ring.
+   ========================================================= */
+.avatar-pastel-option-charm{display:none}
+:where(.avatar-widget-host[data-dialog-style^="pastel-"]) .avatar-pastel-option-charm{display:inline;margin-right:7px}
+:where(.avatar-widget-host[data-dialog-style^="pastel-"]) :is(.avatar-widget-nameplate,.avatar-widget-launcher__star){background:var(--avatar-solid);color:var(--on-accent)}
+:where(.avatar-widget-host[data-dialog-style^="pastel-"]) .avatar-widget-nameplate::before,
+:where(.avatar-widget-host[data-dialog-style^="pastel-"]) .avatar-widget-nameplate::after{background:var(--avatar-solid)}
+:where(.avatar-widget-host[data-dialog-style^="pastel-"]) :is(.avatar-widget-option,.avatar-widget-next):is(:hover,:focus-visible):not(:disabled){background:var(--avatar-solid);color:var(--on-accent)}
+:where(.avatar-widget-host[data-dialog-style^="pastel-"]) :is(.avatar-widget-header,.avatar-widget-footer,.avatar-widget-launcher){background:var(--avatar-paper);border-color:var(--accent-soft);color:var(--avatar-ink);box-shadow:none}
+:where(.avatar-widget-host[data-dialog-style^="pastel-"]) .avatar-widget-launcher{border:3px solid var(--avatar-white);box-shadow:3px 5px 0 var(--avatar-shadow);background:var(--accent-soft)}
+:where(.avatar-widget-host[data-dialog-style^="pastel-"]) :is(.avatar-widget-heading span,.avatar-widget-launcher strong,.avatar-widget-launcher small,.avatar-widget-footer small,.avatar-widget-motion,.avatar-widget-hide,.avatar-widget-history__entry,.avatar-widget-history__entry--user){color:var(--avatar-ink)}
+:where(.avatar-widget-host[data-dialog-style^="pastel-"]) .avatar-widget-history:empty::before{color:var(--avatar-ink)}
+:where(.avatar-widget-host[data-dialog-style^="pastel-"]) .avatar-widget-icon-button{width:44px;height:44px;border:2px solid var(--accent);background:var(--avatar-white);color:var(--avatar-ink)}
+:where(.avatar-widget-host[data-dialog-style^="pastel-"]) .avatar-widget-icon-button:hover{border-color:var(--accent-strong);background:var(--accent-soft);color:var(--avatar-ink)}
+:where(.avatar-widget-host[data-dialog-style^="pastel-"]) :is(.avatar-widget-motion,.avatar-widget-hide){min-height:44px;font-size:.72rem}
+:where(.avatar-widget-host[data-dialog-style^="pastel-"]) :is(button,.avatar-widget-text):focus-visible{outline:3px solid var(--accent-strong);outline-offset:3px;box-shadow:0 0 0 3px var(--avatar-white)}
+:where(.avatar-widget-host[data-dialog-style^="pastel-"]) .avatar-widget-text{scroll-margin-block:20px}
+:where(.avatar-widget-host[data-dialog-style^="pastel-"]) .avatar-widget-panel--minimized{width:min(350px,calc(100vw - 36px))}
+@media(max-width:1000px){
+  .avatar-widget-host[data-dialog-style^="pastel-"]{--avatar-bottom:82px}
+}
+@media(max-width:700px){
+  .avatar-widget-host[data-dialog-style^="pastel-"]{--avatar-angle:-.7deg;--avatar-counter-angle:.7deg;--avatar-label-angle:-2deg;--avatar-outline:4px;--avatar-cut:10px;--avatar-tail-size:38px;--avatar-portrait:130px;--avatar-bottom:82px}
+  .avatar-widget-host[data-dialog-style^="pastel-"] .avatar-widget-panel{right:8px;bottom:calc(var(--avatar-bottom) + var(--avatar-keyboard-inset));width:calc(100% - 16px);max-height:calc(var(--avatar-visible-height) - var(--avatar-bottom) - 16px);border-radius:18px;padding-bottom:env(safe-area-inset-bottom)}
+  .avatar-widget-host[data-dialog-style^="pastel-"] .avatar-widget-content{grid-template-columns:84px minmax(0,1fr);flex-basis:335px;padding:6px 5px 0}
+  .avatar-widget-host[data-dialog-style^="pastel-"] .avatar-widget-stage{width:102px}
+  .avatar-widget-host[data-dialog-style^="pastel-"] .avatar-widget-stage .avatar-renderer{margin-left:-19px;margin-bottom:-8px}
+  .avatar-widget-host[data-dialog-style^="pastel-"] .avatar-widget-dialogue{padding:8px 8px 15px 20px}
+  .avatar-widget-host[data-dialog-style^="pastel-"] .avatar-widget-history{max-height:40px;margin-bottom:17px}
+  .avatar-widget-host[data-dialog-style^="pastel-"] .avatar-pastel-box{margin-left:-8px}
+  .avatar-widget-host[data-dialog-style^="pastel-"] .avatar-pastel-inner{padding:19px 15px 24px}
+  .avatar-widget-host[data-dialog-style^="pastel-"] .avatar-widget-nameplate{margin-top:-28px;padding:5px 12px;font-size:1.05rem}
+  .avatar-widget-host[data-dialog-style^="pastel-"] .avatar-widget-text{font-size:.84rem;min-height:85px}
+  .avatar-widget-host[data-dialog-style^="pastel-"] .avatar-widget-options{grid-template-columns:1fr;gap:8px;margin-top:14px}
+  .avatar-widget-host[data-dialog-style^="pastel-"] .avatar-widget-option{font-size:.78rem;padding:10px}
+  .avatar-widget-host[data-dialog-style^="pastel-"] .avatar-pastel-tail{left:-23px}
+  .avatar-widget-host[data-dialog-style^="pastel-"] .avatar-pastel-spark--two{display:none}
+  .avatar-widget-host[data-dialog-style^="pastel-"] .avatar-pastel-spark{font-size:12px}
+  .avatar-widget-host[data-dialog-style^="pastel-"] .avatar-widget-footer{display:block;padding:6px 12px}
+  .avatar-widget-host[data-dialog-style^="pastel-"] .avatar-widget-footer small{display:block;max-width:none;font-size:.65rem}
+  .avatar-widget-host[data-dialog-style^="pastel-"] .avatar-widget-footer-actions{justify-content:space-between;gap:8px}
+  .avatar-widget-host[data-dialog-style^="pastel-"] .avatar-widget-heading span{max-width:190px;white-space:normal;font-size:.6rem}
+  .avatar-widget-host[data-dialog-style^="pastel-"] .avatar-widget-header{padding:6px 8px;gap:6px}
+  .avatar-widget-host[data-dialog-style^="pastel-"] .avatar-widget-panel--minimized{width:min(350px,calc(100vw - 16px))}
+}
+/* A short visual viewport keeps controls in the scrollable panel; no hidden choices. */
+.avatar-widget-host--compact[data-dialog-style^="pastel-"] .avatar-widget-panel{overflow:auto}
+.avatar-widget-host--compact[data-dialog-style^="pastel-"] .avatar-widget-content{flex:0 0 auto;overflow:visible}
+.avatar-widget-host--compact[data-dialog-style^="pastel-"] .avatar-widget-stage{display:none}
+.avatar-widget-host--compact[data-dialog-style^="pastel-"] .avatar-widget-content{grid-template-columns:1fr}
+.avatar-widget-host--compact[data-dialog-style^="pastel-"] .avatar-widget-dialogue{padding:12px 25px 20px}
+.avatar-widget-host--compact[data-dialog-style^="pastel-"] .avatar-widget-history{max-height:40px}
+.avatar-widget-host--compact[data-dialog-style^="pastel-"] .avatar-pastel-tail{display:none}
+.avatar-widget-host--reduced-motion[data-dialog-style^="pastel-"] :is(.avatar-pastel-box,.avatar-pastel-spark,.avatar-pastel-next-mark){animation:none!important}
+@media(prefers-reduced-motion:reduce){.avatar-widget-host[data-dialog-style^="pastel-"] :is(.avatar-pastel-box,.avatar-pastel-spark,.avatar-pastel-next-mark){animation:none!important}}
+@media(forced-colors:active){.avatar-widget-host[data-dialog-style^="pastel-"] .avatar-pastel-box{filter:none;border:2px solid CanvasText}.avatar-widget-host[data-dialog-style^="pastel-"] .avatar-widget-nameplate{clip-path:none}.avatar-widget-host[data-dialog-style^="pastel-"] .avatar-pastel-paper{background:Canvas}}
+/* Keep minimization authoritative over the mobile footer layout. */
+.avatar-widget-host[data-dialog-style^="pastel-"] .avatar-widget-panel--minimized :is(.avatar-widget-content,.avatar-widget-footer){display:none}
