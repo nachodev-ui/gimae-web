@@ -1,0 +1,146 @@
+<!doctype html>
+<!-- TEMPORAL: comparación de diseño. ELIMINAR ESTE ARCHIVO ANTES DE FUSIONAR. -->
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Temporal · Suki / diálogos pastel · Gimae!</title>
+  <link rel="stylesheet" href="styles.css?v=20260921-pastel">
+  <script src="content.js?v=20260921-pastel"></script>
+  <script>
+    // Preview owns its demo instance; never auto-mount a second widget.
+    window.GIMAE.AVATAR_CONFIG.enabled = false;
+  </script>
+  <script src="avatar.js?v=20260921-pastel" defer></script>
+  <style>
+    body{background:var(--paper)}
+    .preview-shell{max-width:1500px;margin:auto;padding:32px 24px 64px}
+    .preview-kicker{font-size:.75rem;font-weight:700;letter-spacing:.13em;color:var(--pink-dark)}
+    .preview-shell h1{font:500 clamp(2rem,4vw,3.5rem)/1.1 var(--display);margin:12px 0 18px}
+    .preview-intro{max-width:760px}
+    .preview-warning{border:2px dashed var(--pink-dark);border-radius:12px;background:white;padding:14px 18px;margin-top:20px}
+    .preview-toolbar{display:flex;flex-wrap:wrap;gap:14px;align-items:center;padding:18px 0}
+    .preview-toolbar label{display:flex;gap:8px;align-items:center;font-size:.9rem;font-weight:600}
+    .preview-toolbar select,.preview-toolbar a{min-height:44px;border:1px solid var(--pink-dark);border-radius:100px;padding:8px 15px;background:white;color:var(--ink);font:inherit}
+    .preview-toolbar input{width:20px;height:20px;accent-color:var(--pink-dark)}
+    .preview-toolbar select:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
+    .preview-member{padding:28px 0 36px;border-top:1px solid var(--line)}
+    .preview-member h2{font:600 1.7rem var(--display);display:flex;align-items:center;gap:12px}
+    .preview-dot{height:22px;width:22px;border:3px solid white;border-radius:50%;background:var(--accent);box-shadow:0 0 0 1px var(--ink)}
+    .preview-member>p{margin:8px 0 20px;font-size:.84rem}
+    .preview-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+    .preview-card{min-width:0;border:1px solid var(--line);border-radius:18px;background:white;overflow:hidden}
+    .preview-card>header{padding:18px;border-bottom:1px dashed var(--line)}
+    .preview-card h3{font:600 1.2rem var(--display)}
+    .preview-card header p{font-size:.8rem;margin-top:6px}
+    .preview-dimension{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;font-size:.73rem;font-weight:700}
+    .preview-dimension a{text-decoration:underline;text-underline-offset:3px;min-height:44px;display:flex;align-items:center}
+    .preview-window{position:relative;width:100%;overflow:hidden;background:var(--paper)}
+    .preview-window iframe{position:absolute;left:0;top:0;transform-origin:0 0;border:0;max-width:none}
+    .preview-notes{font-size:.84rem;line-height:1.7;margin:18px 0}
+    .preview-frame{margin:0;min-height:100vh;background:var(--paper);background-image:radial-gradient(var(--line) 1px,transparent 1px);background-size:14px 14px}
+    .preview-frame .avatar-widget-host{--avatar-bottom:18px}
+    .preview-frame .avatar-widget-host[data-dialog-style^="pastel-"]{--avatar-bottom:18px}
+    .preview-frame .avatar-widget-panel{max-height:calc(100dvh - 36px)}
+    @media(max-width:900px){.preview-grid{grid-template-columns:repeat(3,minmax(300px,1fr));overflow:auto;padding-bottom:12px}.preview-shell{padding-inline:16px}}
+    @media(prefers-reduced-motion:reduce){.preview-window iframe{scroll-behavior:auto}}
+  </style>
+</head>
+<body>
+  <div id="preview-root"></div>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const params = new URLSearchParams(location.search);
+      const styles = ['default', 'pastel-angular', 'pastel-sticker'];
+      const descriptions = ['Diseño actual, sin cambios visuales.', 'Marco recortado, ticket y cola ✦.', 'Gingham sutil, cinta con moño y cola ♡.'];
+      const members = window.GIMAE.members.slice(0, 4);
+      const selectedMember = members.find(member => member.name === params.get('member')) || members[0];
+      const style = styles.includes(params.get('style')) ? params.get('style') : 'default';
+      const frameURL = (member, variant, motion) => {
+        const url = new URL('avatar-preview.html', location.href);
+        url.search = new URLSearchParams({frame:'1',member:member.name,style:variant,motion:motion ? '1' : '0'});
+        return url.href;
+      };
+      if (params.has('frame')) {
+        document.body.className = 'preview-frame';
+        const config = {...window.GIMAE, AVATAR_CONFIG: {...window.GIMAE.AVATAR_CONFIG,
+          dialogStyle:style, storageKey:'gimae.avatar.preview.' + selectedMember.name + '.' + style},
+          AVATAR_SCRIPT:{start:'demo',nodes:{demo:{id:'demo',expression:'happy',
+            text:'¡Hola! Soy Suki. ¿Qué parte de Gimae quieres conocer hoy?',options:[
+              {label:'Sobre el grupo',target:'group'},{label:'Eventos',target:'demo'},
+              {label:'Tienda',target:'demo'},{label:'Redes sociales',target:'demo'}]},
+            group:{id:'group',expression:'excited',text:'Cuatro voces. Un mismo brillo. Gracias por acompañarnos ♡',
+              options:[{label:'Volver al inicio',target:'demo'}]}}}};
+        const widget = new window.AvatarDialogueWidget(config);
+        widget.host.hidden = false; // Ignore any hidden preference only in this disposable fixture.
+        widget.host.style.setProperty('--avatar-accent', selectedMember.accent);
+        widget.setAccent(selectedMember.accent);
+        widget.setDialogStyle(style);
+        widget.setMotionDisabled(params.get('motion') !== '1');
+        window.GIMAE_AVATAR_WIDGET = widget;
+        void widget.open();
+        return;
+      }
+      const root = document.getElementById('preview-root');
+      root.className = 'preview-shell';
+      root.innerHTML = '<p class="preview-kicker">GIMAE! · DISEÑO DE DIÁLOGOS · ✦ ♡</p>'
+        + '<h1>El rincón de Suki</h1><p class="preview-intro">Compara el diseño actual con dos interpretaciones pastel. Cada muestra usa el runtime real y las mismas imágenes; el guion es solo una demostración. Cambiar el color no cambia al personaje.</p>'
+        + '<p class="preview-warning"><strong>TEMPORAL · NO FUSIONAR ESTA PÁGINA.</strong> Elegir una variante, completar las pruebas y eliminar avatar-preview.html antes del merge.</p>'
+        + '<div class="preview-toolbar"><label>Ancho móvil <select id="mobile-width"><option>360</option><option selected>390</option><option>480</option></select> px</label>'
+        + '<label><input id="preview-motion" type="checkbox"> Animaciones (respeta reduced motion)</label>'
+        + '<a href="index.html?avatar-debug&avatar-style=pastel-angular" target="_blank" rel="noopener">Probar sobre el sitio ↗</a></div>'
+        + '<p class="preview-notes">Escritorio: viewport de 800 × 600 px. Móvil: viewport elegido × 720 px. Las muestras se reducen para comparar; “Abrir” permite interactuar a tamaño real. Desplaza la fila horizontalmente en pantallas pequeñas. Para probar carrito, menú, modales y teclado, usa el enlace del sitio.</p>';
+      const frames = [];
+      members.forEach(member => {
+        const palette = window.GIMAE_AVATAR_PALETTE(member.accent);
+        const section = document.createElement('section'); section.className = 'preview-member';
+        section.style.setProperty('--accent', member.accent);
+        const title = document.createElement('h2');
+        const dot = document.createElement('span'); dot.className = 'preview-dot'; dot.setAttribute('aria-hidden','true');
+        title.append(dot, document.createTextNode(member.name + ' · ' + member.colorLabel));
+        const note = document.createElement('p');
+        note.textContent = 'Acento '+member.accent+' · Variantes pastel: texto sobre sólido '+palette.ratios.solidText.toFixed(2)+':1; foco sobre blanco '+palette.ratios.focusOnWhite.toFixed(2)+':1. El diseño default es la referencia original y no se certifica aquí.';
+        const grid = document.createElement('div'); grid.className = 'preview-grid';
+        styles.forEach((variant, index) => {
+          const card = document.createElement('article'); card.className='preview-card';
+          const header = document.createElement('header');
+          const heading = document.createElement('h3'); heading.textContent=variant;
+          const description = document.createElement('p'); description.textContent=descriptions[index];
+          header.append(heading,description);card.append(header);
+          ['desktop','mobile'].forEach(mode => {
+            const dimension=document.createElement('div');dimension.className='preview-dimension';
+            const caption=document.createElement('span');caption.textContent=mode==='desktop'?'ESCRITORIO · 800 px':'MÓVIL';
+            const link=document.createElement('a');link.textContent='Abrir ↗';link.target='_blank';link.rel='noopener';
+            const wrap=document.createElement('div');wrap.className='preview-window';
+            const frame=document.createElement('iframe');frame.loading='lazy';
+            frame.title=member.name+' / '+variant+' / '+mode;
+            wrap.append(frame);dimension.append(caption,link);card.append(dimension,wrap);
+            frames.push({frame,wrap,link,caption,mode,member,variant});
+          });
+          grid.append(card);
+        });
+        section.append(title,note,grid);root.append(section);
+      });
+      const mobileWidth=document.getElementById('mobile-width');
+      const motion=document.getElementById('preview-motion');
+      const sizeFrames=()=>frames.forEach(item=>{
+        const width=item.mode==='desktop'?800:Number(mobileWidth.value);
+        const height=item.mode==='desktop'?600:720;
+        const scale=item.wrap.clientWidth/width;
+        item.frame.style.width=width+'px';item.frame.style.height=height+'px';
+        item.frame.style.transform='scale('+scale+')';item.wrap.style.height=height*scale+'px';
+        item.caption.textContent=(item.mode==='desktop'?'ESCRITORIO':'MÓVIL')+' · '+width+' px';
+      });
+      const loadFrames=()=>frames.forEach(item=>{
+        const url=frameURL(item.member,item.variant,motion.checked);
+        item.frame.src=url;item.link.href=url;
+      });
+      mobileWidth.addEventListener('change',sizeFrames);
+      motion.addEventListener('change',loadFrames);
+      new ResizeObserver(sizeFrames).observe(root);
+      loadFrames();sizeFrames();
+    });
+  </script>
+</body>
+</html>
