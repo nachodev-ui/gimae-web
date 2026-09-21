@@ -47,6 +47,8 @@
     const dark = rgb(ink) || rgb('#412d45');
     const white = [255, 255, 255];
     const soft = mix(base, white, .91);
+    const nameplate = mix(base, white, .76);
+    const nameplateBorder = mix(base, dark, .18);
     // Deepen the existing hue only as much as needed for normal white text.
     let strong = base;
     for (let step = 0; step <= 100 && contrast(strong, white) < 4.6; step += 1) {
@@ -57,9 +59,10 @@
     const onAccent = darkText ? dark : white;
     return { accent: hex(base), soft: hex(soft), strong: hex(strong),
       solid: hex(solid), onAccent: hex(onAccent), ink: hex(dark),
+      nameplate: hex(nameplate), nameplateBorder: hex(nameplateBorder),
       ratios: { solidText: contrast(solid, onAccent), text: contrast(soft, dark),
         whiteButton: contrast(white, dark), focusOnWhite: contrast(strong, white),
-        focusOnSoft: contrast(strong, soft) } };
+        focusOnSoft: contrast(strong, soft), nameplateText: contrast(nameplate, dark) } };
   }
 
   const wait = (milliseconds) => new Promise((resolve) => window.setTimeout(resolve, milliseconds));
@@ -844,7 +847,8 @@
       const ink = getComputedStyle(document.documentElement).getPropertyValue('--ink').trim();
       this.palette = avatarPalette(accent, ink);
       const tokens = { '--accent': 'accent', '--accent-soft': 'soft', '--accent-strong': 'strong',
-        '--on-accent': 'onAccent', '--avatar-solid': 'solid' };
+        '--on-accent': 'onAccent', '--avatar-solid': 'solid',
+        '--avatar-name-bg': 'nameplate', '--avatar-name-border': 'nameplateBorder' };
       Object.entries(tokens).forEach(([property, key]) => this.host.style.setProperty(property, this.palette[key]));
     }
 

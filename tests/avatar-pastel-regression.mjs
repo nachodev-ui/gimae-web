@@ -353,6 +353,7 @@ for (const [name, color] of Object.entries({Suki:'#e84694',Usi:'#df4d62',Vewe:'#
   assert(palette.ratios.text >= 4.5);
   assert(palette.ratios.focusOnWhite >= 3);
   assert(palette.ratios.focusOnSoft >= 3);
+  assert(palette.ratios.nameplateText >= 4.5);
   if(name==='Vewe') assert.equal(palette.onAccent,'#412d45');
   ratios[name] = palette;
 }
