@@ -11,7 +11,7 @@
     'thinking',
     'wink'
   ]);
-  const DIALOG_STYLES = Object.freeze(['default', 'pastel-angular']);
+  const DIALOG_STYLES = Object.freeze(['default', 'pastel-angular', 'pastel-sticker']);
   const validDialogStyle = (value) => DIALOG_STYLES.includes(value) ? value : 'default';
 
   const MOUTH_EXPRESSIONS = new Set(['neutral', 'happy', 'excited']);

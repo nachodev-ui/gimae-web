@@ -248,3 +248,17 @@ html{background:var(--paper);overflow-x:clip;scrollbar-color:#d594b6 var(--paper
 @keyframes avatarPastelPop{from{opacity:0;transform:skewX(var(--avatar-angle)) translateY(7px) scale(.96)}to{opacity:1;transform:skewX(var(--avatar-angle)) translateY(0) scale(1)}}
 @keyframes avatarPastelBeat{0%,100%{transform:scale(1);opacity:.7}50%{transform:scale(1.12);opacity:1}}
 @keyframes avatarPastelGlimmer{0%,100%{opacity:.4}50%{opacity:.7}}
+
+/* AVATAR — PASTEL STICKER: rounded purikura, heart tail and ribbon bow. */
+.avatar-widget-host[data-dialog-style="pastel-sticker"]{
+  --avatar-angle:-2deg;--avatar-counter-angle:2deg;--avatar-label-angle:-4deg;
+  --avatar-box-radius:25px;--avatar-shape:none;--avatar-tail-size:64px;
+}
+:where(.avatar-widget-host[data-dialog-style="pastel-sticker"]) .avatar-pastel-paper{
+  background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 3%,transparent) 50%,transparent 50%),linear-gradient(color-mix(in srgb,var(--accent) 3%,transparent) 50%,transparent 50%),linear-gradient(135deg,var(--avatar-white),var(--accent-soft));background-size:12px 12px,12px 12px,100% 100%;
+}
+:where(.avatar-widget-host[data-dialog-style="pastel-sticker"]) .avatar-widget-nameplate{clip-path:none;border-radius:9px 9px 12px 4px;padding-right:27px}
+:where(.avatar-widget-host[data-dialog-style="pastel-sticker"]) .avatar-widget-nameplate::before,
+:where(.avatar-widget-host[data-dialog-style="pastel-sticker"]) .avatar-widget-nameplate::after{content:'';position:absolute;right:-17px;top:4px;width:15px;height:19px;border:2px solid var(--avatar-white);background:var(--accent);border-radius:70% 20% 55% 20%;transform:rotate(-22deg);pointer-events:none}
+:where(.avatar-widget-host[data-dialog-style="pastel-sticker"]) .avatar-widget-nameplate::after{right:-29px;transform:rotate(22deg) scaleX(-1)}
+:where(.avatar-widget-host[data-dialog-style="pastel-sticker"]) .avatar-pastel-tail{left:-34px;bottom:24%;transform:rotate(-24deg)}
