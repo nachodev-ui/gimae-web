@@ -65,6 +65,8 @@ window.GIMAE = {
   // IMÁGENES: reemplaza los WebP de dist/images/avatar/ conservando 768x768, transparencia y encuadre.
   // Las bases usan <expresión>.webp y neutral/happy/excited requieren además <expresión>-mouth.webp.
   "AVATAR_CONFIG": {
+    // default conserva el diseño actual; la URL ?avatar-style= tiene prioridad.
+    "dialogStyle": "default",
     "enabled": true,
     "name": "Suki",
     "label": "Avatar animado · diálogos predefinidos",

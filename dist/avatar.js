@@ -11,6 +11,9 @@
     'thinking',
     'wink'
   ]);
+  const DIALOG_STYLES = Object.freeze(['default', 'pastel-angular']);
+  const validDialogStyle = (value) => DIALOG_STYLES.includes(value) ? value : 'default';
+
   const MOUTH_EXPRESSIONS = new Set(['neutral', 'happy', 'excited']);
   const MOUTH_SPRITES = Object.freeze([
     'neutral-mouth',
@@ -479,7 +482,22 @@
     mouthDebugLabel.append(mouthDebugInput, mouthDebugText);
     debugToggles.append(continuousLabel, mouthDebugLabel);
 
-    controls.append(heading, status, expressionGroup, actions, debugToggles);
+    const styleLabel = document.createElement('label');
+    styleLabel.className = 'avatar-debug__style';
+    styleLabel.textContent = 'Estilo del diálogo';
+    const styleSelect = document.createElement('select');
+    styleSelect.id = 'avatar-dialog-style';
+    DIALOG_STYLES.forEach((value) => {
+      const option = document.createElement('option');
+      option.value = value;
+      option.textContent = value;
+      styleSelect.append(option);
+    });
+    styleSelect.value = validDialogStyle(new URLSearchParams(location.search).get('avatar-style')
+      || window.GIMAE?.AVATAR_CONFIG?.dialogStyle);
+    styleSelect.addEventListener('change', () => window.GIMAE_AVATAR_WIDGET?.setDialogStyle(styleSelect.value));
+    styleLabel.append(styleSelect);
+    controls.append(heading, styleLabel, status, expressionGroup, actions, debugToggles);
     panel.append(stage, controls);
     document.body.append(panel);
 
@@ -590,6 +608,7 @@
       this._onViewportChange = () => this._syncVisualViewport();
 
       this._build();
+      this.setDialogStyle(new URLSearchParams(location.search).get('avatar-style') || this.config.dialogStyle);
       if (typeof this._motionQuery.addEventListener === 'function') {
         this._motionQuery.addEventListener('change', this._onMotionPreferenceChange);
       } else {
@@ -699,7 +718,31 @@
       this.options.className = 'avatar-widget-options';
       this.options.setAttribute('role', 'group');
       this.options.setAttribute('aria-label', 'Opciones de diálogo');
-      dialogue.append(this.history, this.nameplate, this.text, this.nextButton, this.options);
+      // Wrappers are display:contents in default; existing text/history nodes stay intact.
+      const box = document.createElement('div');
+      box.className = 'avatar-pastel-box';
+      const paper = document.createElement('span');
+      paper.className = 'avatar-pastel-paper';
+      paper.setAttribute('aria-hidden', 'true');
+      const inner = document.createElement('div');
+      inner.className = 'avatar-pastel-inner';
+      const ornament = (className, symbol) => {
+        const node = document.createElement('span');
+        node.className = className;
+        node.setAttribute('aria-hidden', 'true');
+        node.textContent = symbol;
+        return node;
+      };
+      this.tail = ornament('avatar-pastel-tail', '✦');
+      this.nameCharm = ornament('avatar-pastel-name-charm', '✦');
+      this.nameplate.append(this.nameCharm);
+      inner.append(this.nameplate, this.text, this.nextButton,
+        ornament('avatar-pastel-next-mark', '♡'));
+      box.append(paper, inner, this.tail,
+        ornament('avatar-pastel-spark avatar-pastel-spark--one', '✦'),
+        ornament('avatar-pastel-spark avatar-pastel-spark--two', '♡'),
+        ornament('avatar-pastel-spark avatar-pastel-spark--three', '✦'));
+      dialogue.append(this.history, box, this.options);
       this.content.append(this.stage, dialogue);
 
       this.footer = document.createElement('footer');
@@ -737,6 +780,15 @@
           this.close();
         }
       });
+    }
+
+    setDialogStyle(value) {
+      this.dialogStyle = validDialogStyle(value);
+      this.host.dataset.dialogStyle = this.dialogStyle;
+      this.tail.textContent = this.dialogStyle === 'pastel-sticker' ? '♥' : '✦';
+      this.nameCharm.textContent = this.dialogStyle === 'pastel-sticker' ? '♡' : '✦';
+      const select = document.getElementById('avatar-dialog-style');
+      if (select) select.value = this.dialogStyle;
     }
 
     _readHiddenPreference() {
