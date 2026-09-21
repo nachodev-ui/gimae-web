@@ -751,6 +751,14 @@
       this.text.setAttribute('aria-label', 'Texto del avatar. Presiona Enter, espacio o haz clic para completar la escritura.');
       this.text.textContent = 'Abre el avatar para iniciar.';
 
+      const copy = document.createElement('div');
+      copy.className = 'avatar-widget-copy';
+      this.textMeasure = document.createElement('div');
+      this.textMeasure.className = 'avatar-widget-text-measure';
+      this.textMeasure.setAttribute('aria-hidden', 'true');
+      this.textMeasure.textContent = this.text.textContent;
+      copy.append(this.textMeasure, this.text);
+
       this.nextButton = createButton('Siguiente', 'avatar-widget-next');
       this.nextButton.hidden = true;
       this.options = document.createElement('div');
@@ -775,7 +783,7 @@
       this.tail = ornament('avatar-pastel-tail', '✦');
       this.nameCharm = ornament('avatar-pastel-name-charm', '✦');
       this.nameplate.append(this.nameCharm);
-      inner.append(this.nameplate, this.text, this.nextButton,
+      inner.append(this.nameplate, copy, this.nextButton,
         ornament('avatar-pastel-next-mark', '♡'));
       box.append(paper, inner, this.tail,
         ornament('avatar-pastel-spark avatar-pastel-spark--one', '✦'),
@@ -1148,7 +1156,9 @@
     _renderPart() {
       const part = this.currentParts[this.currentPartIndex];
       if (typeof part !== 'string') {
-        this.text.textContent = 'COMPLETAR: agrega texto para este nodo en content.js.';
+        const fallback = 'COMPLETAR: agrega texto para este nodo en content.js.';
+        this.textMeasure.textContent = fallback;
+        this.text.textContent = fallback;
         this._renderOptions();
         return;
       }
@@ -1157,6 +1167,9 @@
       this._isTyping = true;
       this._currentText = part;
       this._partLogged = false;
+      // La copia invisible ocupa desde el inicio la altura del mensaje completo.
+      // Así la caja no cambia de tamaño carácter a carácter durante el tecleo.
+      this.textMeasure.textContent = part;
       this.text.textContent = '';
       this.nextButton.hidden = true;
       this.options.replaceChildren();

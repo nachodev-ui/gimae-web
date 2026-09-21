@@ -200,7 +200,8 @@ html{background:var(--paper);overflow-x:clip;scrollbar-color:#d594b6 var(--paper
    Scoped to the widget. Tune geometry here, never the sprite artwork.
    default uses display:contents so the original composition is preserved.
    ========================================================= */
-.avatar-pastel-box,.avatar-pastel-inner{display:contents}
+.avatar-pastel-box,.avatar-pastel-inner,.avatar-widget-copy{display:contents}
+.avatar-widget-text-measure{display:none}
 .avatar-pastel-paper,.avatar-pastel-tail,.avatar-pastel-name-charm,.avatar-pastel-next-mark,.avatar-pastel-spark{display:none}
 .avatar-debug__style{display:grid;gap:6px;font:600 .85rem var(--body)}
 .avatar-debug__style select{min-height:44px;padding:8px;border:2px solid var(--pink-dark);border-radius:9px;background:white;color:var(--ink);font:inherit}
@@ -230,10 +231,15 @@ html{background:var(--paper);overflow-x:clip;scrollbar-color:#d594b6 var(--paper
 :where(.avatar-widget-host[data-dialog-style^="pastel-"]) .avatar-pastel-paper{content:'';display:block;position:absolute;inset:0;z-index:-2;clip-path:var(--avatar-shape);border-radius:var(--avatar-box-radius);background:var(--avatar-white);pointer-events:none}
 :where(.avatar-widget-host[data-dialog-style^="pastel-"]) .avatar-pastel-box::after{inset:var(--avatar-outline);background:var(--accent)}
 :where(.avatar-widget-host[data-dialog-style^="pastel-"]) .avatar-pastel-paper{inset:calc(var(--avatar-outline) + var(--avatar-inner-outline));z-index:-1;background:linear-gradient(145deg,var(--avatar-white),var(--accent-soft))}
-:where(.avatar-widget-host[data-dialog-style^="pastel-"]) .avatar-pastel-inner{display:flex;flex-direction:column;padding:24px 23px 27px 36px;transform:skewX(var(--avatar-counter-angle))}
+:where(.avatar-widget-host[data-dialog-style^="pastel-"]) .avatar-pastel-inner{display:flex;flex-direction:column;padding:22px 23px 24px 36px;transform:skewX(var(--avatar-counter-angle))}
 :where(.avatar-widget-host[data-dialog-style^="pastel-"]) .avatar-widget-nameplate{margin:-36px 0 7px;padding:8px 21px;border:3px solid var(--avatar-white);border-radius:3px;transform:rotate(var(--avatar-label-angle));background:var(--accent);color:var(--on-accent);font:700 1.2rem var(--display);box-shadow:3px 4px 0 var(--avatar-shadow);clip-path:polygon(0 0,100% 0,100% 35%,95% 50%,100% 65%,100% 100%,0 100%,0 65%,5% 50%,0 35%)}
 :where(.avatar-widget-host[data-dialog-style^="pastel-"]) .avatar-pastel-name-charm{display:inline;margin-left:12px}
-:where(.avatar-widget-host[data-dialog-style^="pastel-"]) .avatar-widget-text{border:0;padding:8px 0;min-height:95px;margin:0;background:transparent;color:var(--avatar-ink);font:400 .94rem/1.6 var(--body)}
+:where(.avatar-widget-host[data-dialog-style^="pastel-"]) .avatar-widget-copy{display:grid;min-width:0;padding:8px 0;font:400 .94rem/1.6 var(--body)}
+:where(.avatar-widget-host[data-dialog-style^="pastel-"]) :is(.avatar-widget-text-measure,.avatar-widget-text){grid-area:1/1;min-width:0;min-height:3.2em;margin:0;border:0;border-radius:0;background:transparent;box-shadow:none;color:var(--avatar-ink);font:inherit;white-space:pre-wrap;overflow-wrap:anywhere}
+:where(.avatar-widget-host[data-dialog-style^="pastel-"]) .avatar-widget-text-measure{display:block;visibility:hidden;pointer-events:none;user-select:none}
+:where(.avatar-widget-host[data-dialog-style^="pastel-"]) .avatar-widget-text{padding:0}
+:where(.avatar-widget-host[data-dialog-style^="pastel-"]) .avatar-widget-text:focus-visible{outline:0;box-shadow:none}
+:where(.avatar-widget-host[data-dialog-style^="pastel-"]) .avatar-pastel-box:focus-within{outline:3px solid var(--accent-strong);outline-offset:4px}
 :where(.avatar-widget-host[data-dialog-style^="pastel-"]) .avatar-pastel-tail{display:block;position:absolute;z-index:-3;left:-42px;bottom:20%;font:var(--avatar-tail-size)/1 var(--display);color:var(--accent-soft);text-shadow:2px 0 var(--avatar-white),-2px 0 var(--avatar-white),0 2px var(--avatar-white),0 -2px var(--avatar-white);pointer-events:none}
 :where(.avatar-widget-host[data-dialog-style^="pastel-"]) .avatar-pastel-next-mark{display:block;position:absolute;right:18px;bottom:8px;color:var(--accent-strong);font-size:1.15rem;animation:avatarPastelBeat 2.8s ease-in-out infinite;pointer-events:none}
 :where(.avatar-widget-host[data-dialog-style^="pastel-"]) .avatar-pastel-spark{display:block;position:absolute;pointer-events:none;color:var(--accent-strong);font-size:18px;animation:avatarPastelGlimmer 4s ease-in-out infinite}
@@ -244,7 +250,7 @@ html{background:var(--paper);overflow-x:clip;scrollbar-color:#d594b6 var(--paper
 :where(.avatar-widget-host[data-dialog-style^="pastel-"]) :is(.avatar-widget-option,.avatar-widget-next){min-height:44px;padding:10px 14px;border:2px solid var(--accent);border-radius:100px;background:var(--avatar-white);color:var(--avatar-ink);font:700 .8rem/1.4 var(--body);box-shadow:0 3px 0 var(--avatar-shadow)}
 :where(.avatar-widget-host[data-dialog-style^="pastel-"]) :is(.avatar-widget-option,.avatar-widget-next):is(:hover,:focus-visible):not(:disabled){background:var(--accent);border-color:var(--accent-strong);color:var(--on-accent)}
 :where(.avatar-widget-host[data-dialog-style^="pastel-"]) .avatar-widget-next{margin-bottom:8px}
-:where(.avatar-widget-host[data-dialog-style^="pastel-"]) :is(button,.avatar-widget-text):focus-visible{outline:3px solid var(--accent-strong);outline-offset:3px}
+:where(.avatar-widget-host[data-dialog-style^="pastel-"]) button:focus-visible{outline:3px solid var(--accent-strong);outline-offset:3px}
 @keyframes avatarPastelPop{from{opacity:0;transform:skewX(var(--avatar-angle)) translateY(7px) scale(.96)}to{opacity:1;transform:skewX(var(--avatar-angle)) translateY(0) scale(1)}}
 @keyframes avatarPastelBeat{0%,100%{transform:scale(1);opacity:.7}50%{transform:scale(1.12);opacity:1}}
 @keyframes avatarPastelGlimmer{0%,100%{opacity:.4}50%{opacity:.7}}
@@ -281,7 +287,7 @@ html{background:var(--paper);overflow-x:clip;scrollbar-color:#d594b6 var(--paper
 :where(.avatar-widget-host[data-dialog-style^="pastel-"]) .avatar-widget-icon-button{width:44px;height:44px;border:2px solid var(--accent);background:var(--avatar-white);color:var(--avatar-ink)}
 :where(.avatar-widget-host[data-dialog-style^="pastel-"]) .avatar-widget-icon-button:hover{border-color:var(--accent-strong);background:var(--accent-soft);color:var(--avatar-ink)}
 :where(.avatar-widget-host[data-dialog-style^="pastel-"]) :is(.avatar-widget-motion,.avatar-widget-hide){min-height:44px;font-size:.72rem}
-:where(.avatar-widget-host[data-dialog-style^="pastel-"]) :is(button,.avatar-widget-text):focus-visible{outline:3px solid var(--accent-strong);outline-offset:3px;box-shadow:0 0 0 3px var(--avatar-white)}
+:where(.avatar-widget-host[data-dialog-style^="pastel-"]) button:focus-visible{outline:3px solid var(--accent-strong);outline-offset:3px;box-shadow:0 0 0 3px var(--avatar-white)}
 :where(.avatar-widget-host[data-dialog-style^="pastel-"]) .avatar-widget-text{scroll-margin-block:20px}
 :where(.avatar-widget-host[data-dialog-style^="pastel-"]) .avatar-widget-panel--minimized{width:min(350px,calc(100vw - 36px))}
 @media(max-width:1000px){
@@ -296,9 +302,10 @@ html{background:var(--paper);overflow-x:clip;scrollbar-color:#d594b6 var(--paper
   .avatar-widget-host[data-dialog-style^="pastel-"] .avatar-widget-dialogue{padding:8px 8px 15px 20px}
   .avatar-widget-host[data-dialog-style^="pastel-"] .avatar-widget-history{max-height:40px;margin-bottom:17px}
   .avatar-widget-host[data-dialog-style^="pastel-"] .avatar-pastel-box{margin-left:-8px}
-  .avatar-widget-host[data-dialog-style^="pastel-"] .avatar-pastel-inner{padding:19px 15px 24px}
+  .avatar-widget-host[data-dialog-style^="pastel-"] .avatar-pastel-inner{padding:18px 15px 21px}
   .avatar-widget-host[data-dialog-style^="pastel-"] .avatar-widget-nameplate{margin-top:-28px;padding:5px 12px;font-size:1.05rem}
-  .avatar-widget-host[data-dialog-style^="pastel-"] .avatar-widget-text{font-size:.84rem;min-height:85px}
+  .avatar-widget-host[data-dialog-style^="pastel-"] .avatar-widget-copy{font-size:.84rem}
+  .avatar-widget-host[data-dialog-style^="pastel-"] :is(.avatar-widget-text-measure,.avatar-widget-text){min-height:3.1em}
   .avatar-widget-host[data-dialog-style^="pastel-"] .avatar-widget-options{grid-template-columns:1fr;gap:8px;margin-top:14px}
   .avatar-widget-host[data-dialog-style^="pastel-"] .avatar-widget-option{font-size:.78rem;padding:10px}
   .avatar-widget-host[data-dialog-style^="pastel-"] .avatar-pastel-tail{left:-23px}

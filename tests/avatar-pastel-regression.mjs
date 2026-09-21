@@ -270,6 +270,7 @@ widget.launcher.focus();
 await widget.open();
 assert.equal(documentMock.activeElement, widget.text);
 assert.equal(widget.text.textContent, 'Texto completo.');
+assert.equal(widget.textMeasure.textContent, 'Texto completo.');
 widget.close();
 assert.equal(documentMock.activeElement, widget.launcher);
 
@@ -306,6 +307,7 @@ assert.equal(widget.renderer._mouthOpen, false);
 await widget.open();
 assert.equal(widget.currentNode.id, 'thinking');
 assert.equal(widget.text.textContent, 'Texto pendiente.');
+assert.equal(widget.textMeasure.textContent, 'Texto pendiente.');
 
 widget.panel.dispatchEvent({
   type: 'keydown',
