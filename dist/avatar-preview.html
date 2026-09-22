@@ -54,7 +54,7 @@
       const params = new URLSearchParams(location.search);
       const styles = ['default', 'pastel-angular', 'pastel-sticker'];
       const ginghamLevels = ['suave', 'medio', 'fuerte'];
-      const descriptions = ['Diseño actual, sin cambios visuales.', 'Marco recortado, ticket y cola ✦.', 'Gingham cruzado, cinta con moño y cola ♡.'];
+      const descriptions = ['Diseño actual, sin cambios visuales.', 'Crema con lunares, marco redondeado y festones pastel ✦.', 'Gingham cruzado, cinta con moño y cola ♡.'];
       const members = window.GIMAE.members.slice(0, 4);
       const selectedMember = members.find(member => member.name === params.get('member')) || members[0];
       const style = styles.includes(params.get('style')) ? params.get('style') : 'default';
