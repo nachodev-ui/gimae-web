@@ -716,13 +716,24 @@
 
       const windowControls = document.createElement('div');
       windowControls.className = 'avatar-widget-window-controls';
+
+      this.historyButton = createButton('', 'avatar-widget-icon-button');
+      this.historyButton.classList.add('avatar-widget-history-toggle');
+      this.historyButton.setAttribute('aria-label', 'Abrir diario de conversación');
+      this.historyButton.setAttribute('aria-controls', 'gimae-avatar-history-drawer');
+      this.historyButton.setAttribute('aria-expanded', 'false');
+      const historyIcon = document.createElement('span');
+      historyIcon.className = 'avatar-widget-history-icon';
+      historyIcon.setAttribute('aria-hidden', 'true');
+      this.historyButton.append(historyIcon);
+
       this.minimizeButton = createButton('—', 'avatar-widget-icon-button');
       this.minimizeButton.setAttribute('aria-label', 'Minimizar avatar');
       this.minimizeButton.setAttribute('aria-controls', 'gimae-avatar-content');
       this.minimizeButton.setAttribute('aria-expanded', 'true');
       this.closeButton = createButton('×', 'avatar-widget-icon-button');
       this.closeButton.setAttribute('aria-label', 'Cerrar avatar');
-      windowControls.append(this.minimizeButton, this.closeButton);
+      windowControls.append(this.historyButton, this.minimizeButton, this.closeButton);
       header.append(heading, windowControls);
 
       this.content = document.createElement('div');
@@ -734,12 +745,6 @@
 
       const dialogue = document.createElement('div');
       dialogue.className = 'avatar-widget-dialogue';
-      this.history = document.createElement('div');
-      this.history.className = 'avatar-widget-history';
-      this.history.setAttribute('role', 'log');
-      this.history.setAttribute('aria-live', 'polite');
-      this.history.setAttribute('aria-relevant', 'additions');
-      this.history.setAttribute('aria-label', 'Historial de la conversación predefinida');
 
       this.nameplate = document.createElement('span');
       this.nameplate.className = 'avatar-widget-nameplate';
@@ -792,27 +797,65 @@
         ornament('avatar-pastel-spark avatar-pastel-spark--one', '✦'),
         ornament('avatar-pastel-spark avatar-pastel-spark--two', '♡'),
         ornament('avatar-pastel-spark avatar-pastel-spark--three', '✦'));
-      dialogue.append(this.history, box, this.options);
+      dialogue.append(box, this.options);
       this.content.append(this.stage, dialogue);
 
       this.footer = document.createElement('footer');
       this.footer.className = 'avatar-widget-footer';
-      const privacy = document.createElement('small');
-      privacy.textContent = 'Conversación local: no guarda ni envía tus respuestas.';
       const footerActions = document.createElement('div');
       footerActions.className = 'avatar-widget-footer-actions';
       this.motionButton = createButton('Desactivar animaciones', 'avatar-widget-motion');
       this.motionButton.setAttribute('aria-pressed', 'false');
       this.hideButton = createButton('Ocultar avatar', 'avatar-widget-hide');
       footerActions.append(this.motionButton, this.hideButton);
-      this.footer.append(privacy, footerActions);
+      this.footer.append(footerActions);
 
-      this.panel.append(header, this.content, this.footer);
+      this.historyDrawer = document.createElement('aside');
+      this.historyDrawer.id = 'gimae-avatar-history-drawer';
+      this.historyDrawer.className = 'avatar-widget-history-drawer';
+      this.historyDrawer.hidden = true;
+      this.historyDrawer.setAttribute('role', 'region');
+      this.historyDrawer.setAttribute('aria-labelledby', 'gimae-avatar-history-title');
+      this.historyDrawer.setAttribute('aria-describedby', 'gimae-avatar-history-privacy');
+
+      const historyHeader = document.createElement('header');
+      historyHeader.className = 'avatar-widget-history-drawer__header';
+      const historyHeading = document.createElement('div');
+      historyHeading.className = 'avatar-widget-history-drawer__heading';
+      const historyKicker = document.createElement('span');
+      historyKicker.textContent = '♡ DIARIO LOCAL';
+      const historyTitle = document.createElement('strong');
+      historyTitle.id = 'gimae-avatar-history-title';
+      historyTitle.textContent = `Diario de ${this.name}`;
+      historyHeading.append(historyKicker, historyTitle);
+
+      this.historyCloseButton = createButton('×', 'avatar-widget-icon-button');
+      this.historyCloseButton.classList.add('avatar-widget-history-close');
+      this.historyCloseButton.setAttribute('aria-label', 'Cerrar diario de conversación');
+      historyHeader.append(historyHeading, this.historyCloseButton);
+
+      this.history = document.createElement('div');
+      this.history.className = 'avatar-widget-history';
+      this.history.setAttribute('role', 'log');
+      this.history.setAttribute('aria-live', 'polite');
+      this.history.setAttribute('aria-relevant', 'additions');
+      this.history.setAttribute('aria-label', 'Historial de la conversación predefinida');
+
+      this.historyPrivacy = document.createElement('small');
+      this.historyPrivacy.id = 'gimae-avatar-history-privacy';
+      this.historyPrivacy.className = 'avatar-widget-history-privacy';
+      this.historyPrivacy.textContent = 'Conversación local: no guarda ni envía tus respuestas.';
+
+      this.historyDrawer.append(historyHeader, this.history, this.historyPrivacy);
+
+      this.panel.append(header, this.content, this.footer, this.historyDrawer);
       this.host.append(this.launcher, this.panel);
       document.body.append(this.host);
 
       this.launcher.addEventListener('click', () => { void this.open(); });
       this.closeButton.addEventListener('click', () => this.close());
+      this.historyButton.addEventListener('click', () => this.toggleHistory());
+      this.historyCloseButton.addEventListener('click', () => this._setHistoryOpen(false));
       this.minimizeButton.addEventListener('click', () => this.toggleMinimized());
       this.motionButton.addEventListener('click', () => this.setMotionDisabled(!this._motionDisabled));
       this.hideButton.addEventListener('click', () => this.hide());
@@ -827,6 +870,10 @@
       this.panel.addEventListener('keydown', (event) => {
         if (event.key === 'Escape') {
           event.preventDefault();
+          if (!this.historyDrawer.hidden) {
+            this._setHistoryOpen(false);
+            return;
+          }
           this.close();
         }
       });
@@ -951,12 +998,43 @@
       }
     }
 
+    _scrollHistoryToEnd() {
+      if (!this.history) return;
+      this.history.scrollTop = this.history.scrollHeight;
+    }
+
+    _setHistoryOpen(open, options = {}) {
+      if (!this.historyDrawer || !this.historyButton) return;
+      const minimized = this.panel.classList.contains('avatar-widget-panel--minimized');
+      const shouldOpen = Boolean(open) && !this.panel.hidden && !minimized;
+      this.historyDrawer.hidden = !shouldOpen;
+      this.historyButton.setAttribute('aria-expanded', String(shouldOpen));
+      this.panel.classList.toggle('avatar-widget-panel--history-open', shouldOpen);
+      this.content.inert = shouldOpen || minimized;
+      this.footer.inert = shouldOpen || minimized;
+
+      if (shouldOpen) {
+        this._scrollHistoryToEnd();
+        void afterNextPaint().then(() => {
+          if (!this.historyDrawer.hidden) this._scrollHistoryToEnd();
+        });
+        if (options.focus !== false) this.historyCloseButton.focus({ preventScroll: true });
+      } else if (options.focus !== false && !this.panel.hidden && !minimized) {
+        this.historyButton.focus({ preventScroll: true });
+      }
+    }
+
+    toggleHistory() {
+      this._setHistoryOpen(this.historyDrawer.hidden);
+    }
+
     async open() {
       if (this.host.hidden) return;
       this._returnFocus = this.launcher;
       this.panel.hidden = false;
       this.launcher.hidden = true;
       this.panel.classList.remove('avatar-widget-panel--minimized');
+      this._setHistoryOpen(false, { focus: false });
       this.minimizeButton.textContent = '—';
       this.minimizeButton.setAttribute('aria-label', 'Minimizar avatar');
       this.minimizeButton.setAttribute('aria-expanded', 'true');
@@ -1001,6 +1079,7 @@
       }
       if (this._isTyping) this.skipTypewriter();
       else if (this.renderer) this.renderer.stopSpeaking();
+      this._setHistoryOpen(false, { focus: false });
       this.panel.hidden = true;
       this.launcher.hidden = false;
       this.launcher.setAttribute('aria-expanded', 'false');
@@ -1014,6 +1093,7 @@
     toggleMinimized() {
       const minimized = this.panel.classList.toggle('avatar-widget-panel--minimized');
       if (minimized) {
+        this._setHistoryOpen(false, { focus: false });
         if (this._nodePending) {
           this._navigationToken += 1;
           this._nodePending = false;
@@ -1255,8 +1335,12 @@
       text.textContent = String(message);
       entry.append(name, text);
       this.history.append(entry);
-      while (this.history.children.length > 30) this.history.firstElementChild.remove();
-      this.history.scrollTop = this.history.scrollHeight;
+      this._scrollHistoryToEnd();
+      if (!this.historyDrawer.hidden) {
+        void afterNextPaint().then(() => {
+          if (!this.historyDrawer.hidden) this._scrollHistoryToEnd();
+        });
+      }
     }
 
     destroy() {

@@ -11,6 +11,10 @@ const contentSource = fs.readFileSync(path.join(root, 'dist/content.js'), 'utf8'
 assert.match(avatarSource, /class AvatarDialogueWidget/);
 assert.match(avatarSource, /avatar-widget-option/);
 assert.match(avatarSource, /setAttribute\('role', 'log'\)/);
+assert.match(avatarSource, /avatar-widget-history-drawer/);
+assert.match(avatarSource, /Abrir diario de conversación/);
+assert.match(avatarSource, /Conversación local: no guarda ni envía tus respuestas\./);
+assert.doesNotMatch(avatarSource, /dialogue\.append\(this\.history/);
 assert.match(avatarSource, /window\.localStorage/);
 assert.match(avatarSource, /setAttribute\('role', 'dialog'\)/);
 assert.match(avatarSource, /setAttribute\('aria-modal', 'false'\)/);
@@ -69,6 +73,7 @@ class MockElement {
     this.hidden = false;
     this.inert = false;
     this.disabled = false;
+    this.scrollTop = 0;
     this.textContent = '';
   }
 
@@ -265,12 +270,32 @@ const widget = new windowMock.AvatarDialogueWidget({
 assert.equal(widget.panel.getAttribute('role'), 'dialog');
 assert.equal(widget.panel.getAttribute('aria-modal'), 'false');
 assert.equal(widget.history.getAttribute('role'), 'log');
+assert.equal(widget.history.parentNode, widget.historyDrawer);
+assert.equal(widget.historyDrawer.hidden, true);
+assert.equal(widget.historyButton.getAttribute('aria-expanded'), 'false');
+assert.match(widget.historyPrivacy.textContent, /Conversación local/);
 assert.equal(widget.text.getAttribute('aria-live'), 'off');
 widget.launcher.focus();
 await widget.open();
 assert.equal(documentMock.activeElement, widget.text);
 assert.equal(widget.text.textContent, 'Texto completo.');
 assert.equal(widget.textMeasure.textContent, 'Texto completo.');
+widget._appendHistory('Tú', 'Entrada de prueba', 'user');
+widget.toggleHistory();
+assert.equal(widget.historyDrawer.hidden, false);
+assert.equal(widget.historyButton.getAttribute('aria-expanded'), 'true');
+assert.equal(widget.content.inert, true);
+assert.equal(widget.footer.inert, true);
+assert.equal(widget.history.scrollTop, widget.history.scrollHeight);
+widget.panel.dispatchEvent({
+  type: 'keydown',
+  key: 'Escape',
+  preventDefault() {}
+});
+assert.equal(widget.historyDrawer.hidden, true);
+assert.equal(widget.panel.hidden, false);
+assert.equal(widget.historyButton.getAttribute('aria-expanded'), 'false');
+assert.equal(widget.content.inert, false);
 widget.close();
 assert.equal(documentMock.activeElement, widget.launcher);
 
