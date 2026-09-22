@@ -53,13 +53,15 @@
     document.addEventListener('DOMContentLoaded', () => {
       const params = new URLSearchParams(location.search);
       const styles = ['default', 'pastel-angular', 'pastel-sticker'];
-      const descriptions = ['Diseño actual, sin cambios visuales.', 'Marco recortado, ticket y cola ✦.', 'Gingham sutil, cinta con moño y cola ♡.'];
+      const ginghamLevels = ['suave', 'medio', 'fuerte'];
+      const descriptions = ['Diseño actual, sin cambios visuales.', 'Marco recortado, ticket y cola ✦.', 'Gingham cruzado, cinta con moño y cola ♡.'];
       const members = window.GIMAE.members.slice(0, 4);
       const selectedMember = members.find(member => member.name === params.get('member')) || members[0];
       const style = styles.includes(params.get('style')) ? params.get('style') : 'default';
-      const frameURL = (member, variant, motion) => {
+      const gingham = ginghamLevels.includes(params.get('gingham')) ? params.get('gingham') : 'medio';
+      const frameURL = (member, variant, motion, ginghamLevel) => {
         const url = new URL('avatar-preview.html', location.href);
-        url.search = new URLSearchParams({frame:'1',member:member.name,style:variant,motion:motion ? '1' : '0'});
+        url.search = new URLSearchParams({frame:'1',member:member.name,style:variant,motion:motion ? '1' : '0',gingham:ginghamLevel});
         return url.href;
       };
       if (params.has('frame')) {
@@ -77,6 +79,7 @@
         widget.host.style.setProperty('--avatar-accent', selectedMember.accent);
         widget.setAccent(selectedMember.accent);
         widget.setDialogStyle(style);
+        widget.host.dataset.gingham = gingham;
         widget.setMotionDisabled(params.get('motion') !== '1');
         window.GIMAE_AVATAR_WIDGET = widget;
         void widget.open();
@@ -88,9 +91,10 @@
         + '<h1>El rincón de Suki</h1><p class="preview-intro">Compara el diseño actual con dos interpretaciones pastel. Cada muestra usa el runtime real y las mismas imágenes; el guion es solo una demostración. Cambiar el color no cambia al personaje.</p>'
         + '<p class="preview-warning"><strong>TEMPORAL · NO FUSIONAR ESTA PÁGINA.</strong> Elegir una variante, completar las pruebas y eliminar avatar-preview.html antes del merge.</p>'
         + '<div class="preview-toolbar"><label>Ancho móvil <select id="mobile-width"><option>360</option><option selected>390</option><option>480</option></select> px</label>'
+        + '<label>Gingham <select id="gingham-level"><option value="suave">Suave</option><option value="medio" selected>Medio</option><option value="fuerte">Fuerte</option></select></label>'
         + '<label><input id="preview-motion" type="checkbox"> Animaciones (respeta reduced motion)</label>'
         + '<a href="index.html?avatar-debug&avatar-style=pastel-angular" target="_blank" rel="noopener">Probar sobre el sitio ↗</a></div>'
-        + '<p class="preview-notes">Escritorio: viewport de 800 × 600 px. Móvil: viewport elegido × 720 px. Las muestras se reducen para comparar; “Abrir” permite interactuar a tamaño real. Desplaza la fila horizontalmente en pantallas pequeñas. Para probar carrito, menú, modales y teclado, usa el enlace del sitio.</p>';
+        + '<p class="preview-notes">Escritorio: viewport de 800 × 600 px. Móvil: viewport elegido × 720 px. Gingham controla solo pastel-sticker y parte en Medio. Las muestras se reducen para comparar; “Abrir” permite interactuar a tamaño real. Desplaza la fila horizontalmente en pantallas pequeñas. Para probar carrito, menú, modales y teclado, usa el enlace del sitio.</p>';
       const frames = [];
       members.forEach(member => {
         const palette = window.GIMAE_AVATAR_PALETTE(member.accent);
@@ -123,6 +127,7 @@
         section.append(title,note,grid);root.append(section);
       });
       const mobileWidth=document.getElementById('mobile-width');
+      const ginghamLevel=document.getElementById('gingham-level');
       const motion=document.getElementById('preview-motion');
       const sizeFrames=()=>frames.forEach(item=>{
         const width=item.mode==='desktop'?800:Number(mobileWidth.value);
@@ -133,10 +138,11 @@
         item.caption.textContent=(item.mode==='desktop'?'ESCRITORIO':'MÓVIL')+' · '+width+' px';
       });
       const loadFrames=()=>frames.forEach(item=>{
-        const url=frameURL(item.member,item.variant,motion.checked);
+        const url=frameURL(item.member,item.variant,motion.checked,ginghamLevel.value);
         item.frame.src=url;item.link.href=url;
       });
       mobileWidth.addEventListener('change',sizeFrames);
+      ginghamLevel.addEventListener('change',loadFrames);
       motion.addEventListener('change',loadFrames);
       new ResizeObserver(sizeFrames).observe(root);
       loadFrames();sizeFrames();

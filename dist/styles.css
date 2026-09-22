@@ -260,9 +260,17 @@ html{background:var(--paper);overflow-x:clip;scrollbar-color:#d594b6 var(--paper
 .avatar-widget-host[data-dialog-style="pastel-sticker"]{
   --avatar-angle:-2deg;--avatar-counter-angle:2deg;--avatar-label-angle:-4deg;
   --avatar-box-radius:25px;--avatar-shape:none;--avatar-tail-size:64px;
+  --avatar-gingham-strength:22%;--avatar-gingham-size:18px;--avatar-gingham-band:7px;
 }
+.avatar-widget-host[data-dialog-style="pastel-sticker"][data-gingham="suave"]{--avatar-gingham-strength:14%}
+.avatar-widget-host[data-dialog-style="pastel-sticker"][data-gingham="medio"]{--avatar-gingham-strength:22%}
+.avatar-widget-host[data-dialog-style="pastel-sticker"][data-gingham="fuerte"]{--avatar-gingham-strength:32%}
 :where(.avatar-widget-host[data-dialog-style="pastel-sticker"]) .avatar-pastel-paper{
-  background:linear-gradient(90deg,color-mix(in srgb,var(--avatar-white) 18%,transparent) 50%,transparent 50%),linear-gradient(color-mix(in srgb,var(--avatar-white) 18%,transparent) 50%,transparent 50%),linear-gradient(135deg,var(--avatar-white),var(--accent-soft));background-size:12px 12px,12px 12px,100% 100%;
+  background:
+    radial-gradient(ellipse at center,color-mix(in srgb,var(--avatar-white) 98%,transparent) 0 22%,color-mix(in srgb,var(--avatar-white) 88%,transparent) 44%,color-mix(in srgb,var(--avatar-white) 42%,transparent) 68%,transparent 88%),
+    repeating-linear-gradient(90deg,color-mix(in srgb,var(--accent) var(--avatar-gingham-strength),transparent) 0 var(--avatar-gingham-band),transparent var(--avatar-gingham-band) var(--avatar-gingham-size)),
+    repeating-linear-gradient(0deg,color-mix(in srgb,var(--accent) var(--avatar-gingham-strength),transparent) 0 var(--avatar-gingham-band),transparent var(--avatar-gingham-band) var(--avatar-gingham-size)),
+    linear-gradient(135deg,var(--avatar-white),var(--accent-soft));
 }
 :where(.avatar-widget-host[data-dialog-style="pastel-sticker"]) .avatar-widget-nameplate{clip-path:none;border-radius:9px 9px 12px 4px;padding-right:27px}
 :where(.avatar-widget-host[data-dialog-style="pastel-sticker"]) .avatar-widget-nameplate::before,
