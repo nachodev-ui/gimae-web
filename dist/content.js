@@ -248,19 +248,30 @@ window.GIMAE = {
       }
     }
   ],
-  // PRODUCTOS: "stock": null muestra "Disponibilidad por confirmar".
-  // Reemplázalo por un entero cuando conozcas el stock. Para stock por variante usa,
-  // por ejemplo, "stockByVariant": { "01": 3, "02": 2 } con los IDs reales de variante.
-  // Cambia "active" a false para ocultar un producto sin borrar su información.
+  // PRODUCTOS:
+  // - "stock": null muestra "Disponibilidad por confirmar".
+  // - "image" es la imagen principal y "gallery" alimentará el modal de detalle.
+  // - Las imágenes se muestran con object-fit: contain; no se recortan ni alteran diseños/rostros.
+  // - Para stock por variante usa "stockByVariant": { "01": 3, "02": 2 }.
+  // - Cambia "active" a false para ocultar un producto sin borrar su información.
   "merch": [
     {
       "id": "01",
       "name": "Poleras estampadas",
       "note": "Tu color, tu member.",
+      "description": "Poleras estampadas de Gimae disponibles por integrante y color. La imagen corresponde al diseño de referencia del producto; el estampado se presenta sin recortes ni modificaciones.",
       "price": 15000,
       "color": "pink",
       "active": true,
       "stock": null,
+      "image": "images/merch/poleras.png",
+      "imageAlt": "Cuatro poleras estampadas de Gimae en los colores de las integrantes",
+      "gallery": [
+        {
+          "src": "images/merch/poleras.png",
+          "alt": "Vista de las cuatro poleras estampadas de Gimae"
+        }
+      ],
       "variantLabel": "Color / integrante",
       "variantSource": "members"
     },
@@ -268,35 +279,72 @@ window.GIMAE = {
       "id": "02",
       "name": "Lightstick",
       "note": "Lleva tu brillo al escenario.",
+      "description": "Lightstick oficial de Gimae con el logotipo multicolor. La fotografía de producto se muestra completa para conservar proporciones y detalles.",
       "price": 8000,
       "color": "purple",
       "active": true,
-      "stock": null
+      "stock": null,
+      "image": "images/merch/lightstick.png",
+      "imageAlt": "Lightstick de Gimae con logotipo multicolor",
+      "gallery": [
+        {
+          "src": "images/merch/lightstick.png",
+          "alt": "Vista completa del lightstick de Gimae"
+        }
+      ]
     },
     {
       "id": "03",
       "name": "Llaveros",
       "note": "Un pequeño amuleto idol.",
+      "description": "Llaveros de las integrantes de Gimae con ilustración, lazo y cuentas en el color de cada member.",
       "price": 3000,
       "color": "yellow",
       "active": true,
-      "stock": null
+      "stock": null,
+      "image": "images/merch/llaveros.png",
+      "imageAlt": "Cuatro llaveros de Gimae, uno por integrante",
+      "gallery": [
+        {
+          "src": "images/merch/llaveros.png",
+          "alt": "Vista conjunta de los cuatro llaveros de Gimae"
+        }
+      ],
+      "variantLabel": "Integrante",
+      "variantSource": "members"
     },
     {
       "id": "04",
       "name": "Chekis",
       "note": "Un recuerdo en formato instantáneo.",
+      "description": "Chekis impresas en formato instantáneo. Puedes elegir la versión individual o grupal; el detalle mostrará la imagen correspondiente a la variante seleccionada.",
+      "image": "images/merch/cheki-individual.png",
+      "imageAlt": "Cheki individual de Gimae",
+      "gallery": [
+        {
+          "src": "images/merch/cheki-individual.png",
+          "alt": "Cheki individual de Gimae"
+        },
+        {
+          "src": "images/merch/cheki-grupal.png",
+          "alt": "Cheki grupal de las integrantes de Gimae"
+        }
+      ],
       "variantLabel": "Tipo",
       "prices": [
         {
           "id": "individual",
           "label": "Individual",
-          "value": 4500
+          "value": 4500,
+          "image": "images/merch/cheki-individual.png",
+          "imageAlt": "Cheki individual de Gimae"
         },
         {
           "id": "group",
           "label": "Grupal",
-          "value": 5000
+          "value": 5000,
+          "image": "images/merch/cheki-grupal.png",
+          "imageAlt": "Cheki grupal de las integrantes de Gimae"
         }
       ],
       "color": "pink",
@@ -307,10 +355,14 @@ window.GIMAE = {
       "id": "05",
       "name": "Postales",
       "note": "Un pedacito de nuestro universo.",
+      "description": "Postales de Gimae. La imagen de producto todavía no está publicada en el catálogo; se mantendrá la tarjeta funcional hasta contar con el asset definitivo.",
       "price": 2000,
       "color": "red",
       "active": true,
-      "stock": null
+      "stock": null,
+      "image": null,
+      "imageAlt": "",
+      "gallery": []
     }
   ]
 };
