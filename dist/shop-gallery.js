@@ -58,10 +58,14 @@
     if (Array.isArray(product.prices) && product.prices.length) {
       return product.prices.map((option, index) => ({
         id: cleanText(option.id || `option-${index + 1}`, 40),
-        label: cleanText(option.label || `Opción ${index + 1}`, 60),
+        label: cleanText(option.label || `Opción ${index + 1}`, 80),
         price: positiveNumber(option.value),
         image: assetPath(option.image),
-        imageAlt: cleanText(option.imageAlt, 160)
+        imageAlt: cleanText(option.imageAlt, 160),
+        typeId: cleanText(option.typeId || option.id || `option-${index + 1}`, 40),
+        typeLabel: cleanText(option.typeLabel || option.label || `Opción ${index + 1}`, 60),
+        memberId: cleanText(option.memberId, 40),
+        memberLabel: cleanText(option.memberLabel, 60)
       })).filter(option => option.id && option.price !== null);
     }
 
@@ -71,7 +75,11 @@
         label: cleanText(`${member.name} · ${member.colorLabel}`, 60),
         price: positiveNumber(product.price),
         image: assetPath(product.image),
-        imageAlt: cleanText(product.imageAlt, 160)
+        imageAlt: cleanText(product.imageAlt, 160),
+        typeId: cleanText(member.id, 40),
+        typeLabel: cleanText(`${member.name} · ${member.colorLabel}`, 60),
+        memberId: '',
+        memberLabel: ''
       })).filter(option => option.id && option.price !== null);
     }
 
@@ -81,8 +89,26 @@
       label: '',
       price,
       image: assetPath(product.image),
-      imageAlt: cleanText(product.imageAlt, 160)
+      imageAlt: cleanText(product.imageAlt, 160),
+      typeId: 'default',
+      typeLabel: '',
+      memberId: '',
+      memberLabel: ''
     }];
+  }
+
+  function hasSplitVariant(options) {
+    return options.some(option => option.memberId);
+  }
+
+  function typeChoices(options) {
+    const seen = new Set();
+    return options.reduce((choices, option) => {
+      if (!option.typeId || seen.has(option.typeId)) return choices;
+      seen.add(option.typeId);
+      choices.push({ id: option.typeId, label: option.typeLabel || option.label || option.typeId });
+      return choices;
+    }, []);
   }
 
   function stockFor(product, optionId) {
@@ -126,11 +152,125 @@
     return productGrid.querySelector(`.shop-product-card[data-product-id="${CSS.escape(String(productId))}"]`);
   }
 
+  function canonicalVariant(card) {
+    return card?.querySelector('.shop-variant-canonical') || card?.querySelector('.shop-variant') || null;
+  }
+
+  function selectedCardOption(product, card) {
+    const options = optionsFor(product);
+    const select = canonicalVariant(card);
+    return options.find(option => option.id === select?.value) || options[0] || null;
+  }
+
+  function syncCardMedia(card, option) {
+    const image = card?.querySelector('.shop-product-media img');
+    if (!image || !option) return;
+    const src = option.image || '';
+    if (!src) return;
+    image.src = src;
+    image.alt = option.imageAlt || image.alt;
+  }
+
+  function enhanceSplitCardControls(product, card) {
+    const options = optionsFor(product);
+    if (!hasSplitVariant(options)) return;
+
+    const controls = card.querySelector('.shop-buy-controls');
+    const canonical = controls?.querySelector('.shop-variant');
+    if (!controls || !canonical || controls.dataset.splitVariant === 'true') return;
+
+    controls.dataset.splitVariant = 'true';
+    canonical.classList.add('shop-variant-canonical');
+    canonical.hidden = true;
+    canonical.tabIndex = -1;
+    canonical.setAttribute('aria-hidden', 'true');
+
+    const typeSelect = element('select', 'shop-variant shop-variant-type');
+    typeSelect.setAttribute('aria-label', cleanText(product.variantLabel || 'Tipo', 60));
+    typeChoices(options).forEach(choice => {
+      const item = element('option', '', choice.label);
+      item.value = choice.id;
+      typeSelect.append(item);
+    });
+
+    const memberSelect = element('select', 'shop-variant shop-variant-member');
+    memberSelect.setAttribute('aria-label', cleanText(product.memberVariantLabel || 'Integrante', 60));
+
+    controls.insertBefore(typeSelect, canonical);
+    controls.insertBefore(memberSelect, canonical);
+
+    let syncing = false;
+
+    function currentOption() {
+      return options.find(option => option.id === canonical.value) || options[0] || null;
+    }
+
+    function fillMembers(typeId, preferredMemberId = '') {
+      const candidates = options.filter(option => option.typeId === typeId);
+      const members = candidates.filter(option => option.memberId);
+      memberSelect.replaceChildren();
+
+      if (!members.length) {
+        memberSelect.hidden = true;
+        const choice = candidates[0] || options[0];
+        if (choice) canonical.value = choice.id;
+        return;
+      }
+
+      memberSelect.hidden = false;
+      members.forEach(option => {
+        const item = element('option', '', option.memberLabel || option.label);
+        item.value = option.memberId;
+        memberSelect.append(item);
+      });
+
+      const chosen = members.find(option => option.memberId === preferredMemberId) || members[0];
+      memberSelect.value = chosen.memberId;
+      canonical.value = chosen.id;
+    }
+
+    function syncVisibleFromCanonical() {
+      const option = currentOption();
+      if (!option) return;
+      syncing = true;
+      typeSelect.value = option.typeId;
+      fillMembers(option.typeId, option.memberId);
+      syncing = false;
+      syncCardMedia(card, option);
+    }
+
+    function commitVisibleSelection() {
+      if (syncing) return;
+      const candidates = options.filter(option => option.typeId === typeSelect.value);
+      const memberOptions = candidates.filter(option => option.memberId);
+      const option = memberOptions.length
+        ? memberOptions.find(item => item.memberId === memberSelect.value) || memberOptions[0]
+        : candidates[0];
+
+      if (!option) return;
+      canonical.value = option.id;
+      canonical.dispatchEvent(new Event('change', { bubbles: true }));
+      syncCardMedia(card, option);
+    }
+
+    typeSelect.addEventListener('change', () => {
+      const previousMember = currentOption()?.memberId || memberSelect.value;
+      syncing = true;
+      fillMembers(typeSelect.value, previousMember);
+      syncing = false;
+      commitVisibleSelection();
+    });
+    memberSelect.addEventListener('change', commitVisibleSelection);
+    canonical.addEventListener('change', syncVisibleFromCanonical);
+
+    syncVisibleFromCanonical();
+  }
+
   function addThroughOriginalControls(product, optionId, quantity) {
     const card = cardFor(product.id);
     if (!card) return false;
 
-    const cardVariant = card.querySelector('.shop-variant');
+    const cardVariant = canonicalVariant(card);
     const cardQuantity = card.querySelector('.shop-quantity');
     const cardAdd = card.querySelector('.add-cart');
     if (!cardQuantity || !cardAdd) return false;
@@ -163,7 +303,7 @@
     const options = optionsFor(product);
     const gallery = galleryFor(product);
     const card = cardFor(product.id);
-    const cardVariant = card?.querySelector('.shop-variant');
+    const cardVariant = canonicalVariant(card);
     let selectedOptionId = options.some(option => option.id === cardVariant?.value)
       ? cardVariant.value
       : (options[0]?.id || 'default');
@@ -206,18 +346,38 @@
     info.append(title, note, description, price, availability);
 
     const form = element('div', 'product-detail-purchase');
+    const split = hasSplitVariant(options);
     let variantSelect = null;
+    let typeSelect = null;
+    let memberSelect = null;
+    let memberLabel = null;
+
     if (options.length > 1) {
       const variantField = element('label', 'product-detail-field');
       variantField.append(element('span', '', cleanText(product.variantLabel || 'Variante', 60)));
-      variantSelect = element('select', 'shop-variant product-detail-variant');
-      options.forEach(option => {
-        const item = element('option', '', option.label || 'Única opción');
-        item.value = option.id;
-        variantSelect.append(item);
-      });
-      variantSelect.value = selectedOptionId;
-      variantField.append(variantSelect);
+
+      if (split) {
+        typeSelect = element('select', 'shop-variant product-detail-variant product-detail-type');
+        typeChoices(options).forEach(choice => {
+          const item = element('option', '', choice.label);
+          item.value = choice.id;
+          typeSelect.append(item);
+        });
+        variantField.append(typeSelect);
+
+        memberLabel = element('span', 'product-detail-member-label', cleanText(product.memberVariantLabel || 'Integrante', 60));
+        memberSelect = element('select', 'shop-variant product-detail-member');
+        variantField.append(memberLabel, memberSelect);
+      } else {
+        variantSelect = element('select', 'shop-variant product-detail-variant');
+        options.forEach(option => {
+          const item = element('option', '', option.label || 'Única opción');
+          item.value = option.id;
+          variantSelect.append(item);
+        });
+        variantField.append(variantSelect);
+      }
+
       form.append(variantField);
     }
 
@@ -248,6 +408,36 @@
       return options.find(option => option.id === selectedOptionId) || options[0] || null;
     }
 
+    function syncVariantUI() {
+      const option = selectedOption();
+      if (!option) return;
+
+      if (variantSelect) {
+        variantSelect.value = option.id;
+        return;
+      }
+
+      if (!typeSelect || !memberSelect || !memberLabel) return;
+      typeSelect.value = option.typeId;
+      const memberOptions = options.filter(item => item.typeId === option.typeId && item.memberId);
+      memberSelect.replaceChildren();
+
+      if (!memberOptions.length) {
+        memberLabel.hidden = true;
+        memberSelect.hidden = true;
+        return;
+      }
+
+      memberOptions.forEach(item => {
+        const node = element('option', '', item.memberLabel || item.label);
+        node.value = item.memberId;
+        memberSelect.append(node);
+      });
+      memberLabel.hidden = false;
+      memberSelect.hidden = false;
+      memberSelect.value = option.memberId || memberOptions[0].memberId;
+    }
+
     function markActiveThumb() {
       thumbs.querySelectorAll('.product-gallery-thumb').forEach(button => {
         button.setAttribute('aria-pressed', String(button.dataset.src === activeMediaSrc));
@@ -262,6 +452,8 @@
 
     function syncOption(changeMedia = true) {
       const option = selectedOption();
+      syncVariantUI();
+
       if (!option) {
         price.textContent = 'Precio por confirmar';
         availability.textContent = 'Disponibilidad por confirmar';
@@ -286,6 +478,18 @@
       }
     }
 
+    function selectSplitOption(typeId, preferredMemberId = '') {
+      const candidates = options.filter(option => option.typeId === typeId);
+      const memberOptions = candidates.filter(option => option.memberId);
+      const option = memberOptions.length
+        ? memberOptions.find(item => item.memberId === preferredMemberId) || memberOptions[0]
+        : candidates[0];
+
+      if (!option) return;
+      selectedOptionId = option.id;
+      syncOption(true);
+    }
+
     gallery.forEach((item, index) => {
       const button = element('button', 'product-gallery-thumb');
       button.type = 'button';
@@ -299,10 +503,11 @@
       image.decoding = 'async';
       button.append(image);
       button.addEventListener('click', () => {
-        const matchingOption = options.find(option => option.image && option.image === item.src);
-        if (matchingOption) {
+        const matches = options.filter(option => option.image && option.image === item.src);
+        if (matches.length) {
+          const currentMember = selectedOption()?.memberId || '';
+          const matchingOption = matches.find(option => option.memberId === currentMember) || matches[0];
           selectedOptionId = matchingOption.id;
-          if (variantSelect) variantSelect.value = matchingOption.id;
           syncOption(false);
         }
         showMedia(item.src, item.alt);
@@ -315,6 +520,14 @@
     variantSelect?.addEventListener('change', () => {
       selectedOptionId = variantSelect.value;
       syncOption(true);
+    });
+
+    typeSelect?.addEventListener('change', () => {
+      selectSplitOption(typeSelect.value, selectedOption()?.memberId || memberSelect?.value || '');
+    });
+
+    memberSelect?.addEventListener('change', () => {
+      selectSplitOption(typeSelect.value, memberSelect.value);
     });
 
     quantity.addEventListener('change', () => {
@@ -351,7 +564,13 @@
       const card = cards[index];
       if (!card) return;
       card.dataset.productId = String(product.id);
-      if (card.querySelector('.shop-product-media')) return;
+
+      enhanceSplitCardControls(product, card);
+
+      if (card.querySelector('.shop-product-media')) {
+        syncCardMedia(card, selectedCardOption(product, card));
+        return;
+      }
 
       const mediaButton = element('button', 'shop-product-media');
       mediaButton.type = 'button';
@@ -375,6 +594,8 @@
       const top = card.querySelector('.product-top');
       if (top) top.insertAdjacentElement('afterend', mediaButton);
       else card.prepend(mediaButton);
+
+      syncCardMedia(card, selectedCardOption(product, card));
     });
   }
 
