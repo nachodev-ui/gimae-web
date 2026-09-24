@@ -103,10 +103,9 @@
     if (!ctx) return null;
     const gradient = ctx.createRadialGradient(128, 128, 0, 128, 128, 128);
     gradient.addColorStop(0, 'rgba(255,255,255,1)');
-    gradient.addColorStop(0.08, 'rgba(255,255,255,1)');
-    gradient.addColorStop(0.22, 'rgba(255,255,255,.82)');
-    gradient.addColorStop(0.42, 'rgba(255,255,255,.36)');
-    gradient.addColorStop(0.70, 'rgba(255,255,255,.10)');
+    gradient.addColorStop(0.12, 'rgba(255,255,255,.95)');
+    gradient.addColorStop(0.28, 'rgba(255,255,255,.58)');
+    gradient.addColorStop(0.55, 'rgba(255,255,255,.18)');
     gradient.addColorStop(1, 'rgba(255,255,255,0)');
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, 256, 256);
@@ -340,7 +339,7 @@
         glowTop.intensity = 0;
         glowBottom.intensity = 0;
         status.innerHTML = '<strong>Apagado</strong>Presiona el botón para encenderlo.';
-        powerButton.textContent = '※ Encender';
+        powerButton.textContent = '⏻ Encender';
         powerButton.setAttribute('aria-label', 'Encender lightstick');
         return;
       }
@@ -349,24 +348,28 @@
       const shellTint = color.clone().lerp(new THREE.Color('#ffffff'), 0.42);
       panel.classList.add('lightstick3d-is-on');
       panel.style.setProperty('--lightstick-glow', mode.value);
+
       chamberMat.color.copy(shellTint);
       chamberMat.emissive.copy(color);
-      chamberMat.emissiveIntensity = 1.18;
-      chamberMat.opacity = 0.56;
-      chamberMat.transmission = 0.14;
+      chamberMat.emissiveIntensity = 0.95;
+      chamberMat.opacity = 0.50;
+      chamberMat.transmission = 0.18;
+
       colorCoreMat.color.copy(color);
-      colorCoreMat.opacity = 0.96;
+      colorCoreMat.opacity = 0.88;
       hotCoreMat.color.set('#ffffff');
-      hotCoreMat.opacity = 1.0;
+      hotCoreMat.opacity = 0.98;
       auraMat.color.copy(color);
-      auraMat.opacity = 0.30;
-      setGlowSpriteColor(color, 0.48);
+      auraMat.opacity = 0.22;
+      setGlowSpriteColor(color, 0.34);
+
       glowLight.color.copy(color);
       glowTop.color.copy(color);
       glowBottom.color.copy(color);
-      glowLight.intensity = 18.5;
-      glowTop.intensity = 8.2;
-      glowBottom.intensity = 8.2;
+      glowLight.intensity = 15;
+      glowTop.intensity = 6.5;
+      glowBottom.intensity = 6.5;
+
       status.innerHTML = `<strong>Encendido · ${mode.label}</strong>Color ${index + 1} de ${COLOR_STEPS.length}.`;
       powerButton.textContent = index === COLOR_STEPS.length - 1 ? '⏻ Apagar' : '✦ Cambiar color';
       powerButton.setAttribute('aria-label', index === COLOR_STEPS.length - 1
@@ -408,18 +411,18 @@
       controls.update();
       if (!reducedMotion && colorIndex >= 0) {
         const wave = Math.sin(time * 0.004);
-        const pulse = 1 + wave * 0.05;
+        const pulse = 1 + wave * 0.035;
         aura.scale.set(pulse, 1, pulse);
-        colorCore.scale.set(1 + wave * 0.022, 1, 1 + wave * 0.022);
-        hotCore.scale.set(1 + wave * 0.012, 1, 1 + wave * 0.012);
+        colorCore.scale.set(1 + wave * 0.015, 1, 1 + wave * 0.015);
+        hotCore.scale.set(1 + wave * 0.008, 1, 1 + wave * 0.008);
         glowSprites.forEach((sprite, index) => {
           const base = index === 0 || index === glowSprites.length - 1 ? 1.28 : 1.48;
           const s = base * (1 + wave * 0.045);
           sprite.scale.set(s, s, 1);
         });
-        glowLight.intensity = 18.0 + wave * 2.2;
-        glowTop.intensity = 8.0 + wave * 0.9;
-        glowBottom.intensity = 8.0 + wave * 0.9;
+        glowLight.intensity = 14.5 + wave * 1.8;
+        glowTop.intensity = 6.1 + wave * 0.7;
+        glowBottom.intensity = 6.1 + wave * 0.7;
       } else {
         aura.scale.set(1, 1, 1);
         colorCore.scale.set(1, 1, 1);
@@ -502,7 +505,7 @@
     panel.setAttribute('aria-label', 'Vista 3D interactiva del lightstick');
     const badge = document.createElement('span');
     badge.className = 'lightstick3d-badge';
-    badge.textContent = '3D INTERACTIVO ☦';
+    badge.textContent = '3D INTERACTIVO ✦';
     const mount = document.createElement('div');
     mount.className = 'lightstick3d-canvas';
     mount.setAttribute('role', 'img');
@@ -554,8 +557,7 @@
     show3D();
 
     try {
-      const viewerCleanup = await mountViewer
-{ panel, mount, powerButton, resetButton, status });
+      const viewerCleanup = await mountViewer({ panel, mount, powerButton, resetButton, status });
       if (!panel.isConnected) {
         viewerCleanup();
         return;
