@@ -36,14 +36,15 @@
       .lightstick3d-switch button{min-height:34px;border:0;border-radius:999px;background:transparent;padding:6px 13px;color:#81506b;font:750 .72rem/1 var(--body);cursor:pointer}
       .lightstick3d-switch button[aria-pressed="true"]{background:#fff;color:#9c356d;box-shadow:0 2px 8px #5b25431a}
       .lightstick3d-switch button:focus-visible,.lightstick3d-power:focus-visible,.lightstick3d-reset:focus-visible{outline:3px solid #96306c;outline-offset:2px}
-      .lightstick3d-panel{position:relative;overflow:hidden;border:1px solid #d9c3ec;border-radius:22px;background:radial-gradient(circle at 50% 30%,#fff 0 10%,#fff9fd 42%,#f6efff 100%);box-shadow:0 8px 0 #efe3fb;isolation:isolate}
+      .lightstick3d-panel{position:relative;overflow:hidden;border:1px solid #d9c3ec;border-radius:22px;background:radial-gradient(circle at 50% 28%,#fff 0 9%,#fff9fd 44%,#f4edff 100%);box-shadow:0 8px 0 #efe3fb;isolation:isolate}
       .lightstick3d-panel[hidden]{display:none!important}
-      .lightstick3d-canvas{position:relative;width:100%;height:470px;touch-action:none;cursor:grab}
+      .lightstick3d-hide-2d{display:none!important}
+      .lightstick3d-canvas{position:relative;width:100%;height:500px;touch-action:none;cursor:grab}
       .lightstick3d-canvas:active{cursor:grabbing}
       .lightstick3d-canvas canvas{display:block;width:100%!important;height:100%!important}
       .lightstick3d-badge{position:absolute;left:14px;top:14px;z-index:2;border:1px solid #e7d2f4;border-radius:999px;background:#ffffffdc;padding:6px 10px;color:#75528e;font:800 .6rem/1 var(--body);letter-spacing:.08em;backdrop-filter:blur(8px);pointer-events:none}
       .lightstick3d-controls{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;border-top:1px solid #eadff0;background:#fffdfef2;padding:12px 14px;backdrop-filter:blur(8px)}
-      .lightstick3d-power{min-height:42px;border:0;border-radius:999px;background:linear-gradient(135deg,#e84694,#c62f78);padding:0 16px;color:white;font:800 .76rem/1 var(--body);box-shadow:0 4px 0 #f4c4dd;cursor:pointer}
+      .lightstick3d-power{min-height:42px;border:0;border-radius:999px;background:linear-gradient(135deg,#e84694,#c62f78);padding:0 16px;color:#fff;font:800 .76rem/1 var(--body);box-shadow:0 4px 0 #f4c4dd;cursor:pointer}
       .lightstick3d-power:hover{transform:translateY(-1px)}
       .lightstick3d-status{min-width:0;color:#6f5364;font-size:.73rem;line-height:1.35}
       .lightstick3d-status strong{display:block;color:#412d45;font-size:.78rem}
@@ -51,8 +52,8 @@
       .lightstick3d-help{margin:0;border-top:1px dashed #ead8e3;background:#fffafd;padding:9px 14px;color:#866679;font-size:.67rem;line-height:1.45;text-align:center}
       .lightstick3d-error{display:grid;place-items:center;min-height:360px;padding:28px;color:#73576a;text-align:center;line-height:1.6}
       .lightstick3d-error strong{display:block;margin-bottom:6px;color:#412d45;font:600 1rem var(--display)}
-      @media(max-width:820px){.lightstick3d-canvas{height:380px}}
-      @media(max-width:620px){.lightstick3d-canvas{height:310px}.lightstick3d-controls{grid-template-columns:1fr auto}.lightstick3d-status{grid-column:1/-1;grid-row:2}.lightstick3d-power{width:100%}}
+      @media(max-width:820px){.lightstick3d-canvas{height:420px}}
+      @media(max-width:620px){.lightstick3d-canvas{height:350px}.lightstick3d-controls{grid-template-columns:1fr auto}.lightstick3d-status{grid-column:1/-1;grid-row:2}.lightstick3d-power{width:100%}}
       @media(prefers-reduced-motion:reduce){.lightstick3d-power{transition:none!important}}
     `;
     document.head.append(style);
@@ -132,31 +133,33 @@
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.14;
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.setClearColor(0x000000, 0);
     mount.replaceChildren(renderer.domElement);
 
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
-    camera.position.set(0, 0.25, 8.5);
+    const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100);
+    camera.position.set(0, 0.15, 13.2);
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enablePan = false;
     controls.enableDamping = true;
     controls.dampingFactor = 0.075;
-    controls.minDistance = 5.5;
-    controls.maxDistance = 12;
-    controls.minPolarAngle = 0.16;
-    controls.maxPolarAngle = Math.PI - 0.16;
-    controls.target.set(0, 0.2, 0);
+    controls.minDistance = 5.2;
+    controls.maxDistance = 24;
+    controls.minPolarAngle = 0.12;
+    controls.maxPolarAngle = Math.PI - 0.12;
+    controls.target.set(0, 0.15, 0);
 
-    scene.add(new THREE.HemisphereLight(0xffffff, 0xc9b8da, 2.2));
-    const key = new THREE.DirectionalLight(0xffffff, 3.1);
+    scene.add(new THREE.HemisphereLight(0xffffff, 0xc9b8da, 2.35));
+    const key = new THREE.DirectionalLight(0xffffff, 3.15);
     key.position.set(4, 7, 6);
     key.castShadow = true;
     scene.add(key);
-    const rim = new THREE.DirectionalLight(0xffc9ea, 1.7);
+    const rim = new THREE.DirectionalLight(0xffc9ea, 1.75);
     rim.position.set(-5, 2, -4);
     scene.add(rim);
 
@@ -168,26 +171,37 @@
     const rimMat = new THREE.MeshStandardMaterial({ color: 0xf8f8f8, roughness: 0.28, metalness: 0.22 });
     const bandMat = new THREE.MeshStandardMaterial({ color: 0xf4c96d, roughness: 0.36, metalness: 0.18 });
     const chamberMat = new THREE.MeshPhysicalMaterial({
-      color: 0xbfc1c5,
-      roughness: 0.3,
-      metalness: 0.05,
+      color: 0xc7c9cd,
+      emissive: 0x000000,
+      emissiveIntensity: 0,
+      roughness: 0.24,
+      metalness: 0.02,
       transparent: true,
-      opacity: 0.82,
-      transmission: 0.08,
-      thickness: 0.5,
-      clearcoat: 0.45,
-      clearcoatRoughness: 0.25
+      opacity: 0.55,
+      transmission: 0.18,
+      thickness: 0.38,
+      clearcoat: 0.5,
+      clearcoatRoughness: 0.18,
+      depthWrite: false
     });
     const coreMat = new THREE.MeshStandardMaterial({
-      color: 0xd6d7da,
+      color: 0xd9dade,
       emissive: 0x000000,
       emissiveIntensity: 0,
       transparent: true,
-      opacity: 0.78,
-      roughness: 0.24,
-      metalness: 0.02
+      opacity: 0.62,
+      roughness: 0.16,
+      metalness: 0,
+      depthWrite: false
     });
-    const auraMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false });
+    const auraMat = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      side: THREE.DoubleSide
+    });
 
     function cylinder(radiusTop, radiusBottom, height, material, y, segments = 64) {
       const mesh = new THREE.Mesh(new THREE.CylinderGeometry(radiusTop, radiusBottom, height, segments), material);
@@ -203,7 +217,8 @@
     cylinder(0.45, 0.45, 0.09, rimMat, -0.21);
     cylinder(0.45, 0.45, 0.46, bandMat, 0.06);
     cylinder(0.44, 0.44, 0.08, rimMat, 0.34);
-    cylinder(0.43, 0.43, 3.08, chamberMat, 1.92);
+    const chamber = cylinder(0.43, 0.43, 3.08, chamberMat, 1.92);
+    chamber.castShadow = false;
     cylinder(0.44, 0.44, 0.12, rimMat, 3.51);
 
     const topLip = new THREE.Mesh(new THREE.TorusGeometry(0.40, 0.028, 12, 64), rimMat);
@@ -211,9 +226,10 @@
     topLip.position.y = 3.54;
     root.add(topLip);
 
-    const core = cylinder(0.27, 0.27, 2.68, coreMat, 1.9, 48);
+    const core = cylinder(0.31, 0.31, 2.72, coreMat, 1.9, 48);
     core.castShadow = false;
-    const aura = cylinder(0.39, 0.39, 2.86, auraMat, 1.9, 48);
+    core.receiveShadow = false;
+    const aura = cylinder(0.405, 0.405, 2.92, auraMat, 1.9, 48);
     aura.castShadow = false;
     aura.receiveShadow = false;
 
@@ -229,17 +245,23 @@
         new THREE.PlaneGeometry(0.58, 1.68),
         new THREE.MeshBasicMaterial({ map: logoTexture, transparent: true, depthWrite: false })
       );
-      logo.position.set(0, 2.0, 0.438);
+      logo.position.set(0, 2.0, 0.442);
       root.add(logo);
     }
 
-    const glowLight = new THREE.PointLight(0xffffff, 0, 5.2, 1.7);
+    const glowLight = new THREE.PointLight(0xffffff, 0, 7.5, 1.4);
     glowLight.position.set(0, 1.85, 0);
     root.add(glowLight);
+    const glowTop = new THREE.PointLight(0xffffff, 0, 4.2, 1.5);
+    glowTop.position.set(0, 3.15, 0);
+    root.add(glowTop);
+    const glowBottom = new THREE.PointLight(0xffffff, 0, 4.2, 1.5);
+    glowBottom.position.set(0, 0.65, 0);
+    root.add(glowBottom);
 
     const floor = new THREE.Mesh(
       new THREE.CircleGeometry(1.55, 64),
-      new THREE.ShadowMaterial({ color: 0x5f426e, opacity: 0.12 })
+      new THREE.ShadowMaterial({ color: 0x5f426e, opacity: 0.1 })
     );
     floor.rotation.x = -Math.PI / 2;
     floor.position.y = -3.31;
@@ -248,32 +270,58 @@
 
     let colorIndex = -1;
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const offChamber = new THREE.Color('#c7c9cd');
+    const offCore = new THREE.Color('#d9dade');
 
     function applyColor(index) {
       colorIndex = index;
       const mode = COLOR_STEPS[index] || null;
+
       if (!mode) {
-        coreMat.color.set('#d6d7da');
+        chamberMat.color.copy(offChamber);
+        chamberMat.emissive.set('#000000');
+        chamberMat.emissiveIntensity = 0;
+        chamberMat.opacity = 0.55;
+        chamberMat.transmission = 0.18;
+        coreMat.color.copy(offCore);
         coreMat.emissive.set('#000000');
         coreMat.emissiveIntensity = 0;
+        coreMat.opacity = 0.62;
         auraMat.opacity = 0;
         glowLight.intensity = 0;
+        glowTop.intensity = 0;
+        glowBottom.intensity = 0;
         status.innerHTML = '<strong>Apagado</strong>Presiona el botón para encenderlo.';
         powerButton.textContent = '⏻ Encender';
         powerButton.setAttribute('aria-label', 'Encender lightstick');
         return;
       }
+
       const color = new THREE.Color(mode.value);
+      const shellTint = color.clone().lerp(new THREE.Color('#ffffff'), 0.32);
+      chamberMat.color.copy(shellTint);
+      chamberMat.emissive.copy(color);
+      chamberMat.emissiveIntensity = 0.72;
+      chamberMat.opacity = 0.68;
+      chamberMat.transmission = 0.08;
       coreMat.color.copy(color);
       coreMat.emissive.copy(color);
-      coreMat.emissiveIntensity = 2.2;
+      coreMat.emissiveIntensity = 4.6;
+      coreMat.opacity = 1;
       auraMat.color.copy(color);
-      auraMat.opacity = 0.24;
+      auraMat.opacity = 0.42;
       glowLight.color.copy(color);
-      glowLight.intensity = 7.5;
+      glowTop.color.copy(color);
+      glowBottom.color.copy(color);
+      glowLight.intensity = 11;
+      glowTop.intensity = 4.2;
+      glowBottom.intensity = 4.2;
+
       status.innerHTML = `<strong>Encendido · ${mode.label}</strong>Color ${index + 1} de ${COLOR_STEPS.length}.`;
       powerButton.textContent = index === COLOR_STEPS.length - 1 ? '⏻ Apagar' : '✦ Cambiar color';
-      powerButton.setAttribute('aria-label', index === COLOR_STEPS.length - 1 ? 'Apagar lightstick' : `Cambiar color del lightstick. Actual: ${mode.label}`);
+      powerButton.setAttribute('aria-label', index === COLOR_STEPS.length - 1
+        ? 'Apagar lightstick'
+        : `Cambiar color del lightstick. Actual: ${mode.label}`);
     }
 
     function nextColor() {
@@ -283,8 +331,8 @@
     }
 
     function resetView() {
-      camera.position.set(0, 0.25, 8.5);
-      controls.target.set(0, 0.2, 0);
+      camera.position.set(0, 0.15, 13.2);
+      controls.target.set(0, 0.15, 0);
       root.rotation.set(0, -0.15, 0);
       controls.update();
     }
@@ -295,7 +343,7 @@
 
     const resize = () => {
       const width = Math.max(1, mount.clientWidth || 480);
-      const height = Math.max(1, mount.clientHeight || 470);
+      const height = Math.max(1, mount.clientHeight || 500);
       camera.aspect = width / height;
       camera.updateProjectionMatrix();
       renderer.setSize(width, height, false);
@@ -311,7 +359,10 @@
       if (!reducedMotion && colorIndex >= 0) {
         const pulse = 1 + Math.sin(time * 0.004) * 0.025;
         aura.scale.set(pulse, 1, pulse);
-        glowLight.intensity = 7.2 + Math.sin(time * 0.004) * 0.8;
+        const wave = Math.sin(time * 0.004);
+        glowLight.intensity = 10.5 + wave * 1.25;
+        glowTop.intensity = 4 + wave * 0.45;
+        glowBottom.intensity = 4 + wave * 0.45;
       } else {
         aura.scale.set(1, 1, 1);
       }
@@ -334,6 +385,19 @@
     };
   }
 
+  function revealPhotoElements() {
+    content.querySelectorAll('.product-gallery-stage,.product-gallery-thumbs').forEach(node => {
+      node.classList.remove('lightstick3d-hide-2d');
+      if (node.classList.contains('product-gallery-stage')) node.hidden = false;
+    });
+  }
+
+  function hidePhotoElements() {
+    content.querySelectorAll('.product-gallery-stage,.product-gallery-thumbs').forEach(node => {
+      node.classList.add('lightstick3d-hide-2d');
+    });
+  }
+
   function destroyActive() {
     if (activeCleanup) {
       activeCleanup();
@@ -341,8 +405,7 @@
     }
     content.querySelector('.lightstick3d-switch')?.remove();
     content.querySelector('.lightstick3d-panel')?.remove();
-    const stage = content.querySelector('.product-gallery-stage');
-    if (stage) stage.hidden = false;
+    revealPhotoElements();
   }
 
   async function mountIntoLightstick() {
@@ -355,7 +418,9 @@
     injectStyles();
     const mediaColumn = content.querySelector('.product-gallery-column');
     const photoStage = content.querySelector('.product-gallery-stage');
+    const photoThumbs = content.querySelector('.product-gallery-thumbs');
     if (!mediaColumn || !photoStage) return;
+    const thumbsInitiallyHidden = photoThumbs?.hidden ?? true;
 
     const switcher = document.createElement('div');
     switcher.className = 'lightstick3d-switch';
@@ -397,27 +462,34 @@
     controlsBar.append(powerButton, status, resetButton);
     const help = document.createElement('p');
     help.className = 'lightstick3d-help';
-    help.textContent = 'Arrastra para girar · rueda o pellizca para acercar · el botón recorre todos los colores y luego se apaga.';
+    help.textContent = 'Arrastra para girar · rueda o pellizca para acercar o alejar · el botón recorre todos los colores y luego se apaga.';
     panel.append(badge, mount, controlsBar, help);
 
     mediaColumn.insertBefore(switcher, photoStage);
     mediaColumn.insertBefore(panel, photoStage);
-    photoStage.hidden = true;
 
     function show3D() {
       panel.hidden = false;
-      photoStage.hidden = true;
+      hidePhotoElements();
       threeButton.setAttribute('aria-pressed', 'true');
       photoButton.setAttribute('aria-pressed', 'false');
     }
+
     function showPhoto() {
       panel.hidden = true;
+      photoStage.classList.remove('lightstick3d-hide-2d');
       photoStage.hidden = false;
+      if (photoThumbs) {
+        photoThumbs.classList.remove('lightstick3d-hide-2d');
+        photoThumbs.hidden = thumbsInitiallyHidden;
+      }
       threeButton.setAttribute('aria-pressed', 'false');
       photoButton.setAttribute('aria-pressed', 'true');
     }
+
     threeButton.addEventListener('click', show3D);
     photoButton.addEventListener('click', showPhoto);
+    show3D();
 
     try {
       const viewerCleanup = await mountViewer({ panel, mount, powerButton, resetButton, status });
@@ -429,11 +501,13 @@
         viewerCleanup();
         threeButton.removeEventListener('click', show3D);
         photoButton.removeEventListener('click', showPhoto);
+        revealPhotoElements();
       };
     } catch (error) {
       mount.innerHTML = '<div class="lightstick3d-error"><div><strong>Vista 3D no disponible</strong>Puedes seguir revisando el producto con la foto original.</div></div>';
       powerButton.disabled = true;
       resetButton.disabled = true;
+      showPhoto();
       photoButton.focus({ preventScroll: true });
       console.warn('[Gimae shop] No se pudo cargar el visor 3D del lightstick.', error);
     }
