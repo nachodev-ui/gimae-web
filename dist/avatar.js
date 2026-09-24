@@ -11,6 +11,9 @@
     'thinking',
     'wink'
   ]);
+  const DIALOG_STYLES = Object.freeze(['default', 'pastel-angular', 'pastel-sticker']);
+  const validDialogStyle = (value) => DIALOG_STYLES.includes(value) ? value : 'default';
+
   const MOUTH_EXPRESSIONS = new Set(['neutral', 'happy', 'excited']);
   const MOUTH_SPRITES = Object.freeze([
     'neutral-mouth',
@@ -27,6 +30,40 @@
   // El parpadeo se omite deliberadamente: sin una capa de ojos cerrados,
   // comprimir u oscurecer una franja también deforma nariz, cabello y rostro.
   // Mantener la ilustración estable produce un resultado más natural.
+
+  // WCAG 2 relative luminance in sRGB; all variants derive from existing site tokens.
+  const rgb = (hex) => /^#[0-9a-f]{6}$/i.test(String(hex))
+    ? hex.slice(1).match(/../g).map((channel) => parseInt(channel, 16)) : null;
+  const hex = (channels) => '#' + channels.map((c) => Math.round(c).toString(16).padStart(2, '0')).join('');
+  const mix = (a, b, weight) => a.map((channel, i) => Math.round(channel * (1 - weight) + b[i] * weight));
+  const luminance = (channels) => channels.map((channel) => {
+    const c = channel / 255;
+    return c <= .04045 ? c / 12.92 : ((c + .055) / 1.055) ** 2.4;
+  }).reduce((sum, channel, i) => sum + channel * [.2126, .7152, .0722][i], 0);
+  const contrast = (a, b) => (Math.max(luminance(a), luminance(b)) + .05)
+    / (Math.min(luminance(a), luminance(b)) + .05);
+  function avatarPalette(accent, ink = '#412d45') {
+    const base = rgb(accent) || rgb('#e84694');
+    const dark = rgb(ink) || rgb('#412d45');
+    const white = [255, 255, 255];
+    const soft = mix(base, white, .91);
+    const nameplate = mix(base, white, .76);
+    const nameplateBorder = mix(base, dark, .18);
+    // Deepen the existing hue only as much as needed for normal white text.
+    let strong = base;
+    for (let step = 0; step <= 100 && contrast(strong, white) < 4.6; step += 1) {
+      strong = mix(base, dark, step / 100);
+    }
+    const darkText = contrast(base, dark) >= 4.6;
+    const solid = darkText ? base : strong;
+    const onAccent = darkText ? dark : white;
+    return { accent: hex(base), soft: hex(soft), strong: hex(strong),
+      solid: hex(solid), onAccent: hex(onAccent), ink: hex(dark),
+      nameplate: hex(nameplate), nameplateBorder: hex(nameplateBorder),
+      ratios: { solidText: contrast(solid, onAccent), text: contrast(soft, dark),
+        whiteButton: contrast(white, dark), focusOnWhite: contrast(strong, white),
+        focusOnSoft: contrast(strong, soft), nameplateText: contrast(nameplate, dark) } };
+  }
 
   const wait = (milliseconds) => new Promise((resolve) => window.setTimeout(resolve, milliseconds));
   const afterNextPaint = () => new Promise((resolve) => {
@@ -479,7 +516,22 @@
     mouthDebugLabel.append(mouthDebugInput, mouthDebugText);
     debugToggles.append(continuousLabel, mouthDebugLabel);
 
-    controls.append(heading, status, expressionGroup, actions, debugToggles);
+    const styleLabel = document.createElement('label');
+    styleLabel.className = 'avatar-debug__style';
+    styleLabel.textContent = 'Estilo del diálogo';
+    const styleSelect = document.createElement('select');
+    styleSelect.id = 'avatar-dialog-style';
+    DIALOG_STYLES.forEach((value) => {
+      const option = document.createElement('option');
+      option.value = value;
+      option.textContent = value;
+      styleSelect.append(option);
+    });
+    styleSelect.value = validDialogStyle(new URLSearchParams(location.search).get('avatar-style')
+      || window.GIMAE?.AVATAR_CONFIG?.dialogStyle);
+    styleSelect.addEventListener('change', () => window.GIMAE_AVATAR_WIDGET?.setDialogStyle(styleSelect.value));
+    styleLabel.append(styleSelect);
+    controls.append(heading, styleLabel, status, expressionGroup, actions, debugToggles);
     panel.append(stage, controls);
     document.body.append(panel);
 
@@ -557,6 +609,10 @@
     window.__GIMAE_AVATAR_DEBUG__ = Object.freeze({ panel, renderer });
   }
 
+  function sukiAccent(config, name) {
+    return config.members?.find((member) => member?.name === name)?.accent;
+  }
+
   class AvatarDialogueWidget {
     constructor(siteConfig = {}) {
       this.siteConfig = siteConfig;
@@ -590,6 +646,8 @@
       this._onViewportChange = () => this._syncVisualViewport();
 
       this._build();
+      this.setAccent(sukiAccent(siteConfig, this.name));
+      this.setDialogStyle(new URLSearchParams(location.search).get('avatar-style') || this.config.dialogStyle);
       if (typeof this._motionQuery.addEventListener === 'function') {
         this._motionQuery.addEventListener('change', this._onMotionPreferenceChange);
       } else {
@@ -603,6 +661,9 @@
         window.visualViewport.addEventListener('scroll', this._onViewportChange, { passive: true });
       }
       this._observeDialogs();
+      this._onFocusChange = () => this._syncObstructions();
+      document.addEventListener('focusin', this._onFocusChange);
+      document.addEventListener('focusout', this._onFocusChange);
       if (this._readHiddenPreference()) this.host.hidden = true;
     }
 
@@ -655,13 +716,24 @@
 
       const windowControls = document.createElement('div');
       windowControls.className = 'avatar-widget-window-controls';
+
+      this.historyButton = createButton('', 'avatar-widget-icon-button');
+      this.historyButton.classList.add('avatar-widget-history-toggle');
+      this.historyButton.setAttribute('aria-label', 'Abrir diario de conversación');
+      this.historyButton.setAttribute('aria-controls', 'gimae-avatar-history-drawer');
+      this.historyButton.setAttribute('aria-expanded', 'false');
+      const historyIcon = document.createElement('span');
+      historyIcon.className = 'avatar-widget-history-icon';
+      historyIcon.setAttribute('aria-hidden', 'true');
+      this.historyButton.append(historyIcon);
+
       this.minimizeButton = createButton('—', 'avatar-widget-icon-button');
       this.minimizeButton.setAttribute('aria-label', 'Minimizar avatar');
       this.minimizeButton.setAttribute('aria-controls', 'gimae-avatar-content');
       this.minimizeButton.setAttribute('aria-expanded', 'true');
       this.closeButton = createButton('×', 'avatar-widget-icon-button');
       this.closeButton.setAttribute('aria-label', 'Cerrar avatar');
-      windowControls.append(this.minimizeButton, this.closeButton);
+      windowControls.append(this.historyButton, this.minimizeButton, this.closeButton);
       header.append(heading, windowControls);
 
       this.content = document.createElement('div');
@@ -673,12 +745,6 @@
 
       const dialogue = document.createElement('div');
       dialogue.className = 'avatar-widget-dialogue';
-      this.history = document.createElement('div');
-      this.history.className = 'avatar-widget-history';
-      this.history.setAttribute('role', 'log');
-      this.history.setAttribute('aria-live', 'polite');
-      this.history.setAttribute('aria-relevant', 'additions');
-      this.history.setAttribute('aria-label', 'Historial de la conversación predefinida');
 
       this.nameplate = document.createElement('span');
       this.nameplate.className = 'avatar-widget-nameplate';
@@ -693,33 +759,103 @@
       this.text.setAttribute('aria-label', 'Texto del avatar. Presiona Enter, espacio o haz clic para completar la escritura.');
       this.text.textContent = 'Abre el avatar para iniciar.';
 
+      const copy = document.createElement('div');
+      copy.className = 'avatar-widget-copy';
+      this.textMeasure = document.createElement('div');
+      this.textMeasure.className = 'avatar-widget-text-measure';
+      this.textMeasure.setAttribute('aria-hidden', 'true');
+      this.textMeasure.textContent = this.text.textContent;
+      copy.append(this.textMeasure, this.text);
+
       this.nextButton = createButton('Siguiente', 'avatar-widget-next');
       this.nextButton.hidden = true;
       this.options = document.createElement('div');
       this.options.className = 'avatar-widget-options';
       this.options.setAttribute('role', 'group');
       this.options.setAttribute('aria-label', 'Opciones de diálogo');
-      dialogue.append(this.history, this.nameplate, this.text, this.nextButton, this.options);
+      // Wrappers are display:contents in default; existing text/history nodes stay intact.
+      const box = document.createElement('div');
+      box.className = 'avatar-pastel-box';
+      const paper = document.createElement('span');
+      paper.className = 'avatar-pastel-paper';
+      paper.setAttribute('aria-hidden', 'true');
+      const inner = document.createElement('div');
+      inner.className = 'avatar-pastel-inner';
+      const ornament = (className, symbol) => {
+        const node = document.createElement('span');
+        node.className = className;
+        node.setAttribute('aria-hidden', 'true');
+        node.textContent = symbol;
+        return node;
+      };
+      this.tail = ornament('avatar-pastel-tail', '✦');
+      this.nameCharm = ornament('avatar-pastel-name-charm', '✦');
+      this.nameplate.append(this.nameCharm);
+      inner.append(this.nameplate, copy, this.nextButton,
+        ornament('avatar-pastel-next-mark', '♡'));
+      box.append(paper, inner, this.tail,
+        ornament('avatar-pastel-spark avatar-pastel-spark--one', '✦'),
+        ornament('avatar-pastel-spark avatar-pastel-spark--two', '♡'),
+        ornament('avatar-pastel-spark avatar-pastel-spark--three', '✦'));
+      dialogue.append(box, this.options);
       this.content.append(this.stage, dialogue);
 
       this.footer = document.createElement('footer');
       this.footer.className = 'avatar-widget-footer';
-      const privacy = document.createElement('small');
-      privacy.textContent = 'Conversación local: no guarda ni envía tus respuestas.';
       const footerActions = document.createElement('div');
       footerActions.className = 'avatar-widget-footer-actions';
       this.motionButton = createButton('Desactivar animaciones', 'avatar-widget-motion');
       this.motionButton.setAttribute('aria-pressed', 'false');
       this.hideButton = createButton('Ocultar avatar', 'avatar-widget-hide');
       footerActions.append(this.motionButton, this.hideButton);
-      this.footer.append(privacy, footerActions);
+      this.footer.append(footerActions);
 
-      this.panel.append(header, this.content, this.footer);
+      this.historyDrawer = document.createElement('aside');
+      this.historyDrawer.id = 'gimae-avatar-history-drawer';
+      this.historyDrawer.className = 'avatar-widget-history-drawer';
+      this.historyDrawer.hidden = true;
+      this.historyDrawer.setAttribute('role', 'region');
+      this.historyDrawer.setAttribute('aria-labelledby', 'gimae-avatar-history-title');
+      this.historyDrawer.setAttribute('aria-describedby', 'gimae-avatar-history-privacy');
+
+      const historyHeader = document.createElement('header');
+      historyHeader.className = 'avatar-widget-history-drawer__header';
+      const historyHeading = document.createElement('div');
+      historyHeading.className = 'avatar-widget-history-drawer__heading';
+      const historyKicker = document.createElement('span');
+      historyKicker.textContent = '♡ DIARIO LOCAL';
+      const historyTitle = document.createElement('strong');
+      historyTitle.id = 'gimae-avatar-history-title';
+      historyTitle.textContent = `Diario de ${this.name}`;
+      historyHeading.append(historyKicker, historyTitle);
+
+      this.historyCloseButton = createButton('×', 'avatar-widget-icon-button');
+      this.historyCloseButton.classList.add('avatar-widget-history-close');
+      this.historyCloseButton.setAttribute('aria-label', 'Cerrar diario de conversación');
+      historyHeader.append(historyHeading, this.historyCloseButton);
+
+      this.history = document.createElement('div');
+      this.history.className = 'avatar-widget-history';
+      this.history.setAttribute('role', 'log');
+      this.history.setAttribute('aria-live', 'polite');
+      this.history.setAttribute('aria-relevant', 'additions');
+      this.history.setAttribute('aria-label', 'Historial de la conversación predefinida');
+
+      this.historyPrivacy = document.createElement('small');
+      this.historyPrivacy.id = 'gimae-avatar-history-privacy';
+      this.historyPrivacy.className = 'avatar-widget-history-privacy';
+      this.historyPrivacy.textContent = 'Conversación local: no guarda ni envía tus respuestas.';
+
+      this.historyDrawer.append(historyHeader, this.history, this.historyPrivacy);
+
+      this.panel.append(header, this.content, this.footer, this.historyDrawer);
       this.host.append(this.launcher, this.panel);
       document.body.append(this.host);
 
       this.launcher.addEventListener('click', () => { void this.open(); });
       this.closeButton.addEventListener('click', () => this.close());
+      this.historyButton.addEventListener('click', () => this.toggleHistory());
+      this.historyCloseButton.addEventListener('click', () => this._setHistoryOpen(false));
       this.minimizeButton.addEventListener('click', () => this.toggleMinimized());
       this.motionButton.addEventListener('click', () => this.setMotionDisabled(!this._motionDisabled));
       this.hideButton.addEventListener('click', () => this.hide());
@@ -734,9 +870,33 @@
       this.panel.addEventListener('keydown', (event) => {
         if (event.key === 'Escape') {
           event.preventDefault();
+          if (!this.historyDrawer.hidden) {
+            this._setHistoryOpen(false);
+            return;
+          }
           this.close();
         }
       });
+    }
+
+    setDialogStyle(value) {
+      this.dialogStyle = validDialogStyle(value);
+      this.host.dataset.dialogStyle = this.dialogStyle;
+      this.tail.textContent = this.dialogStyle === 'pastel-sticker' ? '♥' : '✦';
+      this.nameCharm.textContent = this.dialogStyle === 'pastel-sticker' ? '♡' : '✦';
+      const select = document.getElementById('avatar-dialog-style');
+      if (select) select.value = this.dialogStyle;
+      this._syncObstructions();
+    }
+
+    // Reusable for a future member switch; never changes the script or portrait.
+    setAccent(accent) {
+      const ink = getComputedStyle(document.documentElement).getPropertyValue('--ink').trim();
+      this.palette = avatarPalette(accent, ink);
+      const tokens = { '--accent': 'accent', '--accent-soft': 'soft', '--accent-strong': 'strong',
+        '--on-accent': 'onAccent', '--avatar-solid': 'solid',
+        '--avatar-name-bg': 'nameplate', '--avatar-name-border': 'nameplateBorder' };
+      Object.entries(tokens).forEach(([property, key]) => this.host.style.setProperty(property, this.palette[key]));
     }
 
     _readHiddenPreference() {
@@ -795,6 +955,8 @@
         : 0;
       this.host.style.setProperty('--avatar-visible-height', `${Math.round(height)}px`);
       this.host.style.setProperty('--avatar-keyboard-inset', `${Math.round(keyboardInset)}px`);
+      this.host.classList.toggle('avatar-widget-host--compact', height < 520);
+      this._syncObstructions();
     }
 
     setMotionDisabled(disabled = true) {
@@ -808,26 +970,62 @@
       this._writeBooleanPreference(this.storageKey, hidden);
     }
 
+    _syncObstructions() {
+      if (!this.host) return;
+      const modalOpen = Boolean(document.querySelector('dialog[open]'));
+      const pastel = this.dialogStyle && this.dialogStyle !== 'default';
+      const menuOpen = pastel && Boolean(document.querySelector('.menu-toggle[aria-expanded="true"]'));
+      const field = document.activeElement;
+      const editingPage = pastel && window.innerWidth <= 700 && field
+        && !this.host.contains(field) && field.matches('input:not([type="button"]):not([type="checkbox"]):not([type="radio"]),textarea,[contenteditable="true"]');
+      const blocked = Boolean(modalOpen || menuOpen || editingPage);
+      this.host.classList.toggle('avatar-widget-host--modal-open', blocked);
+      this.host.inert = blocked;
+      this.host.setAttribute('aria-hidden', String(blocked));
+      if (blocked) {
+        if (this._isTyping) this.skipTypewriter();
+        else if (this.renderer) this.renderer.stopSpeaking();
+      }
+    }
+
     _observeDialogs() {
-      const sync = () => {
-        const modalOpen = Boolean(document.querySelector('dialog[open]'));
-        this.host.classList.toggle('avatar-widget-host--modal-open', modalOpen);
-        this.host.inert = modalOpen;
-        this.host.setAttribute('aria-hidden', String(modalOpen));
-        if (modalOpen) {
-          if (this._isTyping) this.skipTypewriter();
-          else if (this.renderer) this.renderer.stopSpeaking();
-        }
-      };
-      sync();
+      this._syncObstructions();
       if (typeof MutationObserver === 'function') {
-        this._dialogObserver = new MutationObserver(sync);
+        this._dialogObserver = new MutationObserver(() => this._syncObstructions());
         this._dialogObserver.observe(document.body, {
-          subtree: true,
-          attributes: true,
-          attributeFilter: ['open']
+          subtree: true, attributes: true, attributeFilter: ['open', 'aria-expanded']
         });
       }
+    }
+
+    _scrollHistoryToEnd() {
+      if (!this.history) return;
+      this.history.scrollTop = this.history.scrollHeight;
+    }
+
+    _setHistoryOpen(open, options = {}) {
+      if (!this.historyDrawer || !this.historyButton) return;
+      const minimized = this.panel.classList.contains('avatar-widget-panel--minimized');
+      const shouldOpen = Boolean(open) && !this.panel.hidden && !minimized;
+      this.historyDrawer.hidden = !shouldOpen;
+      this.historyButton.setAttribute('aria-expanded', String(shouldOpen));
+      this.panel.classList.toggle('avatar-widget-panel--history-open', shouldOpen);
+      this.content.inert = shouldOpen || minimized;
+      this.footer.inert = shouldOpen || minimized;
+
+      if (shouldOpen) {
+        this._scrollHistoryToEnd();
+        void afterNextPaint().then(() => {
+          if (!this.historyDrawer.hidden) this._scrollHistoryToEnd();
+        });
+        if (options.focus !== false) this.historyCloseButton.focus({ preventScroll: true });
+      } else if (options.focus !== false && !this.panel.hidden && !minimized) {
+        this.historyButton.focus({ preventScroll: true });
+      }
+    }
+
+    toggleHistory() {
+      this._setHistoryOpen(this.historyDrawer.hidden);
     }
 
     async open() {
@@ -836,6 +1034,7 @@
       this.panel.hidden = false;
       this.launcher.hidden = true;
       this.panel.classList.remove('avatar-widget-panel--minimized');
+      this._setHistoryOpen(false, { focus: false });
       this.minimizeButton.textContent = '—';
       this.minimizeButton.setAttribute('aria-label', 'Minimizar avatar');
       this.minimizeButton.setAttribute('aria-expanded', 'true');
@@ -880,6 +1079,7 @@
       }
       if (this._isTyping) this.skipTypewriter();
       else if (this.renderer) this.renderer.stopSpeaking();
+      this._setHistoryOpen(false, { focus: false });
       this.panel.hidden = true;
       this.launcher.hidden = false;
       this.launcher.setAttribute('aria-expanded', 'false');
@@ -893,6 +1093,7 @@
     toggleMinimized() {
       const minimized = this.panel.classList.toggle('avatar-widget-panel--minimized');
       if (minimized) {
+        this._setHistoryOpen(false, { focus: false });
         if (this._nodePending) {
           this._navigationToken += 1;
           this._nodePending = false;
@@ -1039,7 +1240,9 @@
     _renderPart() {
       const part = this.currentParts[this.currentPartIndex];
       if (typeof part !== 'string') {
-        this.text.textContent = 'COMPLETAR: agrega texto para este nodo en content.js.';
+        const fallback = 'COMPLETAR: agrega texto para este nodo en content.js.';
+        this.textMeasure.textContent = fallback;
+        this.text.textContent = fallback;
         this._renderOptions();
         return;
       }
@@ -1048,6 +1251,9 @@
       this._isTyping = true;
       this._currentText = part;
       this._partLogged = false;
+      // La copia invisible ocupa desde el inicio la altura del mensaje completo.
+      // Así la caja no cambia de tamaño carácter a carácter durante el tecleo.
+      this.textMeasure.textContent = part;
       this.text.textContent = '';
       this.nextButton.hidden = true;
       this.options.replaceChildren();
@@ -1107,6 +1313,11 @@
         if (!option || typeof option !== 'object' || !this.nodes[option.target]) return;
         const label = String(option.label || 'Continuar');
         const button = createButton(label, 'avatar-widget-option');
+        const charm = document.createElement('span');
+        charm.className = 'avatar-pastel-option-charm';
+        charm.setAttribute('aria-hidden', 'true');
+        charm.textContent = '♡';
+        button.prepend(charm);
         button.addEventListener('click', () => {
           Array.from(this.options.children).forEach((candidate) => { candidate.disabled = true; });
           void this.goTo(option.target, label);
@@ -1124,8 +1335,12 @@
       text.textContent = String(message);
       entry.append(name, text);
       this.history.append(entry);
-      while (this.history.children.length > 30) this.history.firstElementChild.remove();
-      this.history.scrollTop = this.history.scrollHeight;
+      this._scrollHistoryToEnd();
+      if (!this.historyDrawer.hidden) {
+        void afterNextPaint().then(() => {
+          if (!this.historyDrawer.hidden) this._scrollHistoryToEnd();
+        });
+      }
     }
 
     destroy() {
@@ -1146,6 +1361,8 @@
       }
       if (this.renderer) this.renderer.destroy();
       document.body.classList.remove('avatar-widget-open');
+      document.removeEventListener('focusin', this._onFocusChange);
+      document.removeEventListener('focusout', this._onFocusChange);
       this.host.remove();
     }
   }
@@ -1159,6 +1376,7 @@
     window.GIMAE_AVATAR_WIDGET = widget;
   }
 
+  window.GIMAE_AVATAR_PALETTE = avatarPalette;
   window.AvatarRenderer = AvatarRenderer;
   window.AvatarDialogueWidget = AvatarDialogueWidget;
   window.GIMAE_AVATAR_EXPRESSIONS = EXPRESSIONS;
