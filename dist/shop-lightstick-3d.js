@@ -14,6 +14,7 @@
   const THREE_URL = `https://esm.sh/three@${THREE_VERSION}`;
   const ORBIT_URL = `https://esm.sh/three@${THREE_VERSION}/examples/jsm/controls/OrbitControls.js`;
   const STYLE_ID = 'gimae-lightstick-3d-styles';
+  const OFFICIAL_LIGHTSTICK_LOGO = 'images/merch/lightstick-logo-vertical.png';
   const COLOR_STEPS = [
     { label: 'Rosado', value: '#ff66b7' },
     { label: 'Rojo', value: '#ff6578' },
@@ -78,41 +79,20 @@
     return title === 'lightstick' || heroSrc.includes('images/merch/lightstick.png');
   }
 
-  function createLogoTexture(THREE) {
-    const canvas = document.createElement('canvas');
-    canvas.width = 512;
-    canvas.height = 1024;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return null;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    const letters = [
-      ['G', '#ff78b9'], ['I', '#ff8f8a'], ['M', '#ffd56e'],
-      ['A', '#a7df8a'], ['E', '#75d8eb'], ['!', '#62bff7']
-    ];
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.font = '900 150px Arial Rounded MT Bold, Arial, sans-serif';
-    ctx.lineJoin = 'round';
-    letters.forEach(([letter, color], index) => {
-      const y = 130 + index * 142;
-      ctx.lineWidth = 24;
-      ctx.strokeStyle = 'rgba(255,255,255,.98)';
-      ctx.strokeText(letter, 256, y);
-      ctx.fillStyle = color;
-      ctx.fillText(letter, 256, y);
+  function loadOfficialLogoTexture(THREE) {
+    return new Promise((resolve) => {
+      const loader = new THREE.TextureLoader();
+      loader.load(
+        OFFICIAL_LIGHTSTICK_LOGO,
+        (texture) => {
+          texture.colorSpace = THREE.SRGBColorSpace;
+          texture.needsUpdate = true;
+          resolve(texture);
+        },
+        undefined,
+        () => resolve(null)
+      );
     });
-    ctx.font = '900 70px Arial Rounded MT Bold, Arial, sans-serif';
-    ctx.lineWidth = 14;
-    ctx.strokeStyle = 'rgba(255,255,255,.98)';
-    ctx.fillStyle = '#ff8ec5';
-    ctx.strokeText('♡', 365, 105);
-    ctx.fillText('♡', 365, 105);
-    ctx.strokeText('♡', 150, 885);
-    ctx.fillText('♡', 150, 885);
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.colorSpace = THREE.SRGBColorSpace;
-    texture.needsUpdate = true;
-    return texture;
   }
 
   function createGlowTexture(THREE) {
@@ -268,13 +248,22 @@
     modelButton.position.set(0, -1.42, 0.445);
     root.add(modelButton);
 
-    const logoTexture = createLogoTexture(THREE);
+    const logoTexture = await loadOfficialLogoTexture(THREE);
     if (logoTexture) {
+      const logoHeight = 2.02;
+      const logoAspect = logoTexture.image?.width && logoTexture.image?.height
+        ? logoTexture.image.width / logoTexture.image.height
+        : 47 / 139;
       const logo = new THREE.Mesh(
-        new THREE.PlaneGeometry(0.58, 1.68),
-        new THREE.MeshBasicMaterial({ map: logoTexture, transparent: true, depthWrite: false })
+        new THREE.PlaneGeometry(logoHeight * logoAspect, logoHeight),
+        new THREE.MeshBasicMaterial({
+          map: logoTexture,
+          transparent: true,
+          depthWrite: false,
+          toneMapped: false
+        })
       );
-      logo.position.set(0, 2.0, 0.442);
+      logo.position.set(0, 2.0, 0.445);
       root.add(logo);
     }
 
@@ -359,11 +348,13 @@
       const shellTint = color.clone().lerp(new THREE.Color('#ffffff'), 0.42);
       panel.classList.add('lightstick3d-is-on');
       panel.style.setProperty('--lightstick-glow', mode.value);
+
       chamberMat.color.copy(shellTint);
       chamberMat.emissive.copy(color);
       chamberMat.emissiveIntensity = 0.95;
       chamberMat.opacity = 0.50;
       chamberMat.transmission = 0.18;
+
       colorCoreMat.color.copy(color);
       colorCoreMat.opacity = 0.88;
       hotCoreMat.color.set('#ffffff');
@@ -371,12 +362,14 @@
       auraMat.color.copy(color);
       auraMat.opacity = 0.22;
       setGlowSpriteColor(color, 0.34);
+
       glowLight.color.copy(color);
       glowTop.color.copy(color);
       glowBottom.color.copy(color);
       glowLight.intensity = 15;
       glowTop.intensity = 6.5;
       glowBottom.intensity = 6.5;
+
       status.innerHTML = `<strong>Encendido · ${mode.label}</strong>Color ${index + 1} de ${COLOR_STEPS.length}.`;
       powerButton.textContent = index === COLOR_STEPS.length - 1 ? '⏻ Apagar' : '✦ Cambiar color';
       powerButton.setAttribute('aria-label', index === COLOR_STEPS.length - 1
