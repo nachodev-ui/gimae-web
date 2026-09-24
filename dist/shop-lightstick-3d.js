@@ -1,7 +1,7 @@
 /*
  * GIMAE — visor 3D interactivo del Lightstick.
- * Se monta de forma progresiva dentro de #product-dialog cuando el producto
- * abierto es Lightstick. La foto original sigue disponible como vista alterna.
+ * Vista estilizada basada en el producto real. La foto original sigue
+ * disponible como vista alterna dentro del modal de producto.
  */
 (() => {
   'use strict';
@@ -36,25 +36,28 @@
       .lightstick3d-switch button{min-height:34px;border:0;border-radius:999px;background:transparent;padding:6px 13px;color:#81506b;font:750 .72rem/1 var(--body);cursor:pointer}
       .lightstick3d-switch button[aria-pressed="true"]{background:#fff;color:#9c356d;box-shadow:0 2px 8px #5b25431a}
       .lightstick3d-switch button:focus-visible,.lightstick3d-power:focus-visible,.lightstick3d-reset:focus-visible{outline:3px solid #96306c;outline-offset:2px}
-      .lightstick3d-panel{position:relative;overflow:hidden;border:1px solid #d9c3ec;border-radius:22px;background:radial-gradient(circle at 50% 28%,#fff 0 9%,#fff9fd 44%,#f4edff 100%);box-shadow:0 8px 0 #efe3fb;isolation:isolate}
+      .lightstick3d-panel{--lightstick-glow:#ff66b7;position:relative;overflow:hidden;border:1px solid #d9c3ec;border-radius:22px;background:radial-gradient(circle at 50% 28%,#fff 0 9%,#fff9fd 44%,#f4edff 100%);box-shadow:0 8px 0 #efe3fb;isolation:isolate;transition:border-color .2s ease,box-shadow .2s ease,background .2s ease}
+      .lightstick3d-panel::before{content:'';position:absolute;inset:4% 12% 18%;z-index:0;border-radius:50%;background:radial-gradient(ellipse at center,color-mix(in srgb,var(--lightstick-glow) 38%,transparent) 0%,color-mix(in srgb,var(--lightstick-glow) 20%,transparent) 34%,transparent 72%);filter:blur(28px);opacity:0;pointer-events:none;transition:opacity .18s ease}
+      .lightstick3d-panel.lightstick3d-is-on{border-color:color-mix(in srgb,var(--lightstick-glow) 42%,#d9c3ec);background:radial-gradient(circle at 50% 30%,color-mix(in srgb,var(--lightstick-glow) 10%,#fff) 0 12%,#fff9fd 44%,#f2ecfb 100%);box-shadow:0 8px 0 #efe3fb,0 0 34px color-mix(in srgb,var(--lightstick-glow) 26%,transparent),inset 0 0 30px color-mix(in srgb,var(--lightstick-glow) 12%,transparent)}
+      .lightstick3d-panel.lightstick3d-is-on::before{opacity:1}
       .lightstick3d-panel[hidden]{display:none!important}
       .lightstick3d-hide-2d{display:none!important}
-      .lightstick3d-canvas{position:relative;width:100%;height:500px;touch-action:none;cursor:grab}
+      .lightstick3d-canvas{position:relative;z-index:1;width:100%;height:500px;touch-action:none;cursor:grab}
       .lightstick3d-canvas:active{cursor:grabbing}
       .lightstick3d-canvas canvas{display:block;width:100%!important;height:100%!important}
       .lightstick3d-badge{position:absolute;left:14px;top:14px;z-index:2;border:1px solid #e7d2f4;border-radius:999px;background:#ffffffdc;padding:6px 10px;color:#75528e;font:800 .6rem/1 var(--body);letter-spacing:.08em;backdrop-filter:blur(8px);pointer-events:none}
-      .lightstick3d-controls{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;border-top:1px solid #eadff0;background:#fffdfef2;padding:12px 14px;backdrop-filter:blur(8px)}
+      .lightstick3d-controls{position:relative;z-index:2;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;border-top:1px solid #eadff0;background:#fffdfef2;padding:12px 14px;backdrop-filter:blur(8px)}
       .lightstick3d-power{min-height:42px;border:0;border-radius:999px;background:linear-gradient(135deg,#e84694,#c62f78);padding:0 16px;color:#fff;font:800 .76rem/1 var(--body);box-shadow:0 4px 0 #f4c4dd;cursor:pointer}
       .lightstick3d-power:hover{transform:translateY(-1px)}
       .lightstick3d-status{min-width:0;color:#6f5364;font-size:.73rem;line-height:1.35}
       .lightstick3d-status strong{display:block;color:#412d45;font-size:.78rem}
       .lightstick3d-reset{min-height:36px;border:1px solid #e6d2df;border-radius:999px;background:#fff;padding:0 11px;color:#80536d;font:750 .7rem/1 var(--body);cursor:pointer}
-      .lightstick3d-help{margin:0;border-top:1px dashed #ead8e3;background:#fffafd;padding:9px 14px;color:#866679;font-size:.67rem;line-height:1.45;text-align:center}
+      .lightstick3d-help{position:relative;z-index:2;margin:0;border-top:1px dashed #ead8e3;background:#fffafd;padding:9px 14px;color:#866679;font-size:.67rem;line-height:1.45;text-align:center}
       .lightstick3d-error{display:grid;place-items:center;min-height:360px;padding:28px;color:#73576a;text-align:center;line-height:1.6}
       .lightstick3d-error strong{display:block;margin-bottom:6px;color:#412d45;font:600 1rem var(--display)}
       @media(max-width:820px){.lightstick3d-canvas{height:420px}}
       @media(max-width:620px){.lightstick3d-canvas{height:350px}.lightstick3d-controls{grid-template-columns:1fr auto}.lightstick3d-status{grid-column:1/-1;grid-row:2}.lightstick3d-power{width:100%}}
-      @media(prefers-reduced-motion:reduce){.lightstick3d-power{transition:none!important}}
+      @media(prefers-reduced-motion:reduce){.lightstick3d-power,.lightstick3d-panel,.lightstick3d-panel::before{transition:none!important}}
     `;
     document.head.append(style);
   }
@@ -81,7 +84,6 @@
     canvas.height = 1024;
     const ctx = canvas.getContext('2d');
     if (!ctx) return null;
-
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     const letters = [
       ['G', '#ff78b9'], ['I', '#ff8f8a'], ['M', '#ffd56e'],
@@ -107,7 +109,26 @@
     ctx.fillText('♡', 365, 105);
     ctx.strokeText('♡', 150, 885);
     ctx.fillText('♡', 150, 885);
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.needsUpdate = true;
+    return texture;
+  }
 
+  function createGlowTexture(THREE) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 256;
+    canvas.height = 256;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+    const gradient = ctx.createRadialGradient(128, 128, 0, 128, 128, 128);
+    gradient.addColorStop(0, 'rgba(255,255,255,1)');
+    gradient.addColorStop(0.12, 'rgba(255,255,255,.95)');
+    gradient.addColorStop(0.28, 'rgba(255,255,255,.58)');
+    gradient.addColorStop(0.55, 'rgba(255,255,255,.18)');
+    gradient.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, 256, 256);
     const texture = new THREE.CanvasTexture(canvas);
     texture.colorSpace = THREE.SRGBColorSpace;
     texture.needsUpdate = true;
@@ -134,7 +155,7 @@
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.14;
+    renderer.toneMappingExposure = 1.25;
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.setClearColor(0x000000, 0);
@@ -154,12 +175,12 @@
     controls.maxPolarAngle = Math.PI - 0.12;
     controls.target.set(0, 0.15, 0);
 
-    scene.add(new THREE.HemisphereLight(0xffffff, 0xc9b8da, 2.35));
-    const key = new THREE.DirectionalLight(0xffffff, 3.15);
+    scene.add(new THREE.HemisphereLight(0xffffff, 0xc9b8da, 2.25));
+    const key = new THREE.DirectionalLight(0xffffff, 3.0);
     key.position.set(4, 7, 6);
     key.castShadow = true;
     scene.add(key);
-    const rim = new THREE.DirectionalLight(0xffc9ea, 1.75);
+    const rim = new THREE.DirectionalLight(0xffc9ea, 1.6);
     rim.position.set(-5, 2, -4);
     scene.add(rim);
 
@@ -174,24 +195,28 @@
       color: 0xc7c9cd,
       emissive: 0x000000,
       emissiveIntensity: 0,
-      roughness: 0.24,
-      metalness: 0.02,
+      roughness: 0.18,
+      metalness: 0.01,
       transparent: true,
-      opacity: 0.55,
-      transmission: 0.18,
-      thickness: 0.38,
-      clearcoat: 0.5,
-      clearcoatRoughness: 0.18,
+      opacity: 0.42,
+      transmission: 0.26,
+      thickness: 0.32,
+      clearcoat: 0.55,
+      clearcoatRoughness: 0.16,
       depthWrite: false
     });
-    const coreMat = new THREE.MeshStandardMaterial({
-      color: 0xd9dade,
-      emissive: 0x000000,
-      emissiveIntensity: 0,
+    const colorCoreMat = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
       transparent: true,
-      opacity: 0.62,
-      roughness: 0.16,
-      metalness: 0,
+      opacity: 0,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
+    });
+    const hotCoreMat = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0,
+      blending: THREE.AdditiveBlending,
       depthWrite: false
     });
     const auraMat = new THREE.MeshBasicMaterial({
@@ -219,6 +244,7 @@
     cylinder(0.44, 0.44, 0.08, rimMat, 0.34);
     const chamber = cylinder(0.43, 0.43, 3.08, chamberMat, 1.92);
     chamber.castShadow = false;
+    chamber.receiveShadow = false;
     cylinder(0.44, 0.44, 0.12, rimMat, 3.51);
 
     const topLip = new THREE.Mesh(new THREE.TorusGeometry(0.40, 0.028, 12, 64), rimMat);
@@ -226,10 +252,13 @@
     topLip.position.y = 3.54;
     root.add(topLip);
 
-    const core = cylinder(0.31, 0.31, 2.72, coreMat, 1.9, 48);
-    core.castShadow = false;
-    core.receiveShadow = false;
-    const aura = cylinder(0.405, 0.405, 2.92, auraMat, 1.9, 48);
+    const colorCore = cylinder(0.31, 0.31, 2.72, colorCoreMat, 1.90, 48);
+    colorCore.castShadow = false;
+    colorCore.receiveShadow = false;
+    const hotCore = cylinder(0.14, 0.14, 2.76, hotCoreMat, 1.90, 48);
+    hotCore.castShadow = false;
+    hotCore.receiveShadow = false;
+    const aura = cylinder(0.48, 0.48, 2.96, auraMat, 1.90, 48);
     aura.castShadow = false;
     aura.receiveShadow = false;
 
@@ -249,19 +278,41 @@
       root.add(logo);
     }
 
-    const glowLight = new THREE.PointLight(0xffffff, 0, 7.5, 1.4);
-    glowLight.position.set(0, 1.85, 0);
+    const glowTexture = createGlowTexture(THREE);
+    const glowSprites = [];
+    if (glowTexture) {
+      [0.64, 1.26, 1.90, 2.54, 3.16].forEach((y, index) => {
+        const material = new THREE.SpriteMaterial({
+          map: glowTexture,
+          color: 0xffffff,
+          transparent: true,
+          opacity: 0,
+          blending: THREE.AdditiveBlending,
+          depthWrite: false,
+          depthTest: true
+        });
+        const sprite = new THREE.Sprite(material);
+        sprite.position.set(0, y, 0);
+        const scale = index === 0 || index === 4 ? 1.28 : 1.48;
+        sprite.scale.set(scale, scale, 1);
+        root.add(sprite);
+        glowSprites.push(sprite);
+      });
+    }
+
+    const glowLight = new THREE.PointLight(0xffffff, 0, 8.6, 1.35);
+    glowLight.position.set(0, 1.9, 0);
     root.add(glowLight);
-    const glowTop = new THREE.PointLight(0xffffff, 0, 4.2, 1.5);
+    const glowTop = new THREE.PointLight(0xffffff, 0, 5.2, 1.45);
     glowTop.position.set(0, 3.15, 0);
     root.add(glowTop);
-    const glowBottom = new THREE.PointLight(0xffffff, 0, 4.2, 1.5);
-    glowBottom.position.set(0, 0.65, 0);
+    const glowBottom = new THREE.PointLight(0xffffff, 0, 5.2, 1.45);
+    glowBottom.position.set(0, 0.62, 0);
     root.add(glowBottom);
 
     const floor = new THREE.Mesh(
       new THREE.CircleGeometry(1.55, 64),
-      new THREE.ShadowMaterial({ color: 0x5f426e, opacity: 0.1 })
+      new THREE.ShadowMaterial({ color: 0x5f426e, opacity: 0.09 })
     );
     floor.rotation.x = -Math.PI / 2;
     floor.position.y = -3.31;
@@ -271,23 +322,30 @@
     let colorIndex = -1;
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const offChamber = new THREE.Color('#c7c9cd');
-    const offCore = new THREE.Color('#d9dade');
+
+    function setGlowSpriteColor(color, opacity) {
+      glowSprites.forEach((sprite, index) => {
+        sprite.material.color.copy(color);
+        sprite.material.opacity = opacity * (index === 0 || index === glowSprites.length - 1 ? 0.82 : 1);
+      });
+    }
 
     function applyColor(index) {
       colorIndex = index;
       const mode = COLOR_STEPS[index] || null;
 
       if (!mode) {
+        panel.classList.remove('lightstick3d-is-on');
+        panel.style.removeProperty('--lightstick-glow');
         chamberMat.color.copy(offChamber);
         chamberMat.emissive.set('#000000');
         chamberMat.emissiveIntensity = 0;
-        chamberMat.opacity = 0.55;
-        chamberMat.transmission = 0.18;
-        coreMat.color.copy(offCore);
-        coreMat.emissive.set('#000000');
-        coreMat.emissiveIntensity = 0;
-        coreMat.opacity = 0.62;
+        chamberMat.opacity = 0.42;
+        chamberMat.transmission = 0.26;
+        colorCoreMat.opacity = 0;
+        hotCoreMat.opacity = 0;
         auraMat.opacity = 0;
+        setGlowSpriteColor(new THREE.Color('#ffffff'), 0);
         glowLight.intensity = 0;
         glowTop.intensity = 0;
         glowBottom.intensity = 0;
@@ -298,25 +356,27 @@
       }
 
       const color = new THREE.Color(mode.value);
-      const shellTint = color.clone().lerp(new THREE.Color('#ffffff'), 0.32);
+      const shellTint = color.clone().lerp(new THREE.Color('#ffffff'), 0.42);
+      panel.classList.add('lightstick3d-is-on');
+      panel.style.setProperty('--lightstick-glow', mode.value);
       chamberMat.color.copy(shellTint);
       chamberMat.emissive.copy(color);
-      chamberMat.emissiveIntensity = 0.72;
-      chamberMat.opacity = 0.68;
-      chamberMat.transmission = 0.08;
-      coreMat.color.copy(color);
-      coreMat.emissive.copy(color);
-      coreMat.emissiveIntensity = 4.6;
-      coreMat.opacity = 1;
+      chamberMat.emissiveIntensity = 0.95;
+      chamberMat.opacity = 0.50;
+      chamberMat.transmission = 0.18;
+      colorCoreMat.color.copy(color);
+      colorCoreMat.opacity = 0.88;
+      hotCoreMat.color.set('#ffffff');
+      hotCoreMat.opacity = 0.98;
       auraMat.color.copy(color);
-      auraMat.opacity = 0.42;
+      auraMat.opacity = 0.22;
+      setGlowSpriteColor(color, 0.34);
       glowLight.color.copy(color);
       glowTop.color.copy(color);
       glowBottom.color.copy(color);
-      glowLight.intensity = 11;
-      glowTop.intensity = 4.2;
-      glowBottom.intensity = 4.2;
-
+      glowLight.intensity = 15;
+      glowTop.intensity = 6.5;
+      glowBottom.intensity = 6.5;
       status.innerHTML = `<strong>Encendido · ${mode.label}</strong>Color ${index + 1} de ${COLOR_STEPS.length}.`;
       powerButton.textContent = index === COLOR_STEPS.length - 1 ? '⏻ Apagar' : '✦ Cambiar color';
       powerButton.setAttribute('aria-label', index === COLOR_STEPS.length - 1
@@ -357,14 +417,23 @@
       frame = requestAnimationFrame(animate);
       controls.update();
       if (!reducedMotion && colorIndex >= 0) {
-        const pulse = 1 + Math.sin(time * 0.004) * 0.025;
-        aura.scale.set(pulse, 1, pulse);
         const wave = Math.sin(time * 0.004);
-        glowLight.intensity = 10.5 + wave * 1.25;
-        glowTop.intensity = 4 + wave * 0.45;
-        glowBottom.intensity = 4 + wave * 0.45;
+        const pulse = 1 + wave * 0.035;
+        aura.scale.set(pulse, 1, pulse);
+        colorCore.scale.set(1 + wave * 0.015, 1, 1 + wave * 0.015);
+        hotCore.scale.set(1 + wave * 0.008, 1, 1 + wave * 0.008);
+        glowSprites.forEach((sprite, index) => {
+          const base = index === 0 || index === glowSprites.length - 1 ? 1.28 : 1.48;
+          const s = base * (1 + wave * 0.045);
+          sprite.scale.set(s, s, 1);
+        });
+        glowLight.intensity = 14.5 + wave * 1.8;
+        glowTop.intensity = 6.1 + wave * 0.7;
+        glowBottom.intensity = 6.1 + wave * 0.7;
       } else {
         aura.scale.set(1, 1, 1);
+        colorCore.scale.set(1, 1, 1);
+        hotCore.scale.set(1, 1, 1);
       }
       renderer.render(scene, camera);
     }
@@ -377,11 +446,14 @@
       resetButton.removeEventListener('click', resetView);
       controls.dispose();
       disposeObject(root);
+      glowTexture?.dispose?.();
       floor.geometry.dispose();
       floor.material.dispose();
       renderer.dispose();
       renderer.forceContextLoss?.();
       mount.replaceChildren();
+      panel.classList.remove('lightstick3d-is-on');
+      panel.style.removeProperty('--lightstick-glow');
     };
   }
 
