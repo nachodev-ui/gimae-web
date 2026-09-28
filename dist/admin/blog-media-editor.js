@@ -1,6 +1,7 @@
 const editorRoot=document.querySelector('#editor');
 const settings=window.GIMAE_SUPABASE||{};
 const rt=window.GIMAE_RICH_TEXT;
+const ui=window.GIMAE_UI;
 let activeCleanup=null;
 let mediaClientPromise=null;
 
@@ -12,6 +13,8 @@ const TUS_THRESHOLD=6*1024*1024;
 
 const el=(tag,className,text)=>{const node=document.createElement(tag);if(className)node.className=className;if(text!==undefined)node.textContent=text;return node};
 const formatBytes=value=>{const bytes=Number(value)||0;if(bytes<1024)return `${bytes} B`;if(bytes<1024**2)return `${(bytes/1024).toFixed(1)} KB`;return `${(bytes/1024**2).toFixed(bytes>=10*1024**2?0:1)} MB`};
+const notify=(tone,title,message)=>ui?.toast({tone,title,message});
+const ask=options=>ui?.confirm(options)??Promise.resolve(confirm(`${options.title||'Confirmar'}\n\n${options.message||''}`));
 const fileExtension=file=>{
   const byType={'image/png':'png','image/jpeg':'jpg','image/webp':'webp','video/mp4':'mp4','video/webm':'webm','video/quicktime':'mov','video/x-m4v':'m4v'}[file.type];
   if(byType)return byType;
@@ -208,7 +211,8 @@ function enhance(form){
   function renderPendingCover(){
     const file=coverInput.files?.[0];
     if(!file){if(coverObjectUrl){URL.revokeObjectURL(coverObjectUrl);coverObjectUrl=''}coverCancel.hidden=true;renderCover();return}
-    try{if(fileKind(file)!=='image'||file.size>MAX_IMAGE)throw new Error('La portada debe ser PNG, JPG o WebP de hasta 8 MB.')}catch(error){coverInput.value='';alert(error.message);renderCover();return}
+    try{if(fileKind(file)!=='image'||file.size>MAX_IMAGE)throw new Error('La portada debe ser PNG, JPG o WebP de hasta 8 MB.')}
+    catch(error){coverInput.value='';notify('warning','Portada no válida',error.message);renderCover();return}
     if(coverObjectUrl)URL.revokeObjectURL(coverObjectUrl);coverObjectUrl=URL.createObjectURL(file);
     coverStage.replaceChildren();const image=document.createElement('img');image.src=coverObjectUrl;image.alt='Nueva portada seleccionada';coverStage.append(image);
     coverName.textContent=`Nueva portada: ${file.name}`;coverHelp.textContent=`${formatBytes(file.size)} · pendiente de guardar`;coverCancel.hidden=false;
@@ -239,16 +243,21 @@ function enhance(form){
         const right=el('button','secondary','→');right.type='button';right.title='Mover después';right.disabled=index===assets.length-1;
         const remove=el('button','secondary danger-soft','Quitar');remove.type='button';
         left.addEventListener('click',()=>reorder(index,index-1));right.addEventListener('click',()=>reorder(index,index+1));
-        remove.addEventListener('click',async()=>{if(!confirm(`¿Quitar “${rowName(row)}” de la galería?`))return;try{setBusy(true);await deleteAsset(row);await loadAssets()}catch(error){alert(error.message)}finally{setBusy(false)}});
+        remove.addEventListener('click',async()=>{
+          const ok=await ask({tone:'danger',title:`Quitar ${kind==='video'?'vídeo':'foto'} de la galería`,message:`Vas a quitar “${rowName(row)}” de esta entrada.`,detail:'El archivo también se eliminará del almacenamiento. Esta acción no se puede deshacer.',confirmText:'Quitar definitivamente'});if(!ok)return;
+          try{setBusy(true);await deleteAsset(row);await loadAssets();notify('success',kind==='video'?'Vídeo eliminado':'Foto eliminada','La galería se actualizó correctamente.')}
+          catch(error){notify('error','No se pudo quitar el recurso',error.message)}finally{setBusy(false)}
+        });
         actions.append(left,right,remove);card.append(visual,meta,actions);grid.append(card);
       }
       schedulePreviewBadge();
-    }catch(error){grid.replaceChildren(el('p','blog-media-error',`No se pudo cargar la galería: ${error.message}`))}
+    }catch(error){grid.replaceChildren(el('p','blog-media-error',`No se pudo cargar la galería: ${error.message}`));notify('error','No se pudo cargar la galería',error.message)}
   }
   async function reorder(from,to){
     if(to<0||to>=assets.length||from===to)return;
     const next=[...assets];[next[from],next[to]]=[next[to],next[from]];
-    try{setBusy(true);const {client}=await ensureContext();for(let index=0;index<next.length;index++){const {error}=await client.from('post_images').update({display_order:index}).eq('id',next[index].id);if(error)throw error}await loadAssets()}catch(error){alert(error.message)}finally{setBusy(false)}
+    try{setBusy(true);const {client}=await ensureContext();for(let index=0;index<next.length;index++){const {error}=await client.from('post_images').update({display_order:index}).eq('id',next[index].id);if(error)throw error}await loadAssets()}
+    catch(error){notify('error','No se pudo cambiar el orden',error.message)}finally{setBusy(false)}
   }
 
   function queueCard(file){
@@ -260,25 +269,29 @@ function enhance(form){
   }
   async function uploadFiles(fileList,{replace=false}={}){
     if(busy)return;const files=[...fileList];if(!files.length)return;
-    try{files.forEach(validateFile)}catch(error){alert(error.message);return}
-    if(replace&&assets.length&&!confirm(`Esto eliminará los ${assets.length} elementos actuales y los reemplazará por ${files.length}. ¿Continuar?`))return;
-    setBusy(true);queue.replaceChildren();
+    try{files.forEach(validateFile)}catch(error){notify('warning','Archivo no válido',error.message);return}
+    if(replace&&assets.length){
+      const ok=await ask({tone:'danger',title:'Reemplazar toda la galería',message:`La galería actual tiene ${assets.length} elemento${assets.length===1?'':'s'}. Los ${files.length} archivo${files.length===1?'':'s'} seleccionado${files.length===1?'':'s'} pasarán a reemplazarlos.`,detail:'Los recursos actuales se eliminarán del almacenamiento. Si solo quieres sumar contenido, usa “Añadir fotos o vídeos”.',confirmText:'Reemplazar galería'});if(!ok){picker.value='';return}
+    }
+    setBusy(true);queue.replaceChildren();let succeeded=0,failed=0;
     try{
       const {client,post}=await ensureContext();
       if(replace){for(const row of [...assets])await deleteAsset(row);assets=[]}
       let order=assets.length?Math.max(...assets.map(row=>Number(row.display_order)||0))+1:0;
       for(const file of files){
-        const ui=queueCard(file);
+        const uiItem=queueCard(file);
         try{
-          const uploaded=await uploadAsset(client,post.id,file,value=>ui.setProgress(value));
+          const uploaded=await uploadAsset(client,post.id,file,value=>uiItem.setProgress(value));
           const alt=uploaded.kind==='video'?`video:${file.name}`:file.name;
           const {error}=await client.from('post_images').insert({post_id:post.id,url:uploaded.url,alt,display_order:order++});
           if(error){await removeBlogAsset(client,uploaded.url);throw error}
-          ui.done();
-        }catch(error){ui.fail(error.message||'Error al subir')}
+          uiItem.done();succeeded++;
+        }catch(error){uiItem.fail(error.message||'Error al subir');failed++}
       }
       await loadAssets();
-    }finally{setBusy(false);picker.value='';camera.value=''}
+      if(succeeded)notify('success',replace?'Galería reemplazada':'Multimedia añadida',`${succeeded} archivo${succeeded===1?'':'s'} se ${succeeded===1?'subió':'subieron'} correctamente.`);
+      if(failed)notify('warning','Algunos archivos no se subieron',`${failed} archivo${failed===1?'':'s'} presentó${failed===1?'':'ron'} un problema. Revisa la cola de subida.`);
+    }catch(error){notify('error','No se pudo actualizar la galería',error.message)}finally{setBusy(false);picker.value='';camera.value=''}
   }
 
   const externalInput=panel.querySelector('.blog-video-add input');
@@ -288,13 +301,28 @@ function enhance(form){
   function renderExternal(){
     const videos=rt.extractMedia?.(content.value).videos||[];externalList.replaceChildren();
     if(!videos.length){externalList.append(el('p','blog-video-empty','No hay vídeos enlazados.'));schedulePreviewBadge();return}
-    videos.forEach((url,index)=>{const row=el('div','blog-video-row');const meta=el('div');meta.append(el('span','',provider(url)),el('small','',url));const remove=el('button','secondary','Quitar');remove.type='button';remove.addEventListener('click',()=>{let seen=-1;content.value=content.value.split('\n').filter(line=>{const match=line.match(/^\s*\[\[video\|(https?:\/\/[^\]\s]+)\]\]\s*$/i);if(!match)return true;seen++;return seen!==index}).join('\n').replace(/\n{3,}/g,'\n\n');content.dispatchEvent(new Event('input',{bubbles:true}))});row.append(meta,remove);externalList.append(row)});schedulePreviewBadge();
+    videos.forEach((url,index)=>{
+      const row=el('div','blog-video-row');const meta=el('div');meta.append(el('span','',provider(url)),el('small','',url));const remove=el('button','secondary','Quitar');remove.type='button';
+      remove.addEventListener('click',async()=>{
+        const ok=await ask({tone:'danger',title:'Quitar vídeo enlazado',message:'Este vídeo dejará de aparecer en el carrusel de la entrada.',detail:url,confirmText:'Quitar enlace'});if(!ok)return;
+        let seen=-1;content.value=content.value.split('\n').filter(line=>{const match=line.match(/^\s*\[\[video\|(https?:\/\/[^\]\s]+)\]\]\s*$/i);if(!match)return true;seen++;return seen!==index}).join('\n').replace(/\n{3,}/g,'\n\n');content.dispatchEvent(new Event('input',{bubbles:true}));notify('success','Vídeo quitado','El enlace se eliminó del carrusel.');
+      });
+      row.append(meta,remove);externalList.append(row)
+    });schedulePreviewBadge();
   }
-  function addExternal(){const url=validVideo(externalInput.value.trim());if(!url){externalInput.setCustomValidity('Usa YouTube, Vimeo o un enlace directo MP4/WebM/MOV/M4V.');externalInput.reportValidity();return}externalInput.setCustomValidity('');insertExternal(url)}
+  function addExternal(){
+    const url=validVideo(externalInput.value.trim());if(!url){externalInput.setCustomValidity('Usa YouTube, Vimeo o un enlace directo MP4/WebM/MOV/M4V.');externalInput.reportValidity();notify('warning','Enlace de vídeo no válido','Usa YouTube, Vimeo o un archivo de vídeo directo.');return}
+    externalInput.setCustomValidity('');insertExternal(url);notify('success','Vídeo enlazado','Se añadió al carrusel. Recuerda guardar la entrada para conservar este cambio.')
+  }
 
   panel.querySelector('[data-cover-pick]').addEventListener('click',()=>coverInput.click());
-  coverCancel.addEventListener('click',()=>{coverInput.value='';renderPendingCover()});
-  coverRemove.addEventListener('click',async()=>{if(!post?.cover_url&&!await ensureContext().then(ctx=>ctx.post.cover_url))return;if(!confirm('¿Quitar la portada actual?'))return;try{setBusy(true);const {client,post}=await ensureContext();const previous=post.cover_url;const {error}=await client.from('posts').update({cover_url:null}).eq('id',post.id);if(error)throw error;await removeBlogAsset(client,previous);post.cover_url=null;coverInput.value='';renderPendingCover()}catch(error){alert(error.message)}finally{setBusy(false)}});
+  coverCancel.addEventListener('click',()=>{coverInput.value='';renderPendingCover();notify('info','Selección cancelada','Se mantendrá la portada actual.')});
+  coverRemove.addEventListener('click',async()=>{
+    if(!post?.cover_url&&!await ensureContext().then(ctx=>ctx.post.cover_url))return;
+    const ok=await ask({tone:'danger',title:'Quitar portada actual',message:'La entrada quedará sin imagen de portada hasta que elijas otra.',detail:'El archivo actual se eliminará del almacenamiento.',confirmText:'Quitar portada'});if(!ok)return;
+    try{setBusy(true);const {client,post}=await ensureContext();const previous=post.cover_url;const {error}=await client.from('posts').update({cover_url:null}).eq('id',post.id);if(error)throw error;await removeBlogAsset(client,previous);post.cover_url=null;coverInput.value='';renderPendingCover();notify('success','Portada eliminada','La entrada ya no tiene portada.')}
+    catch(error){notify('error','No se pudo quitar la portada',error.message)}finally{setBusy(false)}
+  });
   coverInput.addEventListener('change',renderPendingCover);
 
   panel.querySelector('[data-media-add]').addEventListener('click',()=>{pickerMode='add';picker.value='';picker.click()});
