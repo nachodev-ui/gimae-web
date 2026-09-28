@@ -1,8 +1,18 @@
 (function(){
   const INLINE_TOKEN=/(\*\*[^*\n]+?\*\*|==[^=\n]+?==|~~[^~\n]+?~~|\*[^*\n]+?\*|\[\[(?:pink|red|yellow|purple|blue|mint|ja)\|[^\]\n]+?\]\]|\[[^\]\n]+\]\(https?:\/\/[^\s)]+\))/g;
+  const VIDEO_LINE=/^\s*\[\[video\|(https?:\/\/[^\]\s]+)\]\]\s*$/i;
   const COLOR_CLASS={pink:'pink',red:'red',yellow:'yellow',purple:'purple',blue:'blue',mint:'mint'};
   function safeUrl(value){
     try{const url=new URL(value,location.href);return ['https:','http:'].includes(url.protocol)?url.href:null}catch{return null}
+  }
+  function extractMedia(content){
+    const videos=[],body=[];
+    for(const raw of String(content??'').replace(/\r/g,'').split('\n')){
+      const match=raw.match(VIDEO_LINE);
+      if(match){const url=safeUrl(match[1]);if(url)videos.push(url);continue}
+      body.push(raw);
+    }
+    return {content:body.join('\n'),videos};
   }
   function appendInline(target,text){
     let last=0;
@@ -32,7 +42,7 @@
   }
   function fragment(content){
     const root=document.createDocumentFragment();
-    const lines=String(content??'').replace(/\r/g,'').split('\n');
+    const lines=extractMedia(content).content.split('\n');
     let list=null,listType='';
     const endList=()=>{list=null;listType=''};
     const ensureList=type=>{
@@ -60,7 +70,7 @@
     target.replaceChildren(fragment(content));
   }
   function strip(content){
-    return String(content??'')
+    return extractMedia(content).content
       .replace(/^\s*(?:##|>|!|♡|-|\d+\.)\s+/gm,'')
       .replace(/^---+$/gm,' ')
       .replace(/\[\[(?:pink|red|yellow|purple|blue|mint|ja)\|([^\]]+)\]\]/g,'$1')
@@ -73,5 +83,5 @@
     const text=strip(content),words=text?text.split(/\s+/).filter(Boolean).length:0;
     return {characters:text.length,words,minutes:Math.max(1,Math.ceil(words/210))};
   }
-  window.GIMAE_RICH_TEXT={render,fragment,strip,stats};
+  window.GIMAE_RICH_TEXT={render,fragment,strip,stats,extractMedia,safeUrl};
 })();
