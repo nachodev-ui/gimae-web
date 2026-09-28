@@ -1,5 +1,4 @@
--- Ejecutar con conexión directa en una rama Neon con Auth y Data API habilitados.
--- Los roles anonymous/authenticated y auth.user_id() los instala la Data API.
+-- Supabase Postgres: ejecutar antes de la migración de contenido.
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 CREATE TABLE public.members (
@@ -42,13 +41,13 @@ CREATE TABLE public.product_images (
   created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now()
 );
 CREATE TABLE public.profiles (
-  user_id text PRIMARY KEY, email text NOT NULL, role text NOT NULL CHECK (role IN ('admin','integrante')),
+  user_id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE, email text NOT NULL, role text NOT NULL CHECK (role IN ('admin','integrante')),
   member_id text UNIQUE REFERENCES public.members(id) ON DELETE SET NULL,
   created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT member_role CHECK (role = 'admin' OR member_id IS NOT NULL)
 );
 CREATE TABLE public.posts (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(), author_id text NOT NULL REFERENCES public.profiles(user_id),
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(), author_id uuid NOT NULL REFERENCES public.profiles(user_id),
   title text NOT NULL, slug text NOT NULL UNIQUE CHECK (slug ~ '^[a-z0-9]+(-[a-z0-9]+)*$'),
   content text NOT NULL DEFAULT '', cover_url text,
   status text NOT NULL DEFAULT 'borrador' CHECK (status IN ('borrador','publicado')),
@@ -88,48 +87,48 @@ END $$;
 -- SECURITY DEFINER evita recursión al consultar profiles desde sus propias políticas.
 CREATE FUNCTION public.is_admin() RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER
 SET search_path = '' AS $$
-  SELECT EXISTS (SELECT 1 FROM public.profiles WHERE user_id = auth.user_id() AND role = 'admin')
+  SELECT EXISTS (SELECT 1 FROM public.profiles WHERE user_id = (SELECT auth.uid()) AND role = 'admin')
 $$;
-CREATE FUNCTION public.can_write_post(owner_id text) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER
+CREATE FUNCTION public.can_write_post(owner_id uuid) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER
 SET search_path = '' AS $$
   SELECT public.is_admin() OR EXISTS (
-    SELECT 1 FROM public.profiles WHERE user_id = auth.user_id()
+    SELECT 1 FROM public.profiles WHERE user_id = (SELECT auth.uid())
     AND role = 'integrante' AND user_id = owner_id)
 $$;
-REVOKE ALL ON FUNCTION public.is_admin(), public.can_write_post(text) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.is_admin(), public.can_write_post(text) TO authenticated;
+REVOKE ALL ON FUNCTION public.is_admin(), public.can_write_post(uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.is_admin(), public.can_write_post(uuid) TO authenticated;
 
 DO $$ DECLARE tab text; BEGIN
   FOREACH tab IN ARRAY ARRAY['members','group_socials','products','product_variants','product_images','profiles','posts','post_images','events'] LOOP
     EXECUTE format('ALTER TABLE public.%I ENABLE ROW LEVEL SECURITY',tab);
   END LOOP;
 END $$;
-GRANT USAGE ON SCHEMA public TO anonymous, authenticated;
-GRANT SELECT ON public.members,public.group_socials,public.products,public.product_variants,public.product_images,public.posts,public.post_images,public.events TO anonymous;
+GRANT USAGE ON SCHEMA public TO anon, authenticated;
+GRANT SELECT ON public.members,public.group_socials,public.products,public.product_variants,public.product_images,public.posts,public.post_images,public.events TO anon;
 GRANT SELECT,INSERT,UPDATE,DELETE ON public.members,public.group_socials,public.products,public.product_variants,public.product_images,public.profiles,public.posts,public.post_images,public.events TO authenticated;
 
-CREATE POLICY members_read ON public.members FOR SELECT TO anonymous,authenticated USING (true);
+CREATE POLICY members_read ON public.members FOR SELECT TO anon,authenticated USING (true);
 CREATE POLICY members_admin ON public.members FOR ALL TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
-CREATE POLICY socials_read ON public.group_socials FOR SELECT TO anonymous,authenticated USING (true);
+CREATE POLICY socials_read ON public.group_socials FOR SELECT TO anon,authenticated USING (true);
 CREATE POLICY socials_admin ON public.group_socials FOR ALL TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
-CREATE POLICY products_read ON public.products FOR SELECT TO anonymous,authenticated USING (active);
+CREATE POLICY products_read ON public.products FOR SELECT TO anon,authenticated USING (active);
 CREATE POLICY products_admin ON public.products FOR ALL TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
-CREATE POLICY variants_read ON public.product_variants FOR SELECT TO anonymous,authenticated
+CREATE POLICY variants_read ON public.product_variants FOR SELECT TO anon,authenticated
   USING (EXISTS (SELECT 1 FROM public.products p WHERE p.id=product_id AND p.active));
 CREATE POLICY variants_admin ON public.product_variants FOR ALL TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
-CREATE POLICY product_images_read ON public.product_images FOR SELECT TO anonymous,authenticated
+CREATE POLICY product_images_read ON public.product_images FOR SELECT TO anon,authenticated
   USING (EXISTS (SELECT 1 FROM public.products p WHERE p.id=product_id AND p.active));
 CREATE POLICY product_images_admin ON public.product_images FOR ALL TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
 CREATE POLICY profile_self_admin ON public.profiles FOR SELECT TO authenticated
-  USING (user_id = auth.user_id() OR public.is_admin());
+  USING (user_id = (SELECT auth.uid()) OR public.is_admin());
 CREATE POLICY profile_admin_write ON public.profiles FOR ALL TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
-CREATE POLICY posts_public ON public.posts FOR SELECT TO anonymous,authenticated
+CREATE POLICY posts_public ON public.posts FOR SELECT TO anon,authenticated
   USING (status='publicado' AND visibility='publico' AND published_at <= now());
 CREATE POLICY posts_private ON public.posts FOR SELECT TO authenticated USING (public.can_write_post(author_id));
 CREATE POLICY posts_insert ON public.posts FOR INSERT TO authenticated WITH CHECK (public.can_write_post(author_id));
 CREATE POLICY posts_update ON public.posts FOR UPDATE TO authenticated USING (public.can_write_post(author_id)) WITH CHECK (public.can_write_post(author_id));
 CREATE POLICY posts_delete ON public.posts FOR DELETE TO authenticated USING (public.can_write_post(author_id));
-CREATE POLICY post_images_read ON public.post_images FOR SELECT TO anonymous,authenticated
+CREATE POLICY post_images_read ON public.post_images FOR SELECT TO anon,authenticated
   USING (EXISTS (SELECT 1 FROM public.posts p WHERE p.id=post_id AND p.status='publicado' AND p.visibility='publico' AND p.published_at<=now()));
 CREATE POLICY post_images_private ON public.post_images FOR SELECT TO authenticated
   USING (EXISTS (SELECT 1 FROM public.posts p WHERE p.id=post_id AND public.can_write_post(p.author_id)));
@@ -140,5 +139,5 @@ CREATE POLICY post_images_update ON public.post_images FOR UPDATE TO authenticat
   WITH CHECK (EXISTS (SELECT 1 FROM public.posts p WHERE p.id=post_id AND public.can_write_post(p.author_id)));
 CREATE POLICY post_images_delete ON public.post_images FOR DELETE TO authenticated
   USING (EXISTS (SELECT 1 FROM public.posts p WHERE p.id=post_id AND public.can_write_post(p.author_id)));
-CREATE POLICY events_read ON public.events FOR SELECT TO anonymous,authenticated USING (active);
+CREATE POLICY events_read ON public.events FOR SELECT TO anon,authenticated USING (active);
 CREATE POLICY events_admin ON public.events FOR ALL TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());

@@ -6,11 +6,5 @@
     "images:upload": "node scripts/upload-images.mjs",
     "user:enroll": "node scripts/enroll-user.mjs"
   },
-  "dependencies": {
-    "@aws-sdk/client-s3": "^3.900.0",
-    "@neon/config": "^1.8.2",
-    "@neon/functions": "^0.11.0",
-    "jose": "^6.0.0",
-    "pg": "^8.16.0"
-  }
+  "dependencies": { "@supabase/supabase-js": "^2.0.0" }
 }

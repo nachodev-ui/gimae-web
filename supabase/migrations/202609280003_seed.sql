@@ -1,4 +1,4 @@
--- Generado desde dist/content.js: node neon/scripts/build-seed.mjs
+-- Generado desde dist/content.js: node supabase/scripts/build-seed.mjs
 
 -- Stock desconocido: se inicia en 0 con stock_confirmed=false; no significa agotado.
 

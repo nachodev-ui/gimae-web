@@ -8,7 +8,7 @@ const { members, merch, socials } = sandbox.window.GIMAE;
 const q = value => value == null ? 'NULL' : `'${String(value).replaceAll("'", "''")}'`;
 const values = rows => rows.map(row => `(${row.map(q).join(',')})`).join(',\n  ');
 const output = [
-  '-- Generado desde dist/content.js: node neon/scripts/build-seed.mjs',
+  '-- Generado desde dist/content.js: node supabase/scripts/build-seed.mjs',
   '-- Stock desconocido: se inicia en 0 con stock_confirmed=false; no significa agotado.',
   'BEGIN;',
   `INSERT INTO public.members(id,name,color,accent,color_label,photo_url,handle,socials,display_order)
@@ -40,6 +40,6 @@ if(images.length) output.push(`INSERT INTO public.product_images(product_id,url,
 SELECT seed.product_id,seed.url,seed.alt,seed.display_order::integer FROM (VALUES ${values(images)}) AS seed(product_id,url,alt,display_order)
 WHERE NOT EXISTS (SELECT 1 FROM public.product_images pi WHERE pi.product_id=seed.product_id AND pi.url=seed.url);`);
 output.push('COMMIT;');
-const target=new URL('../migrations/202609280002_seed.sql',import.meta.url);
+const target=new URL('../migrations/202609280003_seed.sql',import.meta.url);
 writeFileSync(target,output.join('\n\n')+'\n');
 console.log(`Seed: ${members.length} integrantes, ${merch.length} productos, ${variants.length} variantes, ${images.length} imágenes de producto; 0 posts, 0 eventos.`);
