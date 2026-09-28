@@ -4,8 +4,9 @@
  * - Para cambiar el peso máximo permitido, edita MAX_FILE_SIZE.
  * - El encuadre y toda la exportación ocurren localmente en el navegador.
  */
-(() => {
+(async () => {
   'use strict';
+  await window.GIMAE_READY;
 
   const MAX_FILE_SIZE = 12 * 1024 * 1024;
   const WIDTH = 640;

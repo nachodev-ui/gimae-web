@@ -3,8 +3,10 @@
  * Mejora progresiva sobre shop.js: las compras siguen pasando por los
  * controles originales para conservar validación, carrito y stock en un solo lugar.
  */
-(() => {
+(async () => {
   'use strict';
+
+  await window.GIMAE_READY;
 
   const config = window.GIMAE || {};
   const catalog = Array.isArray(config.merch)

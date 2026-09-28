@@ -1,0 +1,10 @@
+{
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "seed:generate": "node scripts/build-seed.mjs",
+    "images:upload": "node scripts/upload-images.mjs",
+    "user:enroll": "node scripts/enroll-user.mjs"
+  },
+  "dependencies": { "@supabase/supabase-js": "^2.0.0" }
+}

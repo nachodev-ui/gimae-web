@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Panel Gimae!</title><link rel="icon" href="../images/favicon.png"><link rel="stylesheet" href="../styles.css?v=20260928-supabase"><link rel="stylesheet" href="admin.css?v=20260928-supabase">
+<script src="../supabase-config.js" defer></script><script type="module" src="admin.js?v=20260928-supabase"></script></head>
+<body class="admin-page"><a class="skip" href="#main">Saltar al contenido</a><div class="rainbow" aria-hidden="true"></div>
+<header class="admin-header"><a href="../index.html" aria-label="Volver al sitio"><img src="../images/logo-wordmark.webp" alt="Gimae!" width="145"></a><span>Panel del equipo ✦</span><button id="logout" type="button" hidden>Cerrar sesión</button></header>
+<main id="main" class="admin-main"><h1>El rincón del equipo <span aria-hidden="true">♡</span></h1>
+<p id="status" role="status" aria-live="polite">Cargando panel…</p>
+<section id="login-section" class="admin-card" hidden aria-labelledby="login-title"><h2 id="login-title">Ingresar</h2><form id="login-form"><label>Correo electrónico<input name="email" type="email" autocomplete="username" required></label><label>Contraseña<input name="password" type="password" autocomplete="current-password" required></label><button type="submit">Entrar</button></form><p id="login-error" role="alert"></p></section>
+<div id="workspace" hidden><nav class="admin-tabs" aria-label="Módulos"><button type="button" data-tab="posts">Blog</button><button type="button" data-tab="products" data-admin>Merch</button><button type="button" data-tab="members" data-admin>Integrantes</button><button type="button" data-tab="events" data-admin>Eventos</button></nav>
+<details class="admin-card"><summary>Establecer o cambiar contraseña</summary><form id="password-form"><label>Nueva contraseña<input name="password" type="password" autocomplete="new-password" minlength="12" required></label><label>Confirmar contraseña<input name="confirmation" type="password" autocomplete="new-password" minlength="12" required></label><button type="submit">Guardar contraseña</button></form><p id="password-error" role="alert"></p></details>
+<section id="records" class="admin-card" aria-label="Listado"></section><section id="editor" class="admin-card" aria-label="Editor"></section></div>
+</main></body></html>
