@@ -20,7 +20,7 @@
       const id=url.pathname.split('/').filter(Boolean).find(part=>/^\d+$/.test(part));
       if(id)return {type:'vimeo',src:`https://player.vimeo.com/video/${id}`,href};
     }
-    if(/\.(?:mp4|webm)(?:$|[?#])/i.test(url.pathname+url.search+url.hash))return {type:'video',src:href,href};
+    if(/\.(?:mp4|webm|mov|m4v)(?:$|[?#])/i.test(url.pathname+url.search+url.hash))return {type:'video',src:href,href};
     return {type:'link',src:href,href};
   }
   function createMediaNode(asset,title){
@@ -65,7 +65,7 @@
     const setActive=index=>{
       active=Math.max(0,Math.min(assets.length-1,index));counter.textContent=`${active+1} / ${assets.length}`;
       dots.querySelectorAll('button').forEach((dot,i)=>dot.setAttribute('aria-current',String(i===active)));
-      track.querySelectorAll('video').forEach((video,i)=>{if(i!==active&&!video.paused)video.pause()});
+      track.querySelectorAll('video').forEach(video=>{const slide=video.closest('.gimae-media-slide');if(Number(slide?.dataset.index)!==active&&!video.paused)video.pause()});
     };
     const go=index=>{setActive(index);track.scrollTo({left:track.clientWidth*active,behavior:reduced?'auto':'smooth'})};
     if(assets.length>1){
@@ -99,7 +99,11 @@
       if(content){rich=document.createElement('div');rt.render(parsed.content,rich);content.replaceWith(rich)}
       else{rich=document.createElement('div');rt.render(parsed.content,rich);body.append(rich)}
       body.querySelectorAll(':scope > img').forEach(image=>image.remove());
-      const assets=(config.postImages||[]).filter(media=>media.post_id===post.id&&media.url).map(media=>({kind:'image',src:media.url,alt:media.alt||''}));
+      const assets=(config.postImages||[]).filter(media=>media.post_id===post.id&&media.url).map(media=>({
+        kind:String(media.alt||'').startsWith('video:')||/\.(?:mp4|webm|mov|m4v)(?:$|[?#])/i.test(String(media.url))?'video':'image',
+        src:media.url,
+        alt:String(media.alt||'').replace(/^video:/,'')
+      }));
       parsed.videos.forEach(url=>assets.push({kind:'video',src:url,alt:''}));
       const carousel=buildCarousel(assets,post.title||'Gimae');if(carousel)body.append(carousel);
       if(!card.querySelector(':scope > img')&&!card.querySelector(':scope > .gimae-generated-cover')){
