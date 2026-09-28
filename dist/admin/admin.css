@@ -10,5 +10,6 @@
 .admin-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:24px 0}.admin-tabs [aria-current=true]{background:#e84694;color:white}
 .admin-list{display:grid;gap:8px}.admin-list button{text-align:left}.admin-actions{display:flex;gap:10px;flex-wrap:wrap}.admin-actions .danger{border-color:#b03050;color:#9e2444;background:#fff3f4}
 .admin-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}.admin-hint{font-size:.88rem;color:#695769}.admin-preview{display:flex;flex-wrap:wrap;gap:10px}.admin-preview img{height:100px;width:100px;object-fit:contain;border:1px solid #ebd3e0;border-radius:10px}
+.admin-cover{display:block;width:min(100%,220px);height:auto;max-height:220px;object-fit:contain;border:1px solid #ebd3e0;border-radius:10px}
 #status,#login-error{min-height:1.8em}#login-error{color:#a22743}fieldset{border:1px solid #e7bfd3;border-radius:12px;padding:14px}legend{font-weight:700}
 @media(max-width:600px){.admin-header{padding-inline:16px}.admin-header span{display:none}.admin-main{margin-top:22px}.admin-actions button{flex:1}}

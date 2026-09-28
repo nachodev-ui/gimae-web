@@ -62,3 +62,7 @@ Navegación por teclado, enlace para saltar al contenido, modales nativos con ci
 ## Publicación
 
 El sitio está preparado para hosting estático. `.openai/hosting.json` identifica la vista publicada en Sites. Para GitHub Pages puede usarse un workflow que publique `dist`; no es necesario cambiar las rutas.
+
+## Panel y datos
+
+El backend opcional de Supabase, las migraciones reproducibles y el acceso del equipo se documentan en [`supabase/README.md`](supabase/README.md). La URL pública y publishable key se configuran en `dist/supabase-config.js`; la página conserva datos locales cuando la API no responde.

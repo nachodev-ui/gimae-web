@@ -1,4 +1,4 @@
-const $=s=>document.querySelector(s), settings=window.GIMAE_NEON||{};
+const $=s=>document.querySelector(s), settings=window.GIMAE_SUPABASE||{};
 const status=$('#status'), login=$('#login-section'), workspace=$('#workspace'), editor=$('#editor'), records=$('#records');
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const word=v=>String(v??'').trim();
@@ -11,10 +11,10 @@ let client,profile,tab='posts',items=[],members=[];
 
 async function query(promise){const result=await promise;if(result.error)throw result.error;return result.data||[]}
 async function init(){
-  if(!settings.databaseUrl){notice('Neon aún no está configurado. Falta la URL HTTPS pública de la Data API/Auth.');return}
+  if(!settings.url||!settings.publishableKey){notice('Supabase aún no está configurado. Falta la publishable key pública.');return}
   try{
-    const {createClient}=await import('https://esm.sh/@neondatabase/neon-js@0.7.0-beta');
-    client=createClient(settings.databaseUrl,{auth:{allowAnonymous:true}});
+    const {createClient}=await import('https://esm.sh/@supabase/supabase-js@2');
+    client=createClient(settings.url,settings.publishableKey);
     $('#login-form').addEventListener('submit',signIn);
     $('#logout').addEventListener('click',async()=>{await client.auth.signOut();profile=null;showLogin()});
     document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>openTab(b.dataset.tab)));
@@ -32,7 +32,7 @@ async function session(){
   await openTab('posts');
 }
 async function signIn(event){event.preventDefault();const button=event.submitter;button.disabled=true;$('#login-error').textContent='';notice('Verificando acceso…');
-  try{const fd=new FormData(event.currentTarget);const {error}=await client.auth.signIn.email({email:word(fd.get('email')),password:fd.get('password')});if(error)throw error;await session()}
+  try{const fd=new FormData(event.currentTarget);const {error}=await client.auth.signInWithPassword({email:word(fd.get('email')),password:fd.get('password')});if(error)throw error;await session()}
   catch(error){$('#login-error').textContent=error.message||'No fue posible ingresar';notice('Revisa el correo y la contraseña.')}
   finally{button.disabled=false}
 }
@@ -65,7 +65,17 @@ function form(row){const title=row?'Editar':'Crear';let fields='';
   const formNode=$('#record-form');formNode.addEventListener('submit',event=>save(event,row));
   $('#delete-record')?.addEventListener('click',()=>remove(row));
   if(tab==='products'&&row){renderImages(row.id);renderVariants(row.id);$('#add-variant').addEventListener('click',()=>addVariant(row.id))}
-  if(tab==='posts'&&row)renderPostImages(row.id);
+  if(tab==='posts'&&row){
+    renderPostImages(row.id);
+    if(row.cover_url)resolveBlogImage(row.cover_url).then(url=>{
+      const preview=document.createElement('img');preview.className='admin-cover';preview.src=url;preview.alt=`Portada actual de ${row.title}`;
+      $('#record-form [name=cover]').parentElement.after(preview);
+    }).catch(error=>notice(`No se pudo cargar la portada: ${error.message}`));
+  }
+  for(const input of formNode.querySelectorAll('input[type=file]')){
+    const preview=document.createElement('div');preview.className='admin-preview';input.parentElement.after(preview);
+    input.addEventListener('change',()=>{preview.replaceChildren();for(const file of input.files){const image=document.createElement('img');image.src=URL.createObjectURL(file);image.alt=`Vista previa de ${file.name}`;image.onload=()=>URL.revokeObjectURL(image.src);preview.append(image)}});
+  }
   formNode.querySelector('input,textarea,select')?.focus();
 }
 async function save(event,row){event.preventDefault();const f=event.currentTarget,fd=new FormData(f),button=f.querySelector('[type=submit]');button.disabled=true;notice('Guardando…');
@@ -77,21 +87,49 @@ async function save(event,row){event.preventDefault();const f=event.currentTarge
     const result=row?await query(client.from(tab).update(data).eq('id',row.id).select('*')):await query(client.from(tab).insert(data).select('*'));
     const saved=result[0];if(!saved)throw new Error('No se guardó el registro. Verifica tus permisos.');
     if(tab==='products'){for(const file of fd.getAll('images'))if(file?.size){const url=await upload(file,'product',saved.id);await query(client.from('product_images').insert({product_id:saved.id,url,display_order:0}))}}
-    if(tab==='posts'&&fd.get('cover')?.size){const url=await upload(fd.get('cover'),'post',saved.id);await query(client.from('posts').update({cover_url:url}).eq('id',saved.id))}
+    if(tab==='posts'&&fd.get('cover')?.size){const url=await upload(fd.get('cover'),'post',saved.id);await query(client.from('posts').update({cover_url:url}).eq('id',saved.id));await removeStorage(row?.cover_url)}
     if(tab==='posts'){for(const file of fd.getAll('post_images'))if(file?.size){const url=await upload(file,'post',saved.id);await query(client.from('post_images').insert({post_id:saved.id,url,alt:file.name}))}}
     await openTab(tab);notice('Cambios guardados.');
   }catch(error){notice(`No se pudo guardar: ${error.message}`)}finally{button.disabled=false}
 }
-async function upload(file,kind,id){if(!settings.mediaUrl)throw new Error('Falta configurar la URL de la función de imágenes.');
-  const token=await client.auth.token();if(token.error||!token.data?.token)throw new Error('La sesión expiró. Vuelve a iniciar sesión.');
-  const data=new FormData();data.append('kind',kind);data.append('id',id);data.append('file',file);
-  const response=await fetch(settings.mediaUrl,{method:'POST',headers:{Authorization:`Bearer ${token.data.token}`},body:data});const result=await response.json();if(!response.ok)throw new Error(result.error||'No se pudo subir la imagen');return result.url;
+async function upload(file,kind,id){
+  if(file.size>8388608||!['image/png','image/jpeg','image/webp'].includes(file.type))throw new Error('Usa PNG, JPG o WebP de hasta 8 MB.');
+  const bucket=kind==='product'?'gimae-products':'gimae-blog';
+  const extension={'image/png':'png','image/jpeg':'jpg','image/webp':'webp'}[file.type];
+  const path=kind==='product'?`products/${id}/${crypto.randomUUID()}.${extension}`:`posts/${id}/${crypto.randomUUID()}.${extension}`;
+  const {error}=await client.storage.from(bucket).upload(path,file,{contentType:file.type,upsert:false});
+  if(error)throw error;
+  return kind==='product'?client.storage.from(bucket).getPublicUrl(path).data.publicUrl:`storage:${bucket}/${path}`;
 }
-async function renderImages(id){try{const images=await query(client.from('product_images').select('*').eq('product_id',id).order('display_order'));const target=$('#image-list');target.replaceChildren();for(const img of images){const wrap=document.createElement('div'),preview=document.createElement('img'),button=document.createElement('button');preview.src=img.url;preview.alt=img.alt||'Imagen de producto';button.type='button';button.textContent='Quitar imagen';button.addEventListener('click',async()=>{try{await query(client.from('product_images').delete().eq('id',img.id));wrap.remove()}catch(error){notice(error.message)}});wrap.append(preview,button);target.append(wrap)}}catch(error){notice(error.message)}}
-async function renderPostImages(id){try{const images=await query(client.from('post_images').select('*').eq('post_id',id).order('display_order'));const target=$('#post-image-list');target.replaceChildren();for(const img of images){const wrap=document.createElement('div'),label=document.createElement('span'),button=document.createElement('button');label.textContent=img.alt||'Imagen del post';button.type='button';button.textContent='Quitar imagen';button.addEventListener('click',async()=>{try{await query(client.from('post_images').delete().eq('id',img.id));wrap.remove()}catch(error){notice(error.message)}});wrap.append(label,button);target.append(wrap)}}catch(error){notice(error.message)}}
+async function resolveBlogImage(url){
+  if(!url?.startsWith('storage:gimae-blog/'))return url;
+  const {data,error}=await client.storage.from('gimae-blog').createSignedUrl(url.slice('storage:gimae-blog/'.length),3600);
+  if(error)throw error;return data.signedUrl;
+}
+async function removeStorage(url){
+  if(!url)return;
+  const productPrefix=`${settings.url}/storage/v1/object/public/gimae-products/`;
+  const bucket=url.startsWith(productPrefix)?'gimae-products':url.startsWith('storage:gimae-blog/')?'gimae-blog':null;
+  if(!bucket)return;
+  const path=bucket==='gimae-products'?decodeURIComponent(url.slice(productPrefix.length)):url.slice('storage:gimae-blog/'.length);
+  if(!path.startsWith(bucket==='gimae-products'?'products/':'posts/'))return; // Assets del seed pueden ser compartidos.
+  const {error}=await client.storage.from(bucket).remove([path]);if(error)throw error;
+}
+async function renderImages(id){try{const images=await query(client.from('product_images').select('*').eq('product_id',id).order('display_order'));const target=$('#image-list');target.replaceChildren();for(const img of images){const wrap=document.createElement('div'),preview=document.createElement('img'),button=document.createElement('button');preview.src=img.url;preview.alt=img.alt||'Imagen de producto';button.type='button';button.textContent='Quitar imagen';button.addEventListener('click',async()=>{try{await removeStorage(img.url);await query(client.from('product_images').delete().eq('id',img.id));wrap.remove()}catch(error){notice(error.message)}});wrap.append(preview,button);target.append(wrap)}}catch(error){notice(error.message)}}
+async function renderPostImages(id){try{const images=await query(client.from('post_images').select('*').eq('post_id',id).order('display_order'));const target=$('#post-image-list');target.replaceChildren();for(const img of images){const wrap=document.createElement('div'),label=document.createElement('span'),button=document.createElement('button');label.textContent=img.alt||'Imagen del post';button.type='button';button.textContent='Quitar imagen';button.addEventListener('click',async()=>{try{await removeStorage(img.url);await query(client.from('post_images').delete().eq('id',img.id));wrap.remove()}catch(error){notice(error.message)}});if(img.url){const preview=document.createElement('img');preview.src=await resolveBlogImage(img.url);preview.alt=img.alt||'Imagen del post';wrap.append(preview)}wrap.append(label,button);target.append(wrap)}}catch(error){notice(error.message)}}
 async function renderVariants(id){try{const variants=await query(client.from('product_variants').select('*').eq('product_id',id).order('display_order'));const target=$('#variant-list');target.replaceChildren();for(const v of variants){const line=document.createElement('div');line.className='admin-row';const label=document.createElement('strong');label.textContent=v.label;const price=document.createElement('input');price.type='number';price.min='0';price.value=v.price_clp;price.setAttribute('aria-label',`Precio CLP de ${v.label}`);const stock=document.createElement('input');stock.type='number';stock.min='0';stock.value=v.stock;stock.setAttribute('aria-label',`Stock de ${v.label}`);const confirm=document.createElement('input');confirm.type='checkbox';confirm.checked=v.stock_confirmed;confirm.setAttribute('aria-label',`Stock confirmado de ${v.label}`);const save=document.createElement('button');save.textContent='Guardar variante';save.type='button';save.addEventListener('click',async()=>{try{await query(client.from('product_variants').update({price_clp:Number(price.value),stock:Number(stock.value),stock_confirmed:confirm.checked}).eq('id',v.id));notice('Variante guardada.')}catch(error){notice(error.message)}});line.append(label,price,stock,confirm,save);target.append(line)}}catch(error){notice(error.message)}}
 async function addVariant(id){const f=$('#record-form'),label=word(new FormData(f).get('new_variant'));if(!label)return notice('Escribe el nombre de la variante.');try{await query(client.from('product_variants').insert({id:`${id}-${crypto.randomUUID()}`,product_id:id,label,price_clp:Number(new FormData(f).get('new_price'))||0}));await renderVariants(id);notice('Variante creada con inventario sin confirmar.')}catch(error){notice(error.message)}}
 async function remove(row){if(!confirm(`¿Eliminar ${row.title||row.name}? Esta acción no se puede deshacer.`))return;
-  try{await query(client.from(tab).delete().eq('id',row.id));await openTab(tab);notice('Registro eliminado.')}catch(error){notice(`No se pudo eliminar: ${error.message}`)}
+  try{
+    if(tab==='posts'){
+      const images=await query(client.from('post_images').select('url').eq('post_id',row.id));
+      for(const image of images)await removeStorage(image.url);
+      await removeStorage(row.cover_url);
+    }
+    if(tab==='products'){
+      const images=await query(client.from('product_images').select('url').eq('product_id',row.id));
+      for(const image of images)await removeStorage(image.url);
+    }
+    await query(client.from(tab).delete().eq('id',row.id));await openTab(tab);notice('Registro eliminado.')}catch(error){notice(`No se pudo eliminar: ${error.message}`)}
 }
 init();

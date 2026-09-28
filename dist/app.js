@@ -111,10 +111,10 @@ if(config.posts?.length){
     const author=document.createElement('p');author.textContent=`Por ${post.author_name||'Equipo Gimae'}`;
     const content=document.createElement('p');content.textContent=post.content;body.append(title,date,author,content);
     if(post.cover_url){const image=document.createElement('img');image.loading='lazy';image.alt=`Portada de ${post.title}`;
-      image.src=post.cover_url.startsWith('media:')&&config.mediaUrl?`${config.mediaUrl}?key=${encodeURIComponent(post.cover_url.slice(6))}`:safeUrl(post.cover_url)||'';article.append(image)}
-    for(const asset of config.postImages?.filter(im=>im.post_id===post.id)||[]){const image=document.createElement('img');image.loading='lazy';image.alt=asset.alt||`Imagen de ${post.title}`;image.src=asset.url.startsWith('media:')&&config.mediaUrl?`${config.mediaUrl}?key=${encodeURIComponent(asset.url.slice(6))}`:safeUrl(asset.url)||'';body.append(image)}
+      image.src=safeUrl(post.cover_url)||'';article.append(image)}
+    for(const asset of config.postImages?.filter(im=>im.post_id===post.id)||[]){const image=document.createElement('img');image.loading='lazy';image.alt=asset.alt||`Imagen de ${post.title}`;image.src=safeUrl(asset.url)||'';body.append(image)}
     article.append(body);list.append(article)
   }blogSection.append(list)
 } else if(config.backendStatus==='fallback') sectionNote(blogSection,'No pudimos consultar el blog. Vuelve a intentarlo más tarde.');
-if(config.backendStatus==='fallback'&&window.GIMAE_NEON?.databaseUrl) sectionNote(document.querySelector('#merch'),'Se muestran los precios de respaldo. Confirma los valores y el stock por Instagram.');
+if(config.backendStatus==='fallback'&&window.GIMAE_SUPABASE?.publishableKey) sectionNote(document.querySelector('#merch'),'Se muestran los precios de respaldo. Confirma los valores y el stock por Instagram.');
 });

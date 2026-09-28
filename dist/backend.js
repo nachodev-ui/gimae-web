@@ -1,10 +1,11 @@
-// Sustituye el catálogo local con datos de Neon; ante errores deja el respaldo intacto.
+// Supabase público; si la API falla, content.js sigue mostrando el respaldo local.
 window.GIMAE_READY=(async()=>{
-  const cfg=window.GIMAE, settings=window.GIMAE_NEON||{};
-  if(!cfg||!settings.databaseUrl){cfg.backendStatus='fallback';return cfg}
+  const cfg=window.GIMAE,settings=window.GIMAE_SUPABASE||{};
+  if(!cfg||!settings.url||!settings.publishableKey){cfg.backendStatus='fallback';return cfg}
   try{
-    const {createClient}=await import('https://esm.sh/@neondatabase/neon-js@0.7.0-beta');
-    const api=createClient(settings.databaseUrl,{auth:{allowAnonymous:true}});
+    const {createClient}=await import('https://esm.sh/@supabase/supabase-js@2');
+    // La página pública usa siempre el rol anon, incluso en un navegador con el panel abierto.
+    const api=createClient(settings.url,settings.publishableKey,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});
     const get=async(table,order)=>{const {data,error}=await api.from(table).select('*').order(order);if(error)throw error;return data||[]};
     const [members,socials,products,variants,images,posts,postImages,events]=await Promise.all([
       get('members','display_order'),get('group_socials','platform'),get('products','display_order'),
@@ -25,10 +26,15 @@ window.GIMAE_READY=(async()=>{
       if(v.length)product.stockByVariant=Object.fromEntries(v.map(x=>[p.id==='04'?x.id:(x.member_id||x.id),x.stock_confirmed?x.stock:null]));
       return product;
     });
-    cfg.posts=posts.filter(p=>p.status==='publicado'&&p.visibility==='publico'&&new Date(p.published_at)<=new Date());
-    cfg.postImages=postImages;
-    cfg.events=events.filter(e=>e.active);
-    cfg.mediaUrl=settings.mediaUrl;
+    async function blogImage(url){
+      if(!url?.startsWith('storage:gimae-blog/'))return url;
+      const path=url.slice('storage:gimae-blog/'.length);
+      const {data,error}=await api.storage.from('gimae-blog').createSignedUrl(path,3600);
+      if(error)throw error;return data.signedUrl;
+    }
+    cfg.posts=await Promise.all(posts.map(async p=>({...p,cover_url:await blogImage(p.cover_url)})));
+    cfg.postImages=await Promise.all(postImages.map(async im=>({...im,url:await blogImage(im.url)})));
+    cfg.events=events;
     cfg.backendStatus='live';
   }catch(error){cfg.backendStatus='fallback';console.warn('Catálogo local de respaldo:',error)}
   return cfg;
