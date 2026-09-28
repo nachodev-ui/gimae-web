@@ -35,7 +35,7 @@ Los retratos se limpiaron con edición de imágenes para eliminar las superposic
 
 Los eventos y el blog continúan mostrando estados de próxima publicación. Las consultas sobre stock, tallas y pedidos enlazan al Instagram oficial. No se afirman disponibilidad ni opciones de entrega no confirmadas.
 
-Esta versión no incluye pagos, carrito, CMS, cuentas ni formularios. Google Fonts es opcional: la página usa fuentes de sistema si no está disponible.
+La tienda incluye carrito local y checkout configurable. El panel en `dist/admin/` usa Supabase Auth y RLS para editar blog, productos, integrantes y eventos. No hay cuentas públicas, reservas de inventario ni confirmación de pagos en el backend. Google Fonts es opcional: la página usa fuentes de sistema si no está disponible.
 
 ## Generador de chekis
 
@@ -47,7 +47,7 @@ La página `dist/gacha.html` contiene un catálogo editable de 12 cartas que reu
 
 ## Tienda y pagos
 
-`dist/content.js` es la única fuente de productos y precios. En el mismo archivo se completan `SHIPPING`, `PAYMENT_METHODS`, `BANK_TRANSFER`, `PAYPAL_CLIENT_ID`, `PAYPAL_CURRENCY`, `CLP_PER_USD` y `ORDER_CONTACTS`. Los valores `COMPLETAR`, el stock vacío y PayPal desactivado son intencionales: no deben reemplazarse por datos inventados.
+El catálogo publicado se lee de Supabase; `dist/content.js` funciona como respaldo si falla la API. La configuración de envío y pago sigue en `dist/content.js`: `SHIPPING`, `PAYMENT_METHODS`, `BANK_TRANSFER`, `PAYPAL_CLIENT_ID`, `PAYPAL_CURRENCY`, `CLP_PER_USD` y `ORDER_CONTACTS`. Los valores `COMPLETAR`, el stock sin confirmar y PayPal desactivado son intencionales: no deben reemplazarse por datos inventados.
 
 El carrito guarda solo IDs, variantes y cantidades. Al cargar, `dist/shop.js` descarta referencias antiguas y recupera precios desde el catálogo. Los pedidos quedan únicamente en `localStorage`; no existe un backend que reserve stock o confirme pagos.
 
@@ -65,4 +65,4 @@ El sitio está preparado para hosting estático. `.openai/hosting.json` identifi
 
 ## Panel y datos
 
-El backend opcional de Supabase, las migraciones reproducibles y el acceso del equipo se documentan en [`supabase/README.md`](supabase/README.md). La URL pública y publishable key se configuran en `dist/supabase-config.js`; la página conserva datos locales cuando la API no responde.
+Las migraciones, el acceso del equipo y la auditoría de permisos se documentan en [`supabase/README.md`](supabase/README.md). La URL y publishable key públicas se configuran en `dist/supabase-config.js`; la página conserva datos locales cuando la API no responde. El flujo de GitHub Pages despliega `dist/` solo al actualizar `main`; esta rama no está publicada allí.

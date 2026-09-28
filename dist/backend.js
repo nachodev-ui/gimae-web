@@ -32,8 +32,13 @@ window.GIMAE_READY=(async()=>{
       const {data,error}=await api.storage.from('gimae-blog').createSignedUrl(path,60);
       if(error)throw error;return data.signedUrl;
     }
-    cfg.posts=await Promise.all(posts.map(async p=>({...p,cover_url:await blogImage(p.cover_url)})));
-    cfg.postImages=await Promise.all(postImages.map(async im=>({...im,url:await blogImage(im.url)})));
+    // Una imagen rota o sin permiso no debe sustituir también los precios vigentes por el catálogo de respaldo.
+    const optionalBlogImage=async url=>{
+      try{return await blogImage(url)}
+      catch(error){console.warn('No se pudo cargar una imagen del blog:',error);return null}
+    };
+    cfg.posts=await Promise.all(posts.map(async p=>({...p,cover_url:await optionalBlogImage(p.cover_url)})));
+    cfg.postImages=(await Promise.all(postImages.map(async im=>({...im,url:await optionalBlogImage(im.url)})))).filter(im=>im.url);
     cfg.events=events;
     cfg.backendStatus='live';
   }catch(error){cfg.backendStatus='fallback';console.warn('Catálogo local de respaldo:',error)}

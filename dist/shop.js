@@ -1,6 +1,7 @@
 /*
  * TIENDA ESTÁTICA GIMAE
- * - Productos, precios, entregas y medios de pago se leen solo desde content.js.
+ * - Productos y precios se leen desde Supabase, con content.js como respaldo.
+ * - Entregas y medios de pago se configuran en content.js.
  * - El carrito guarda únicamente IDs, variantes y cantidades; los precios se recalculan al cargar.
  * - Completa los datos bancarios, stock, Client ID público y tipo de cambio exclusivamente en content.js.
  * - Nunca pegues aquí un secret de PayPal, contraseña, token o dato privado.

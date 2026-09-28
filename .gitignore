@@ -5,3 +5,9 @@ node_modules/
 .env.*
 .neon/
 neon/node_modules/
+.supabase/
+supabase/.temp/
+*.pem
+*.key
+*.p12
+*.pfx
