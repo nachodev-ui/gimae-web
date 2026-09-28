@@ -8,5 +8,5 @@ BEGIN
   WHERE p.user_id=NEW.author_id;
   RETURN NEW;
 END $$;
-CREATE TRIGGER set_post_author_name BEFORE INSERT OR UPDATE OF author_id ON public.posts
+CREATE TRIGGER set_post_author_name BEFORE INSERT OR UPDATE ON public.posts
 FOR EACH ROW EXECUTE FUNCTION public.set_post_author_name();
