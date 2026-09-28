@@ -1,0 +1,80 @@
+name: Validar sitio estático
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Revisar JavaScript y recursos locales
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v6
+
+      - name: Validar sintaxis JavaScript
+        shell: bash
+        run: |
+          set -euo pipefail
+          while IFS= read -r -d '' file; do
+            echo "node --check $file"
+            node --check "$file"
+          done < <(find dist -type f -name '*.js' -print0)
+
+      - name: Validar scripts y estilos enlazados
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from html.parser import HTMLParser
+          from pathlib import Path
+          from urllib.parse import urlsplit
+
+          root = Path('dist').resolve()
+          missing = []
+
+          class Assets(HTMLParser):
+              def __init__(self, source):
+                  super().__init__()
+                  self.source = source
+
+              def handle_starttag(self, tag, attrs):
+                  values = dict(attrs)
+                  candidates = []
+                  if tag == 'script' and values.get('src'):
+                      candidates.append(values['src'])
+                  if tag == 'link' and values.get('href') and 'stylesheet' in (values.get('rel') or ''):
+                      candidates.append(values['href'])
+
+                  for raw in candidates:
+                      parsed = urlsplit(raw)
+                      if parsed.scheme or parsed.netloc or raw.startswith('//'):
+                          continue
+                      path = parsed.path
+                      if not path or path.startswith('data:'):
+                          continue
+                      target = (self.source.parent / path).resolve()
+                      try:
+                          target.relative_to(root)
+                      except ValueError:
+                          missing.append((self.source, raw, 'fuera de dist'))
+                          continue
+                      if not target.is_file():
+                          missing.append((self.source, raw, 'no existe'))
+
+          for source in root.rglob('*.html'):
+              parser = Assets(source)
+              parser.feed(source.read_text(encoding='utf-8'))
+
+          if missing:
+              for source, ref, reason in missing:
+                  print(f'ERROR: {source.relative_to(root)} -> {ref} ({reason})')
+              raise SystemExit(1)
+
+          print('Referencias locales de scripts y estilos: OK')
+          PY
