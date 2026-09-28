@@ -16,6 +16,7 @@ async function init(){
     const {createClient}=await import('https://esm.sh/@supabase/supabase-js@2');
     client=createClient(settings.url,settings.publishableKey);
     $('#login-form').addEventListener('submit',signIn);
+    $('#password-form').addEventListener('submit',changePassword);
     $('#logout').addEventListener('click',async()=>{await client.auth.signOut();profile=null;showLogin()});
     document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>openTab(b.dataset.tab)));
     await session();
@@ -34,6 +35,16 @@ async function session(){
 async function signIn(event){event.preventDefault();const button=event.submitter;button.disabled=true;$('#login-error').textContent='';notice('Verificando acceso…');
   try{const fd=new FormData(event.currentTarget);const {error}=await client.auth.signInWithPassword({email:word(fd.get('email')),password:fd.get('password')});if(error)throw error;await session()}
   catch(error){$('#login-error').textContent=error.message||'No fue posible ingresar';notice('Revisa el correo y la contraseña.')}
+  finally{button.disabled=false}
+}
+async function changePassword(event){
+  event.preventDefault();const form=event.currentTarget,button=form.querySelector('[type=submit]');
+  const data=new FormData(form),password=data.get('password');
+  $('#password-error').textContent='';
+  if(password!==data.get('confirmation')){$('#password-error').textContent='Las contraseñas no coinciden.';return}
+  button.disabled=true;
+  try{const {error}=await client.auth.updateUser({password});if(error)throw error;form.reset();notice('Contraseña guardada.')}
+  catch(error){$('#password-error').textContent=error.message||'No se pudo guardar la contraseña.'}
   finally{button.disabled=false}
 }
 const titles={posts:'Entradas del blog',products:'Productos de merch',members:'Integrantes',events:'Eventos'};

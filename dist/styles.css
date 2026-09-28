@@ -396,7 +396,7 @@ html{background:var(--paper);overflow-x:clip;scrollbar-color:#d594b6 var(--paper
 @media(forced-colors:active){.avatar-widget-host[data-dialog-style^="pastel-"] .avatar-pastel-box{filter:none;border:2px solid CanvasText}.avatar-widget-host[data-dialog-style^="pastel-"] .avatar-widget-nameplate{clip-path:none}.avatar-widget-host[data-dialog-style^="pastel-"] .avatar-pastel-paper{background:Canvas}}
 /* Keep minimization authoritative over the mobile footer layout. */
 .avatar-widget-host[data-dialog-style^="pastel-"] .avatar-widget-panel--minimized :is(.avatar-widget-content,.avatar-widget-footer){display:none}
-/* Contenido editorial publicado desde Neon. */
+/* Contenido editorial publicado desde Supabase. */
 .live-entry{margin-top:20px;padding:18px;border:1px solid var(--line);border-radius:15px;background:#fffafd}
 .live-entry h3{font:600 1.4rem var(--display)}.live-entry time{display:block;color:var(--muted);margin:6px 0}
 .live-entry p{white-space:pre-wrap;overflow-wrap:anywhere}.live-entry a{color:var(--pink-dark);text-decoration:underline}

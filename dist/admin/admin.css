@@ -4,6 +4,7 @@
 .admin-main{width:min(1100px,calc(100% - 32px));margin:35px auto 90px}.admin-main h1{font-size:clamp(2rem,5vw,3.3rem);margin-bottom:20px}
 .admin-card{border:2px solid #f0bad6;border-radius:22px;background:white;padding:clamp(18px,3vw,30px);margin:18px 0;box-shadow:0 9px 0 #f9dce9}
 .admin-card h2{font-size:1.7rem;margin-bottom:18px}.admin-card form{display:grid;gap:15px}
+.admin-card summary{cursor:pointer;font-weight:700}.admin-card details form,.admin-card[open] form{margin-top:16px}.admin-card summary:focus-visible{outline:3px solid #96306c;outline-offset:3px}
 .admin-card label{display:grid;gap:5px;font-weight:650}.admin-card input,.admin-card select,.admin-card textarea{width:100%;border:1.5px solid #dcb7cd;border-radius:10px;padding:11px;background:#fffcfe;color:var(--ink);font:inherit}
 .admin-card textarea{min-height:170px;resize:vertical}.admin-card input:focus-visible,.admin-card select:focus-visible,.admin-card textarea:focus-visible,.admin-page button:focus-visible{outline:3px solid #96306c;outline-offset:3px}
 .admin-page button{border:1px solid #c96c9d;border-radius:11px;padding:10px 16px;background:#fff0f7;font-weight:700}.admin-page button:hover{background:#ffe1ef}.admin-card button[type=submit]{background:var(--pink);color:white}.admin-page button:disabled{opacity:.55;cursor:wait}
