@@ -14,7 +14,7 @@ const TUS_THRESHOLD=6*1024*1024;
 const el=(tag,className,text)=>{const node=document.createElement(tag);if(className)node.className=className;if(text!==undefined)node.textContent=text;return node};
 const formatBytes=value=>{const bytes=Number(value)||0;if(bytes<1024)return `${bytes} B`;if(bytes<1024**2)return `${(bytes/1024).toFixed(1)} KB`;return `${(bytes/1024**2).toFixed(bytes>=10*1024**2?0:1)} MB`};
 const notify=(tone,title,message)=>ui?.toast({tone,title,message});
-const ask=options=>ui?.confirm(options)??Promise.resolve(confirm(`${options.title||'Confirmar'}\n\n${options.message||''}`));
+const ask=options=>ui?.confirm(options)??Promise.resolve(false);
 const fileExtension=file=>{
   const byType={'image/png':'png','image/jpeg':'jpg','image/webp':'webp','video/mp4':'mp4','video/webm':'webm','video/quicktime':'mov','video/x-m4v':'m4v'}[file.type];
   if(byType)return byType;
@@ -218,10 +218,11 @@ function enhance(form){
     coverName.textContent=`Nueva portada: ${file.name}`;coverHelp.textContent=`${formatBytes(file.size)} · pendiente de guardar`;coverCancel.hidden=false;
   }
 
-  async function deleteAsset(row){
+  async function deleteAsset(row,{silentStorageWarning=false}={}){
     const {client}=await ensureContext();
-    await removeBlogAsset(client,row.url);
     const {error}=await client.from('post_images').delete().eq('id',row.id);if(error)throw error;
+    try{await removeBlogAsset(client,row.url)}
+    catch(error){if(!silentStorageWarning)notify('warning','Recurso quitado, archivo pendiente de limpieza','El elemento dejó de publicarse, pero Storage no pudo borrar el archivo. Puedes continuar usando el panel.')}
   }
   async function loadAssets(){
     try{
@@ -262,7 +263,7 @@ function enhance(form){
 
   function queueCard(file){
     const card=el('div','blog-upload-item');const top=el('div','blog-upload-item-top');const info=el('div');
-    const kind=fileKind(file);info.innerHTML=`<strong>${file.name}</strong><span>${kind==='video'?'Vídeo':'Foto'} · ${formatBytes(file.size)}</span>`;
+    const kind=fileKind(file);info.append(el('strong','',file.name),el('span','',`${kind==='video'?'Vídeo':'Foto'} · ${formatBytes(file.size)}`));
     const state=el('span','blog-upload-state','Esperando…');top.append(info,state);
     const bar=el('div','blog-upload-bar');const fill=el('span');bar.append(fill);card.append(top,bar);queue.append(card);
     return {state,fill,setProgress:value=>{const pct=Math.max(0,Math.min(100,Math.round(value*100)));fill.style.width=`${pct}%`;state.textContent=pct>=100?'Procesando…':`${pct}%`},done:()=>{card.classList.add('is-done');fill.style.width='100%';state.textContent='Subido ✓'},fail:message=>{card.classList.add('is-error');state.textContent=message}};
@@ -271,25 +272,48 @@ function enhance(form){
     if(busy)return;const files=[...fileList];if(!files.length)return;
     try{files.forEach(validateFile)}catch(error){notify('warning','Archivo no válido',error.message);return}
     if(replace&&assets.length){
-      const ok=await ask({tone:'danger',title:'Reemplazar toda la galería',message:`La galería actual tiene ${assets.length} elemento${assets.length===1?'':'s'}. Los ${files.length} archivo${files.length===1?'':'s'} seleccionado${files.length===1?'':'s'} pasarán a reemplazarlos.`,detail:'Los recursos actuales se eliminarán del almacenamiento. Si solo quieres sumar contenido, usa “Añadir fotos o vídeos”.',confirmText:'Reemplazar galería'});if(!ok){picker.value='';return}
+      const ok=await ask({tone:'danger',title:'Reemplazar toda la galería',message:`La galería actual tiene ${assets.length} elemento${assets.length===1?'':'s'}. Los ${files.length} archivo${files.length===1?'':'s'} seleccionado${files.length===1?'':'s'} pasarán a reemplazarlos.`,detail:'La galería anterior se conservará hasta que todos los archivos nuevos terminen de subir correctamente.',confirmText:'Reemplazar galería'});if(!ok){picker.value='';return}
     }
     setBusy(true);queue.replaceChildren();let succeeded=0,failed=0;
     try{
       const {client,post}=await ensureContext();
-      if(replace){for(const row of [...assets])await deleteAsset(row);assets=[]}
+      const previousAssets=replace?[...assets]:[];
+      const createdRows=[];
       let order=assets.length?Math.max(...assets.map(row=>Number(row.display_order)||0))+1:0;
       for(const file of files){
         const uiItem=queueCard(file);
         try{
           const uploaded=await uploadAsset(client,post.id,file,value=>uiItem.setProgress(value));
           const alt=uploaded.kind==='video'?`video:${file.name}`:file.name;
-          const {error}=await client.from('post_images').insert({post_id:post.id,url:uploaded.url,alt,display_order:order++});
-          if(error){await removeBlogAsset(client,uploaded.url);throw error}
-          uiItem.done();succeeded++;
+          try{
+            const inserted=await queryOne(client.from('post_images').insert({post_id:post.id,url:uploaded.url,alt,display_order:order++}).select('*').single());
+            createdRows.push(inserted);uiItem.done();succeeded++;
+          }catch(error){await removeBlogAsset(client,uploaded.url);throw error}
         }catch(error){uiItem.fail(error.message||'Error al subir');failed++}
       }
+
+      if(replace&&failed){
+        let rollbackFailed=false;
+        for(const row of createdRows){try{await deleteAsset(row,{silentStorageWarning:true})}catch{rollbackFailed=true}}
+        await loadAssets();
+        notify(rollbackFailed?'error':'warning','No se reemplazó la galería',rollbackFailed?'La subida falló y algunos archivos nuevos no pudieron limpiarse. La galería anterior sigue registrada; revisa el contenido antes de continuar.':'Uno o más archivos nuevos fallaron. Se conservaron los elementos anteriores y se retiraron las subidas parciales.');
+        return;
+      }
+
+      if(replace){
+        let cleanupFailed=false;
+        for(const row of previousAssets){try{await deleteAsset(row)}catch{cleanupFailed=true}}
+        for(let index=0;index<createdRows.length;index++){
+          const {error}=await client.from('post_images').update({display_order:index}).eq('id',createdRows[index].id);if(error)cleanupFailed=true;
+        }
+        await loadAssets();
+        if(cleanupFailed)notify('warning','Galería reemplazada con observaciones','Los archivos nuevos están activos, pero uno de los elementos anteriores no pudo limpiarse por completo. Revisa la galería antes de salir.');
+        else notify('success','Galería reemplazada',`${succeeded} archivo${succeeded===1?'':'s'} se ${succeeded===1?'subió':'subieron'} correctamente.`);
+        return;
+      }
+
       await loadAssets();
-      if(succeeded)notify('success',replace?'Galería reemplazada':'Multimedia añadida',`${succeeded} archivo${succeeded===1?'':'s'} se ${succeeded===1?'subió':'subieron'} correctamente.`);
+      if(succeeded)notify('success','Multimedia añadida',`${succeeded} archivo${succeeded===1?'':'s'} se ${succeeded===1?'subió':'subieron'} correctamente.`);
       if(failed)notify('warning','Algunos archivos no se subieron',`${failed} archivo${failed===1?'':'s'} presentó${failed===1?'':'ron'} un problema. Revisa la cola de subida.`);
     }catch(error){notify('error','No se pudo actualizar la galería',error.message)}finally{setBusy(false);picker.value='';camera.value=''}
   }
