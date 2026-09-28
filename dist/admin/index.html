@@ -1,13 +1,117 @@
 <!doctype html>
-<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Panel Gimae!</title><link rel="icon" href="../images/favicon.png"><link rel="stylesheet" href="../styles.css?v=20260928-supabase"><link rel="stylesheet" href="admin.css?v=20260928-supabase">
-<script src="../supabase-config.js" defer></script><script type="module" src="admin.js?v=20260928-supabase"></script></head>
-<body class="admin-page"><a class="skip" href="#main">Saltar al contenido</a><div class="rainbow" aria-hidden="true"></div>
-<header class="admin-header"><a href="../index.html" aria-label="Volver al sitio"><img src="../images/logo-wordmark.webp" alt="Gimae!" width="145"></a><span>Panel del equipo ✦</span><button id="logout" type="button" hidden>Cerrar sesión</button></header>
-<main id="main" class="admin-main"><h1>El rincón del equipo <span aria-hidden="true">♡</span></h1>
-<p id="status" role="status" aria-live="polite">Cargando panel…</p>
-<section id="login-section" class="admin-card" hidden aria-labelledby="login-title"><h2 id="login-title">Ingresar</h2><form id="login-form"><label>Correo electrónico<input name="email" type="email" autocomplete="username" required></label><label>Contraseña<input name="password" type="password" autocomplete="current-password" required></label><button type="submit">Entrar</button></form><p id="login-error" role="alert"></p></section>
-<div id="workspace" hidden><nav class="admin-tabs" aria-label="Módulos"><button type="button" data-tab="posts">Blog</button><button type="button" data-tab="products" data-admin>Merch</button><button type="button" data-tab="members" data-admin>Integrantes</button><button type="button" data-tab="events" data-admin>Eventos</button></nav>
-<details class="admin-card"><summary>Establecer o cambiar contraseña</summary><form id="password-form"><label>Nueva contraseña<input name="password" type="password" autocomplete="new-password" minlength="12" required></label><label>Confirmar contraseña<input name="confirmation" type="password" autocomplete="new-password" minlength="12" required></label><button type="submit">Guardar contraseña</button></form><p id="password-error" role="alert"></p></details>
-<section id="records" class="admin-card" aria-label="Listado"></section><section id="editor" class="admin-card" aria-label="Editor"></section></div>
-</main></body></html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Panel Gimae!</title>
+  <link rel="icon" href="../images/favicon.png">
+  <link rel="stylesheet" href="../styles.css?v=20260928-supabase">
+  <link rel="stylesheet" href="admin.css?v=20260928-polish01">
+  <script src="../supabase-config.js" defer></script>
+  <script type="module" src="admin.js?v=20260928-supabase"></script>
+</head>
+<body class="admin-page">
+  <a class="skip" href="#main">Saltar al contenido</a>
+  <div class="rainbow" aria-hidden="true"></div>
+
+  <header class="admin-header">
+    <div class="admin-header-inner">
+      <a class="admin-brand" href="../index.html" aria-label="Volver al sitio de Gimae!">
+        <img src="../images/logo-wordmark.webp" alt="Gimae!" width="145">
+        <span class="admin-back-link">← volver al sitio</span>
+      </a>
+      <div class="admin-header-actions">
+        <span class="admin-panel-badge"><span aria-hidden="true">✦</span> backstage del equipo</span>
+        <button id="logout" class="admin-logout" type="button" hidden>Cerrar sesión</button>
+      </div>
+    </div>
+  </header>
+
+  <main id="main" class="admin-main">
+    <section class="admin-hero" aria-labelledby="admin-title">
+      <div class="admin-hero-copy">
+        <p class="admin-kicker"><span aria-hidden="true">✦</span> GIMAE! TEAM DESK <span aria-hidden="true">✦</span></p>
+        <h1 id="admin-title">El rincón del equipo <span class="admin-title-heart" aria-hidden="true">♡</span></h1>
+        <p class="admin-lede">Tu espacio para mantener el universo de Gimae! bonito, ordenado y siempre al día.</p>
+      </div>
+      <div class="admin-status-card" aria-label="Estado del panel">
+        <span class="admin-status-spark" aria-hidden="true">✦</span>
+        <div>
+          <span class="admin-status-label">Estado del panel</span>
+          <p id="status" role="status" aria-live="polite">Cargando panel…</p>
+        </div>
+      </div>
+      <span class="admin-doodle admin-doodle-star" aria-hidden="true">☆</span>
+      <span class="admin-doodle admin-doodle-heart" aria-hidden="true">♡</span>
+      <span class="admin-doodle admin-doodle-note" aria-hidden="true">♪</span>
+    </section>
+
+    <section id="login-section" class="admin-card admin-login-card" hidden aria-labelledby="login-title">
+      <div class="admin-card-heading">
+        <div>
+          <p class="admin-card-eyebrow">ACCESO DEL EQUIPO</p>
+          <h2 id="login-title">Ingresar al backstage</h2>
+        </div>
+        <span class="admin-heading-sticker" aria-hidden="true">♡</span>
+      </div>
+      <form id="login-form">
+        <label>Correo electrónico<input name="email" type="email" autocomplete="username" required></label>
+        <label>Contraseña<input name="password" type="password" autocomplete="current-password" required></label>
+        <button type="submit">Entrar al panel <span aria-hidden="true">→</span></button>
+      </form>
+      <p id="login-error" role="alert"></p>
+    </section>
+
+    <div id="workspace" hidden>
+      <section class="admin-module-panel" aria-labelledby="module-title">
+        <div class="admin-module-heading">
+          <div>
+            <p class="admin-card-eyebrow">CENTRO DE CONTROL</p>
+            <h2 id="module-title">¿Qué quieres editar?</h2>
+          </div>
+          <p>Elige una sección para administrar su contenido.</p>
+        </div>
+        <nav class="admin-tabs" aria-label="Módulos">
+          <button type="button" data-tab="posts">
+            <span class="admin-tab-icon" aria-hidden="true">✎</span>
+            <span class="admin-tab-copy"><strong>Blog</strong><small>Entradas y publicaciones</small></span>
+            <span class="admin-tab-arrow" aria-hidden="true">↗</span>
+          </button>
+          <button type="button" data-tab="products" data-admin>
+            <span class="admin-tab-icon" aria-hidden="true">♡</span>
+            <span class="admin-tab-copy"><strong>Merch</strong><small>Productos, precios y stock</small></span>
+            <span class="admin-tab-arrow" aria-hidden="true">↗</span>
+          </button>
+          <button type="button" data-tab="members" data-admin>
+            <span class="admin-tab-icon" aria-hidden="true">✦</span>
+            <span class="admin-tab-copy"><strong>Integrantes</strong><small>Perfiles y redes</small></span>
+            <span class="admin-tab-arrow" aria-hidden="true">↗</span>
+          </button>
+          <button type="button" data-tab="events" data-admin>
+            <span class="admin-tab-icon" aria-hidden="true">☆</span>
+            <span class="admin-tab-copy"><strong>Eventos</strong><small>Fechas y actividades</small></span>
+            <span class="admin-tab-arrow" aria-hidden="true">↗</span>
+          </button>
+        </nav>
+      </section>
+
+      <details class="admin-card admin-password-card">
+        <summary>
+          <span class="admin-summary-icon" aria-hidden="true">⌁</span>
+          <span><strong>Seguridad de tu cuenta</strong><small>Establecer o cambiar contraseña</small></span>
+          <span class="admin-summary-arrow" aria-hidden="true">＋</span>
+        </summary>
+        <form id="password-form">
+          <label>Nueva contraseña<input name="password" type="password" autocomplete="new-password" minlength="12" required></label>
+          <label>Confirmar contraseña<input name="confirmation" type="password" autocomplete="new-password" minlength="12" required></label>
+          <button type="submit">Guardar contraseña</button>
+        </form>
+        <p id="password-error" role="alert"></p>
+      </details>
+
+      <section id="records" class="admin-card admin-records-card" aria-label="Listado"></section>
+      <section id="editor" class="admin-card admin-editor-card" aria-label="Editor"></section>
+    </div>
+  </main>
+</body>
+</html>
