@@ -29,7 +29,7 @@ window.GIMAE_READY=(async()=>{
     async function blogImage(url){
       if(!url?.startsWith('storage:gimae-blog/'))return url;
       const path=url.slice('storage:gimae-blog/'.length);
-      const {data,error}=await api.storage.from('gimae-blog').createSignedUrl(path,3600);
+      const {data,error}=await api.storage.from('gimae-blog').createSignedUrl(path,60);
       if(error)throw error;return data.signedUrl;
     }
     cfg.posts=await Promise.all(posts.map(async p=>({...p,cover_url:await blogImage(p.cover_url)})));
