@@ -9,7 +9,7 @@ const select=(name,label,values,current)=>`<label>${label}<select name="${name}"
 const checked=(name,label,value)=>`<label class="admin-check"><input type="checkbox" name="${name}" ${value?'checked':''}>${esc(label)}</label>`;
 const notice=message=>status.textContent=message;
 const toast=(tone,title,message)=>ui?.toast({tone,title,message});
-const ask=options=>ui?.confirm(options)??Promise.resolve(confirm(`${options.title||'Confirmar'}\n\n${options.message||''}`));
+const ask=options=>ui?.confirm(options)??Promise.resolve(false);
 let client,profile,tab='posts',items=[],members=[];
 
 async function query(promise){const result=await promise;if(result.error)throw result.error;return result.data||[]}
