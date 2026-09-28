@@ -32,13 +32,14 @@ window.GIMAE_READY=(async()=>{
     async function blogImage(url){
       if(!url?.startsWith('storage:gimae-blog/'))return url;
       const path=url.slice('storage:gimae-blog/'.length);
-      const {data,error}=await api.storage.from('gimae-blog').createSignedUrl(path,60);
+      // Los vídeos pueden durar varios minutos y hacer peticiones Range durante la reproducción.
+      const {data,error}=await api.storage.from('gimae-blog').createSignedUrl(path,3600);
       if(error)throw error;return data.signedUrl;
     }
-    // Una imagen rota o sin permiso no debe sustituir también los precios vigentes por el catálogo de respaldo.
+    // Un asset roto o sin permiso no debe sustituir también los precios vigentes por el catálogo de respaldo.
     const optionalBlogImage=async url=>{
       try{return await blogImage(url)}
-      catch(error){console.warn('No se pudo cargar una imagen del blog:',error);return null}
+      catch(error){console.warn('No se pudo cargar un recurso del blog:',error);return null}
     };
     const publicPosts=await Promise.all(posts.map(async p=>({...p,cover_url:await optionalBlogImage(p.cover_url)})));
     const publicImages=(await Promise.all(postImages.map(async im=>({...im,url:await optionalBlogImage(im.url)})))).filter(im=>im.url);
