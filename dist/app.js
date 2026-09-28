@@ -112,7 +112,11 @@ if(config.posts?.length){
     const content=document.createElement('p');content.textContent=post.content;body.append(title,date,author,content);
     if(post.cover_url){const image=document.createElement('img');image.loading='lazy';image.alt=`Portada de ${post.title}`;
       image.src=safeUrl(post.cover_url)||'';article.append(image)}
-    for(const asset of config.postImages?.filter(im=>im.post_id===post.id)||[]){const image=document.createElement('img');image.loading='lazy';image.alt=asset.alt||`Imagen de ${post.title}`;image.src=safeUrl(asset.url)||'';body.append(image)}
+    for(const asset of config.postImages?.filter(im=>im.post_id===post.id)||[]){
+      const isVideo=String(asset.alt||'').startsWith('video:')||/\.(?:mp4|webm|mov|m4v)(?:$|[?#])/i.test(String(asset.url||''));
+      if(isVideo)continue;
+      const image=document.createElement('img');image.loading='lazy';image.alt=asset.alt||`Imagen de ${post.title}`;image.src=safeUrl(asset.url)||'';body.append(image)
+    }
     article.append(body);list.append(article)
   }blogSection.append(list)
 } else if(config.backendStatus==='fallback') sectionNote(blogSection,'No pudimos consultar el blog. Vuelve a intentarlo más tarde.');
