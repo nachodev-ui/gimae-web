@@ -5,8 +5,10 @@
  * - Completa los datos bancarios, stock, Client ID público y tipo de cambio exclusivamente en content.js.
  * - Nunca pegues aquí un secret de PayPal, contraseña, token o dato privado.
  */
-(() => {
+(async () => {
   'use strict';
+
+  await window.GIMAE_READY;
 
   const config = window.GIMAE || {};
   const catalog = Array.isArray(config.merch) ? config.merch.filter(product => product?.active !== false) : [];

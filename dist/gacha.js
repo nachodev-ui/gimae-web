@@ -4,8 +4,9 @@
  * Las probabilidades pueden cambiar, pero deberían sumar 100.
  * El límite diario está DESACTIVADO por defecto; cambia enabled a true para usarlo.
  */
-(() => {
+(async () => {
   'use strict';
+  await window.GIMAE_READY;
 
   const GACHA_CONFIG = {
     rarityWeights: { common: 70, rare: 25, ssr: 5 },

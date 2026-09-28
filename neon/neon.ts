@@ -10,6 +10,6 @@ export default defineConfig({
       // las imágenes de los posts públicos sin credenciales.
       'gimae-blog': { access: 'private' }
     },
-    functions: { 'gimae-media': { name: 'Gimae media', source: './functions/media.mjs' } }
+    functions: { gimaemedia: { name: 'Gimae media', source: './functions/media.mjs' } }
   }
 });
