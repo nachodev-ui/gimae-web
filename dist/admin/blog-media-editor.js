@@ -1,6 +1,9 @@
 const editorRoot=document.querySelector('#editor');
 const rt=window.GIMAE_RICH_TEXT;
 if(editorRoot&&rt){
+  let activeForm=null;
+  let activeCleanup=null;
+
   const validVideo=value=>{
     try{
       const url=new URL(value);
@@ -14,12 +17,17 @@ if(editorRoot&&rt){
     try{const host=new URL(value).hostname.replace(/^www\./,'').toLowerCase();if(host.includes('youtu'))return 'YouTube';if(host.includes('vimeo'))return 'Vimeo'}catch{}
     return 'Vídeo directo';
   };
+
   function enhance(form){
     if(form.dataset.mediaStudio==='true'||!form.elements.content)return;
     const toolbar=form.querySelector('.blog-format-toolbar');
     const compose=form.querySelector('.blog-compose-panel');
     if(!toolbar||!compose)return;
+
+    activeCleanup?.();
+    activeForm=form;
     form.dataset.mediaStudio='true';
+
     const content=form.elements.content;
     const lastGroup=toolbar.querySelector('.blog-tool-group:last-child')||toolbar;
     const mediaButton=document.createElement('button');
@@ -44,7 +52,26 @@ if(editorRoot&&rt){
       if(!url){input.setCustomValidity('Usa una URL de YouTube, Vimeo o un archivo .mp4/.webm directo.');input.reportValidity();return}
       input.setCustomValidity('');insert(url);
     }
+    function syncPreviewBadge(){
+      if(!form.isConnected)return;
+      const card=form.querySelector('.blog-preview-viewport .admin-blog-preview-card .diary-copy');
+      if(!card)return;
+      const videos=(rt.extractMedia?.(content.value).videos||[]).length;
+      const storedImages=form.querySelectorAll('#post-image-list img').length;
+      const queuedImages=form.elements.post_images?.files?.length||0;
+      const total=storedImages+queuedImages+videos;
+      let badge=card.querySelector(':scope > .blog-preview-media-badge');
+      if(!total){badge?.remove();return}
+      const parts=[];
+      if(storedImages+queuedImages)parts.push(`${storedImages+queuedImages} foto${storedImages+queuedImages===1?'':'s'}`);
+      if(videos)parts.push(`${videos} vídeo${videos===1?'':'s'}`);
+      const text=`Carrusel · ${parts.join(' · ')}`;
+      if(badge?.textContent===text)return;
+      if(!badge){badge=document.createElement('div');badge.className='blog-preview-media-badge';card.append(badge)}
+      badge.textContent=text;
+    }
     function renderList(){
+      if(!form.isConnected)return;
       const videos=(rt.extractMedia?.(content.value).videos)||[];
       list.replaceChildren();
       if(!videos.length){const empty=document.createElement('p');empty.className='blog-video-empty';empty.textContent='Todavía no hay vídeos en esta entrada.';list.append(empty);syncPreviewBadge();return}
@@ -60,28 +87,51 @@ if(editorRoot&&rt){
       });
       syncPreviewBadge();
     }
-    function syncPreviewBadge(){
-      const card=document.querySelector('.blog-preview-viewport .admin-blog-preview-card .diary-copy');if(!card)return;
-      card.querySelector('.blog-preview-media-badge')?.remove();
-      const videos=(rt.extractMedia?.(content.value).videos||[]).length;
-      const storedImages=form.querySelectorAll('#post-image-list img').length;
-      const queuedImages=form.elements.post_images?.files?.length||0;
-      const total=storedImages+queuedImages+videos;if(!total)return;
-      const badge=document.createElement('div');badge.className='blog-preview-media-badge';
-      const parts=[];if(storedImages+queuedImages)parts.push(`${storedImages+queuedImages} foto${storedImages+queuedImages===1?'':'s'}`);if(videos)parts.push(`${videos} vídeo${videos===1?'':'s'}`);
-      badge.textContent=`Carrusel · ${parts.join(' · ')}`;card.append(badge);
-    }
-    mediaButton.addEventListener('click',()=>{manager.scrollIntoView({behavior:'smooth',block:'center'});input.focus()});
-    add.addEventListener('click',addVideo);input.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();addVideo()}});
-    content.addEventListener('input',()=>setTimeout(renderList,0));
-    form.elements.post_images?.addEventListener('change',()=>setTimeout(syncPreviewBadge,0));
-    const preview=document.querySelector('.blog-preview-viewport');
-    if(preview)new MutationObserver(()=>syncPreviewBadge()).observe(preview,{childList:true,subtree:true});
-    const postImages=form.querySelector('#post-image-list');if(postImages)new MutationObserver(()=>syncPreviewBadge()).observe(postImages,{childList:true,subtree:true});
+
+    const onMediaClick=()=>{manager.scrollIntoView({behavior:'smooth',block:'center'});input.focus()};
+    const onAdd=()=>addVideo();
+    const onInputKey=event=>{if(event.key==='Enter'){event.preventDefault();addVideo()}};
+    let renderQueued=false;
+    const onContentInput=()=>{
+      if(renderQueued)return;
+      renderQueued=true;
+      requestAnimationFrame(()=>{renderQueued=false;renderList()});
+    };
+    const onImagesChange=()=>requestAnimationFrame(syncPreviewBadge);
+
+    mediaButton.addEventListener('click',onMediaClick);
+    add.addEventListener('click',onAdd);
+    input.addEventListener('keydown',onInputKey);
+    content.addEventListener('input',onContentInput);
+    form.elements.post_images?.addEventListener('change',onImagesChange);
+
+    // La preview completa se reemplaza al escribir. Solo observamos sus hijos directos:
+    // observar el subárbol haría que insertar el propio badge volviera a disparar el observer.
+    const preview=form.querySelector('.blog-preview-viewport');
+    const previewObserver=preview?new MutationObserver(()=>requestAnimationFrame(syncPreviewBadge)):null;
+    previewObserver?.observe(preview,{childList:true});
+
+    const postImages=form.querySelector('#post-image-list');
+    const imageObserver=postImages?new MutationObserver(()=>requestAnimationFrame(syncPreviewBadge)):null;
+    imageObserver?.observe(postImages,{childList:true});
+
+    activeCleanup=()=>{
+      previewObserver?.disconnect();
+      imageObserver?.disconnect();
+      mediaButton.removeEventListener('click',onMediaClick);
+      add.removeEventListener('click',onAdd);
+      input.removeEventListener('keydown',onInputKey);
+      content.removeEventListener('input',onContentInput);
+      form.elements.post_images?.removeEventListener('change',onImagesChange);
+      if(activeForm===form)activeForm=null;
+    };
     renderList();
   }
+
   const observer=new MutationObserver(()=>{
-    const form=editorRoot.querySelector('#record-form');if(form?.elements?.content)setTimeout(()=>enhance(form),0);
+    if(activeForm&&!activeForm.isConnected){activeCleanup?.();activeCleanup=null}
+    const form=editorRoot.querySelector('#record-form');
+    if(form?.elements?.content&&form!==activeForm)requestAnimationFrame(()=>enhance(form));
   });
   observer.observe(editorRoot,{childList:true,subtree:true});
 }
