@@ -1,6 +1,7 @@
 const editorRoot=document.querySelector('#editor');
 const statusNode=document.querySelector('#status');
 const rt=window.GIMAE_RICH_TEXT;
+const ui=window.GIMAE_UI;
 let activeDraftKey=null;
 let activeCleanup=null;
 
@@ -27,11 +28,13 @@ function insertLine(textarea,prefix,placeholder='Escribe aquí'){
   textarea.setSelectionRange(lineStart+prefix.length,lineStart+replacement.length);
   textarea.dispatchEvent(new Event('input',{bubbles:true}));
 }
-function insertLink(textarea){
+async function insertLink(textarea){
+  if(!ui?.input){ui?.toast?.({tone:'error',title:'No se pudo abrir el editor de enlaces',message:'Recarga el panel e inténtalo nuevamente.'});return}
   const selected=textarea.value.slice(textarea.selectionStart,textarea.selectionEnd)||'texto del enlace';
-  const href=prompt('URL del enlace (https://...)','https://');
+  const href=await ui.input({tone:'info',title:'Añadir enlace',message:`El texto “${selected}” se convertirá en un enlace.`,label:'URL',value:'https://',inputMode:'url',confirmText:'Insertar enlace'});
   if(!href)return;
-  try{const url=new URL(href);if(!['https:','http:'].includes(url.protocol))throw new Error()}catch{return alert('Usa una URL http:// o https:// válida.')}
+  try{const url=new URL(href);if(!['https:','http:'].includes(url.protocol))throw new Error()}
+  catch{ui.toast({tone:'warning',title:'Enlace no válido',message:'Usa una URL que comience con https:// o http://.'});return}
   insertMarkup(textarea,'[',`](${href})`,selected);
 }
 function previewCover(form){
@@ -222,7 +225,7 @@ function enhanceBlogForm(form){
     else if(action==='idol')insertLine(content,'♡ ','Una notita para las fans');
     else if(action==='list')insertLine(content,'- ','Elemento de la lista');
     else if(action==='divider'){const start=content.selectionStart;content.setRangeText(`${start&&content.value[start-1]!=='\n'?'\n':''}---\n`,start,start,'end');content.dispatchEvent(new Event('input',{bubbles:true}))}
-    else if(action==='link')insertLink(content);
+    else if(action==='link')void insertLink(content);
   });
 
   content.addEventListener('keydown',event=>{
@@ -230,7 +233,7 @@ function enhanceBlogForm(form){
     const key=event.key.toLowerCase();
     if(key==='b'){event.preventDefault();insertMarkup(content,'**','**','negrita')}
     if(key==='i'){event.preventDefault();insertMarkup(content,'*','*','cursiva')}
-    if(key==='k'){event.preventDefault();insertLink(content)}
+    if(key==='k'){event.preventDefault();void insertLink(content)}
   });
   slug.addEventListener('input',()=>{slugTouched=true;syncAll()});
   title.addEventListener('input',()=>{if(!slugTouched||!slug.value)slug.value=slugify(title.value);syncAll()});
