@@ -1,0 +1,14 @@
+{
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "seed:generate": "node scripts/build-seed.mjs",
+    "images:upload": "node scripts/upload-images.mjs"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.900.0",
+    "@neon/functions": "^0.8.0",
+    "jose": "^6.0.0",
+    "pg": "^8.16.0"
+  }
+}
