@@ -140,7 +140,7 @@ function installSocialNetworks(form,state){
     socialCard('X (Twitter)','𝕏','Enlace de X',x,'Ej.: https://x.com/usuario')
   );
   section.append(grid);
-  void loadExistingMember(form,state);
+  state.readyPromise=loadExistingMember(form,state);
 }
 
 async function saveMemberProfile(event,form,state){
@@ -151,6 +151,7 @@ async function saveMemberProfile(event,form,state){
   const status=document.querySelector('#status');if(status)status.textContent='Guardando perfil…';
   let uploaded=null;
   try{
+    await state.readyPromise;
     const client=await profileClient();
     const fd=new FormData(form);
     const id=pmWord(fd.get('id'));if(!id)throw new Error('El perfil necesita un código interno.');
@@ -195,7 +196,7 @@ async function saveMemberProfile(event,form,state){
 function enhanceProfileMedia(form){
   if(form.dataset.profileMedia==='true'||!pmActive()||form.dataset.memberStudio!=='true')return;
   form.dataset.profileMedia='true';
-  const state={pendingFile:null,removePortrait:false,originalPhotoUrl:form.elements.photo_url?.value||null,originalSocials:{},cleanup:null};
+  const state={pendingFile:null,removePortrait:false,originalPhotoUrl:form.elements.photo_url?.value||null,originalSocials:{},cleanup:null,readyPromise:Promise.resolve()};
   installSocialNetworks(form,state);
   installPortraitUploader(form,state);
   form.addEventListener('submit',event=>saveMemberProfile(event,form,state),{capture:true});
