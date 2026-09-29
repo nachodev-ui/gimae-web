@@ -35,7 +35,11 @@ DECLARE
   summary_stock integer;
   summary_confirmed boolean;
 BEGIN
-  target_id := COALESCE(NEW.product_id, OLD.product_id);
+  IF TG_OP = 'DELETE' THEN
+    target_id := OLD.product_id;
+  ELSE
+    target_id := NEW.product_id;
+  END IF;
 
   SELECT count(*)::integer,
          COALESCE(sum(CASE WHEN v.stock_confirmed THEN v.stock ELSE 0 END), 0)::integer,
@@ -66,13 +70,16 @@ BEGIN
     WHERE id = OLD.product_id;
   END IF;
 
-  RETURN COALESCE(NEW, OLD);
+  IF TG_OP = 'DELETE' THEN
+    RETURN OLD;
+  END IF;
+  RETURN NEW;
 END
 $$;
 
 DROP TRIGGER IF EXISTS sync_variant_inventory_to_product ON public.product_variants;
 CREATE TRIGGER sync_variant_inventory_to_product
-AFTER INSERT OR UPDATE OF product_id, stock, stock_confirmed OR DELETE
+AFTER INSERT OR DELETE OR UPDATE OF product_id, stock, stock_confirmed
 ON public.product_variants
 FOR EACH ROW
 EXECUTE FUNCTION public.sync_product_inventory_from_variants();
