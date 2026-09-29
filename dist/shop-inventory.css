@@ -1,0 +1,45 @@
+.shop-stock-summary{
+  display:inline-flex;
+  align-items:center;
+  width:max-content;
+  max-width:100%;
+  line-height:1.35;
+}
+.shop-option-stock{
+  grid-column:1/-1;
+  display:inline-flex;
+  align-items:center;
+  width:max-content;
+  max-width:100%;
+  margin:.15rem 0 .1rem;
+  padding:.45rem .72rem;
+  border:1px solid rgba(232,70,148,.2);
+  border-radius:999px;
+  background:#fff8fc;
+  color:#6c4f61;
+  font-size:.82rem;
+  font-weight:700;
+  line-height:1.35;
+}
+.shop-option-stock[data-state="ok"]{
+  background:#f2fbf6;
+  border-color:rgba(37,126,82,.2);
+  color:#246f49;
+}
+.shop-option-stock[data-state="pending"]{
+  background:#fff9e9;
+  border-color:rgba(187,135,29,.25);
+  color:#8b6305;
+}
+.shop-option-stock[data-state="out"]{
+  background:#fff2f5;
+  border-color:rgba(180,61,91,.2);
+  color:#9d3d58;
+}
+.shop-buy-controls .shop-quantity:disabled{
+  opacity:.6;
+  cursor:not-allowed;
+}
+@media(max-width:640px){
+  .shop-option-stock{width:100%;justify-content:center;text-align:center}
+}
