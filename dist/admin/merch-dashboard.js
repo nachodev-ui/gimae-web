@@ -5,9 +5,14 @@ const money=new Intl.NumberFormat('es-CL',{style:'currency',currency:'CLP',maxim
 let clientPromise=null;
 let scheduled=0;
 let generation=0;
+let lastFailedList=null;
 
 const el=(tag,className,text)=>{const node=document.createElement(tag);if(className)node.className=className;if(text!==undefined)node.textContent=text;return node};
-const safeUrl=value=>{try{const url=new URL(String(value||''),location.href);return ['https:','http:'].includes(url.protocol)?url.href:null}catch{return null}};
+const safeUrl=value=>{
+  const raw=String(value??'').trim();
+  if(!raw)return null;
+  try{const url=new URL(raw,location.href);return ['https:','http:'].includes(url.protocol)?url.href:null}catch{return null}
+};
 const isMerchActive=()=>merchTab?.getAttribute('aria-current')==='true';
 
 async function getClient(){
@@ -55,15 +60,16 @@ function buildLoadingShell(createAction){
   const add=el('button','merch-primary-action','＋ Nuevo producto');add.type='button';add.addEventListener('click',()=>createAction.click());
   actions.append(shop,add);hero.append(copy,actions);
   const loading=el('div','merch-dashboard-loading');
-  loading.innerHTML='<span aria-hidden="true">✦</span><div><strong>Preparando el catálogo visual…</strong><small>Reuniendo imágenes, variantes y stock.</small></div>';
-  shell.append(hero,loading);
+  const sparkle=el('span','','✦');sparkle.setAttribute('aria-hidden','true');
+  const loadingCopy=el('div');loadingCopy.append(el('strong','','Preparando el catálogo visual…'),el('small','','Reuniendo imágenes, variantes y stock.'));
+  loading.append(sparkle,loadingCopy);shell.append(hero,loading);
   return shell;
 }
 
 async function enhance(){
   if(!records||!isMerchActive())return;
   const basicList=records.querySelector('.admin-list');
-  if(!basicList||records.querySelector('.merch-dashboard'))return;
+  if(!basicList||records.querySelector('.merch-dashboard')||basicList===lastFailedList)return;
   const currentGeneration=++generation;
   const originalChildren=[...records.children];
   const originalCreate=originalChildren.find(node=>node.tagName==='BUTTON');
@@ -85,22 +91,24 @@ async function enhance(){
     if(currentGeneration!==generation||!isMerchActive())return;
     const products=productResult.data||[],images=imageResult.data||[],variants=variantResult.data||[];
     if(products.length!==originalButtons.length)throw new Error('El catálogo visual no coincide con la lista administrativa. Recarga el panel para sincronizarlo.');
-    renderDashboard(shell,products,images,variants,originalButtons,originalCreate);
+    lastFailedList=null;
+    renderDashboard(shell,products,images,variants,originalButtons);
   }catch(error){
     console.error('No se pudo preparar Merch Desk:',error);
     if(currentGeneration!==generation||!isMerchActive())return;
+    lastFailedList=basicList;
     records.classList.remove('merch-records-mode');
     records.replaceChildren(...originalChildren);
     window.GIMAE_UI?.toast?.({tone:'warning',title:'No se pudo cargar la vista visual de Merch',message:error.message||'Se mantuvo la lista básica para que puedas seguir trabajando.'});
   }
 }
 
-function renderDashboard(shell,products,images,variants,originalButtons,originalCreate){
+function renderDashboard(shell,products,images,variants,originalButtons){
   shell.querySelector('.merch-dashboard-loading')?.remove();
   const imageByProduct=new Map();
-  images.forEach(image=>{if(!imageByProduct.has(image.product_id))imageByProduct.set(image.product_id,image)});
+  images.forEach(image=>{if(image?.product_id&&!imageByProduct.has(image.product_id))imageByProduct.set(image.product_id,image)});
   const variantsByProduct=new Map();
-  variants.forEach(item=>{if(!variantsByProduct.has(item.product_id))variantsByProduct.set(item.product_id,[]);variantsByProduct.get(item.product_id).push(item)});
+  variants.forEach(item=>{if(!item?.product_id)return;if(!variantsByProduct.has(item.product_id))variantsByProduct.set(item.product_id,[]);variantsByProduct.get(item.product_id).push(item)});
 
   const models=products.map((product,index)=>{
     const productVariants=variantsByProduct.get(product.id)||[];
@@ -129,7 +137,8 @@ function renderDashboard(shell,products,images,variants,originalButtons,original
   const hint=el('span','','Selecciona “Editar producto” para abrir todos sus controles.');
   meta.append(resultCount,hint);
   const grid=el('div','merch-product-grid');
-  const empty=el('div','merch-empty-state');empty.hidden=true;empty.innerHTML='<span aria-hidden="true">♡</span><strong>No encontramos productos</strong><p>Prueba con otra búsqueda o cambia el filtro.</p>';
+  const empty=el('div','merch-empty-state');empty.hidden=true;
+  const emptyIcon=el('span','','♡');emptyIcon.setAttribute('aria-hidden','true');empty.append(emptyIcon,el('strong','','No encontramos productos'),el('p','','Prueba con otra búsqueda o cambia el filtro.'));
   shell.append(overview,toolbar,meta,grid,empty);
 
   let filter='all';
@@ -167,8 +176,11 @@ function buildProductCard(model,editAction){
   card.dataset.active=String(Boolean(product.active));card.dataset.stock=inventory.kind;
   const visual=el('div','merch-product-visual');
   const imageUrl=safeUrl(image?.url);
-  if(imageUrl){const img=document.createElement('img');img.src=imageUrl;img.alt=image.alt||`Imagen de ${product.name}`;img.loading='lazy';visual.append(img)}
-  else{const fallback=el('div','merch-product-fallback');fallback.setAttribute('aria-hidden','true');fallback.append(el('span','','♡'),el('small','',String(product.id||'GIMAE').toUpperCase())) ;visual.append(fallback)}
+  if(imageUrl){
+    const img=document.createElement('img');img.src=imageUrl;img.alt=image?.alt||`Imagen de ${product.name||'producto'}`;img.loading='lazy';
+    img.addEventListener('error',()=>{img.remove();if(!visual.querySelector('.merch-product-fallback'))visual.prepend(buildImageFallback(product))},{once:true});
+    visual.append(img);
+  }else visual.append(buildImageFallback(product));
   const visibility=el('span',`merch-visibility ${product.active?'is-visible':'is-hidden'}`,product.active?'● Visible':'○ Oculto');visual.append(visibility);
 
   const body=el('div','merch-product-body');
@@ -186,6 +198,12 @@ function buildProductCard(model,editAction){
   footer.append(order,edit);
   body.append(identity,note,price,facts,footer);card.append(visual,body);
   return card;
+}
+
+function buildImageFallback(product){
+  const fallback=el('div','merch-product-fallback');fallback.setAttribute('aria-hidden','true');
+  fallback.append(el('span','','♡'),el('small','',String(product?.id||'GIMAE').toUpperCase()));
+  return fallback;
 }
 
 function schedule(){
