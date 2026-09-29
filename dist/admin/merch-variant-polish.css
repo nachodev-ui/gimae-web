@@ -134,34 +134,43 @@
   line-height:1.4;
 }
 
+/* Saving is deliberately a compact secondary action: inventory remains the visual focus. */
 .admin-page .admin-editor-card.is-merch-editor .merch-save-variant{
-  width:100%!important;
-  min-width:0!important;
-  min-height:76px;
-  padding:12px 16px;
-  border:1px solid var(--variant-accent);
-  border-radius:15px;
-  background:var(--variant-accent);
-  color:var(--variant-on-accent);
-  box-shadow:0 5px 0 color-mix(in srgb,var(--variant-accent) 25%,transparent);
-  font-size:.9rem;
+  width:auto!important;
+  min-width:184px!important;
+  max-width:230px;
+  min-height:48px;
+  justify-self:end;
+  align-self:center;
+  padding:11px 20px;
+  border:1.5px solid var(--variant-accent);
+  border-radius:999px;
+  background:color-mix(in srgb,var(--variant-accent) 7%,#fff);
+  color:color-mix(in srgb,var(--variant-accent) 82%,#2f2030);
+  box-shadow:0 3px 0 color-mix(in srgb,var(--variant-accent) 14%,transparent);
+  font-size:.86rem;
   font-weight:850;
-  line-height:1.3;
-  white-space:normal;
-  transition:transform .16s ease,box-shadow .16s ease,filter .16s ease;
+  line-height:1.2;
+  white-space:nowrap;
+  transition:transform .16s ease,box-shadow .16s ease,background-color .16s ease,color .16s ease;
 }
 .admin-page .admin-editor-card.is-merch-editor .merch-save-variant::after{
-  content:'  →';
+  content:'  ✓';
+  font-size:.82em;
 }
 .admin-page .admin-editor-card.is-merch-editor .merch-save-variant:hover{
-  transform:translateY(-2px);
-  filter:saturate(1.04) brightness(.98);
-  box-shadow:0 7px 0 color-mix(in srgb,var(--variant-accent) 28%,transparent);
+  transform:translateY(-1px);
+  background:var(--variant-accent);
   color:var(--variant-on-accent);
+  box-shadow:0 5px 0 color-mix(in srgb,var(--variant-accent) 22%,transparent);
+}
+.admin-page .admin-editor-card.is-merch-editor .merch-save-variant:focus-visible{
+  outline:3px solid color-mix(in srgb,var(--variant-accent) 35%,#fff);
+  outline-offset:3px;
 }
 .admin-page .admin-editor-card.is-merch-editor .merch-save-variant:active{
   transform:translateY(1px);
-  box-shadow:0 3px 0 color-mix(in srgb,var(--variant-accent) 24%,transparent);
+  box-shadow:0 2px 0 color-mix(in srgb,var(--variant-accent) 18%,transparent);
 }
 
 /* Member accents make inventory scanning faster while keeping generic variants neutral. */
@@ -209,6 +218,10 @@
     padding:14px;
   }
   .admin-page .admin-editor-card.is-merch-editor .merch-save-variant{
-    min-height:52px;
+    width:auto!important;
+    min-width:0!important;
+    max-width:none;
+    min-height:48px;
+    justify-self:stretch;
   }
 }
