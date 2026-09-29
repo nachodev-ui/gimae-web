@@ -23,9 +23,9 @@ const relativeLuminance=hex=>{
 const contrastRatio=(a,b)=>(Math.max(a,b)+.05)/(Math.min(a,b)+.05);
 const textOnAccent=hex=>{
   const background=relativeLuminance(hex);
-  const dark=relativeLuminance('#321827');
+  const dark=relativeLuminance('#24101c');
   const white=1;
-  return contrastRatio(background,dark)>=contrastRatio(background,white)?'#321827':'#ffffff';
+  return contrastRatio(background,dark)>=contrastRatio(background,white)?'#24101c':'#ffffff';
 };
 const safeUrl=value=>{
   const raw=String(value??'').trim();
