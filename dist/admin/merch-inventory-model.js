@@ -84,8 +84,11 @@ function enhance(form){
       title.textContent='Inventario administrado por variantes';
       description.textContent='No escribas un segundo stock para el producto general. Actualiza Suki, Usi, Vewe, Vali, talla o edición en “Variantes y stock”; este resumen se recalcula solo.';
       units.querySelector('b').textContent=String(confirmedUnits);
+      units.querySelector('small').textContent='uds. confirmadas';
       progress.querySelector('b').textContent=`${confirmedRows.length}/${rows.length}`;
+      progress.querySelector('small').textContent='variantes confirmadas';
       status.querySelector('b').textContent=allConfirmed?(confirmedUnits>0?'Confirmado':'Agotado'):'Pendiente';
+      status.querySelector('small').textContent='estado general';
       status.dataset.state=allConfirmed?(confirmedUnits>0?'ok':'out'):'pending';
     }else{
       stock.readOnly=original.stockReadOnly;
@@ -101,9 +104,10 @@ function enhance(form){
       description.textContent='Este producto no tiene variantes. Aquí sí se administra directamente su cantidad disponible y su confirmación.';
       units.querySelector('b').textContent=String(Math.max(0,Number(stock.value)||0));
       units.querySelector('small').textContent='uds. registradas';
-      progress.querySelector('b').textContent='1';
+      progress.querySelector('b').textContent='General';
       progress.querySelector('small').textContent='fuente de inventario';
       status.querySelector('b').textContent=confirmed.checked?'Confirmado':'Pendiente';
+      status.querySelector('small').textContent='estado general';
       status.dataset.state=confirmed.checked?'ok':'pending';
     }
   };
