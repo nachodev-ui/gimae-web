@@ -14,6 +14,11 @@ const safeUrl=value=>{
   try{const url=new URL(raw,location.href);return ['https:','http:'].includes(url.protocol)?url.href:null}catch{return null}
 };
 const isMerchActive=()=>merchTab?.getAttribute('aria-current')==='true';
+const isProductsListReady=()=>{
+  if(!records)return false;
+  const heading=records.querySelector(':scope > h2');
+  return heading?.textContent?.trim()==='Productos de merch'&&Boolean(records.querySelector(':scope > .admin-list'));
+};
 
 async function getClient(){
   if(clientPromise)return clientPromise;
@@ -67,8 +72,8 @@ function buildLoadingShell(createAction){
 }
 
 async function enhance(){
-  if(!records||!isMerchActive())return;
-  const basicList=records.querySelector('.admin-list');
+  if(!records||!isMerchActive()||!isProductsListReady())return;
+  const basicList=records.querySelector(':scope > .admin-list');
   if(!basicList||records.querySelector('.merch-dashboard')||basicList===lastFailedList)return;
   const currentGeneration=++generation;
   const originalChildren=[...records.children];
