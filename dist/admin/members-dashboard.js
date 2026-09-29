@@ -13,7 +13,14 @@ const isMembersListReady=()=>{
   const heading=records.querySelector(':scope > h2');
   return heading?.textContent?.trim()==='Integrantes'&&Boolean(records.querySelector(':scope > .admin-list'));
 };
-const safeAccent=value=>/^#[0-9a-f]{6}$/i.test(String(value||''))?String(value):'#e84694';
+const validAccent=value=>/^#[0-9a-f]{6}$/i.test(String(value||''));
+const safeAccent=value=>validAccent(value)?String(value):'#e84694';
+const textOnAccent=hex=>{
+  const value=safeAccent(hex).slice(1);
+  const rgb=[0,2,4].map(index=>parseInt(value.slice(index,index+2),16)/255).map(channel=>channel<=.03928?channel/12.92:((channel+.055)/1.055)**2.4);
+  const luminance=.2126*rgb[0]+.7152*rgb[1]+.0722*rgb[2];
+  return luminance>.48?'#2f2430':'#ffffff';
+};
 const safeUrl=value=>{
   const raw=String(value??'').trim();
   if(!raw)return null;
@@ -49,7 +56,7 @@ function profileHealth(member){
     Boolean(String(member.biography||'').trim()),
     Boolean(String(member.handle||'').trim()),
     Boolean(member.socials?.instagram),
-    Boolean(String(member.color_label||'').trim()&&safeAccent(member.accent))
+    Boolean(String(member.color_label||'').trim()&&validAccent(member.accent))
   ];
   const complete=checks.filter(Boolean).length;
   const ratio=complete/checks.length;
@@ -157,6 +164,7 @@ function buildMemberCard(model,editAction){
   const accent=safeAccent(member.accent);
   const card=el('article','member-admin-card');
   card.style.setProperty('--member-accent',accent);
+  card.style.setProperty('--member-on-accent',textOnAccent(accent));
   card.dataset.health=health.kind;
 
   const visual=el('div','member-admin-visual');
