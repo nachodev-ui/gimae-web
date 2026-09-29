@@ -1,0 +1,178 @@
+/* Accessibility + layout pass for Merch Studio.
+   Goals: avoid horizontal overflow, preserve reflow at zoom, improve contrast/readability,
+   and keep primary controls comfortably above WCAG 2.2 AA target-size minimums. */
+
+/* Give the product editor more room without changing the rest of the admin dashboard. */
+.admin-page:has(.admin-editor-card.is-merch-editor) .admin-main,
+.admin-page:has(.admin-editor-card.is-merch-editor) .admin-header-inner{
+  width:min(1460px,calc(100% - 48px));
+}
+
+.admin-page:has(.admin-editor-card.is-merch-editor) .admin-main{
+  transition:width .18s ease;
+}
+
+/* Comfortable reading sizes and AA-friendly secondary text. */
+.admin-editor-card.is-merch-editor{
+  --merch-text:#503848;
+  --merch-muted:#725f70;
+  --merch-helper:#6f5968;
+  --merch-label:#5f4756;
+}
+.admin-editor-card.is-merch-editor #record-form{
+  padding-inline:32px;
+  gap:24px;
+}
+.merch-editor-eyebrow{font-size:.75rem;line-height:1.4}
+.merch-editor-lede{font-size:.9375rem;line-height:1.65;color:var(--merch-muted)}
+.merch-editor-state{font-size:.8125rem;line-height:1.35;padding:8px 12px}
+.admin-page .merch-editor-back{min-height:44px;font-size:.875rem;padding:9px 14px}
+
+.merch-editor-section{gap:18px;padding:24px}
+.merch-section-number{width:36px;height:36px;font-size:.8125rem}
+.merch-section-head{gap:13px;padding-bottom:16px}
+.merch-section-head h3{font-size:1.125rem;line-height:1.3}
+.merch-section-head p{font-size:.875rem;line-height:1.55;color:var(--merch-muted)}
+
+.merch-field-title{font-size:.875rem;line-height:1.35;color:var(--merch-label)}
+.merch-field-help{font-size:.8125rem;line-height:1.5;color:var(--merch-helper)}
+.admin-page .merch-field input,
+.admin-page .merch-field textarea,
+.admin-page .merch-field select{
+  min-height:48px;
+  font-size:1rem;
+  line-height:1.5;
+  padding:12px 14px;
+}
+.admin-page .merch-field textarea{min-height:132px}
+
+.merch-toggle-grid{gap:12px}
+.admin-page .merch-toggle-card{min-height:88px;padding:14px 15px;gap:13px}
+.merch-toggle-visual{width:44px;height:26px}
+.merch-toggle-visual::after{width:20px;height:20px}
+.merch-toggle-card>input:checked+.merch-toggle-visual::after{transform:translateX(18px)}
+.merch-toggle-copy strong{font-size:.875rem;line-height:1.35;color:var(--merch-label)}
+.merch-toggle-copy small{font-size:.8125rem;line-height:1.45;color:var(--merch-helper)}
+
+.merch-advanced-settings>summary{min-height:44px;display:flex;align-items:center;font-size:.875rem;line-height:1.35}
+
+/* Media manager readability and larger click/tap targets. */
+.merch-mini-kicker{font-size:.6875rem}
+.merch-media-head h4{font-size:1rem;line-height:1.35}
+.merch-media-head p{font-size:.875rem;line-height:1.55;color:var(--merch-muted)}
+.merch-media-spec{font-size:.75rem;line-height:1.3;padding:6px 9px}
+.merch-image-drop{min-height:112px;padding:20px}
+.merch-image-drop strong{font-size:.9375rem;line-height:1.35}
+.merch-image-drop small{font-size:.8125rem;line-height:1.45;color:var(--merch-helper)}
+.admin-page .merch-image-actions button{
+  min-height:44px;
+  padding:9px 14px;
+  font-size:.875rem;
+}
+.merch-current-head strong{font-size:.875rem;line-height:1.35}
+.merch-count{font-size:.75rem;line-height:1.3}
+.merch-current-help{font-size:.8125rem;line-height:1.45;color:var(--merch-helper)}
+.merch-pending-empty strong{font-size:.875rem}
+.merch-pending-empty small{font-size:.8125rem;color:var(--merch-helper)}
+.merch-pending-meta strong{font-size:.8125rem}
+.merch-pending-meta small{font-size:.75rem;color:var(--merch-helper)}
+.admin-page .merch-mini-remove,
+.admin-page .merch-current-remove{min-height:44px;font-size:.8125rem;padding:8px 10px}
+.merch-image-role{font-size:.6875rem;padding:5px 8px}
+.merch-media-note{font-size:.8125rem;line-height:1.55;color:var(--merch-helper)}
+
+/* Variants: keep the four concepts in one row only when there is genuinely enough room. */
+.merch-variants-manager{container-type:inline-size}
+.merch-variants-intro{padding:14px 15px;gap:13px}
+.merch-variants-intro>span{width:36px;height:36px}
+.merch-variants-intro strong{font-size:.875rem;line-height:1.35}
+.merch-variants-intro p{font-size:.8125rem;line-height:1.55;color:var(--merch-helper)}
+#variant-list{gap:12px}
+.merch-variant-card{gap:14px!important;padding:16px!important}
+.merch-variant-kicker{font-size:.6875rem;line-height:1.3}
+.merch-variant-head strong{font-size:.9375rem;line-height:1.35}
+.merch-variant-state{font-size:.75rem;line-height:1.3;padding:6px 9px}
+.merch-variant-fields{
+  grid-template-columns:minmax(150px,.9fr) minmax(140px,.8fr) minmax(260px,1.25fr) minmax(170px,.75fr);
+  gap:12px;
+  align-items:stretch;
+}
+.merch-variant-field>span{font-size:.8125rem;line-height:1.35;color:var(--merch-label)}
+.merch-variant-field>small{font-size:.75rem;line-height:1.45;color:var(--merch-helper)}
+.admin-page .merch-variant-field input{
+  min-height:46px;
+  font-size:1rem;
+  line-height:1.4;
+  padding:10px 12px;
+}
+.merch-variant-confirm{min-height:66px;padding:10px 11px;gap:10px}
+.merch-check-visual{width:38px;height:22px}
+.merch-check-visual::after{width:16px;height:16px}
+.merch-variant-confirm>input:checked+.merch-check-visual::after{transform:translateX(16px)}
+.merch-variant-confirm strong{font-size:.8125rem;line-height:1.35}
+.merch-variant-confirm small{font-size:.75rem;line-height:1.4;color:var(--merch-helper)}
+.admin-page .merch-save-variant{
+  min-height:46px;
+  min-width:170px;
+  width:100%;
+  padding:10px 14px;
+  font-size:.875rem;
+  line-height:1.3;
+  white-space:normal;
+  align-self:end;
+}
+
+.merch-new-variant-fields{gap:12px}
+.admin-page .merch-add-variant{min-height:44px;font-size:.875rem;padding:9px 14px}
+
+.admin-page .merch-editor-actions button{
+  min-height:48px;
+  font-size:.9375rem;
+  padding:10px 16px;
+}
+
+/* Strong, visible keyboard focus across custom Merch controls. */
+.admin-editor-card.is-merch-editor button:focus-visible,
+.admin-editor-card.is-merch-editor input:focus-visible,
+.admin-editor-card.is-merch-editor textarea:focus-visible,
+.admin-editor-card.is-merch-editor select:focus-visible,
+.admin-editor-card.is-merch-editor [role="button"]:focus-visible,
+.admin-editor-card.is-merch-editor summary:focus-visible{
+  outline:3px solid #a83b75;
+  outline-offset:3px;
+}
+
+/* Reflow: no horizontal scrolling or clipped action buttons when space/zoom decreases. */
+@container (max-width:980px){
+  .merch-variant-fields{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .merch-save-variant{min-width:0}
+}
+@container (max-width:620px){
+  .merch-variant-head{align-items:flex-start;flex-direction:column}
+  .merch-variant-fields{grid-template-columns:1fr}
+  .merch-save-variant{width:100%}
+}
+
+@media(max-width:1280px){
+  .admin-page:has(.admin-editor-card.is-merch-editor) .admin-main,
+  .admin-page:has(.admin-editor-card.is-merch-editor) .admin-header-inner{width:min(100% - 32px,1220px)}
+  .admin-editor-card.is-merch-editor #record-form{padding-inline:24px}
+}
+@media(max-width:760px){
+  .admin-page:has(.admin-editor-card.is-merch-editor) .admin-main,
+  .admin-page:has(.admin-editor-card.is-merch-editor) .admin-header-inner{width:calc(100% - 24px)}
+  .admin-editor-card.is-merch-editor #record-form{padding-inline:16px;gap:18px}
+  .merch-editor-section{padding:18px}
+  .merch-sales-grid,.merch-variant-setup-grid,.merch-advanced-grid,.merch-toggle-grid{grid-template-columns:1fr}
+  .merch-media-head,.merch-current-head{align-items:flex-start;flex-direction:column}
+  .merch-current-help{max-width:none;text-align:left}
+}
+
+/* Preserve usability when users enlarge text/zoom. */
+@media(max-width:520px){
+  .admin-page .merch-editor-back,
+  .admin-page .merch-image-actions button,
+  .admin-page .merch-add-variant,
+  .admin-page .merch-editor-actions button{width:100%}
+  .merch-image-actions,.merch-editor-actions{display:grid;grid-template-columns:1fr}
+}
