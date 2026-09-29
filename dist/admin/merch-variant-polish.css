@@ -1,0 +1,214 @@
+/* Visual polish for Merch variant cards: each row becomes a compact inventory card. */
+.admin-editor-card.is-merch-editor .merch-variant-card{
+  --variant-accent:#d84587;
+  --variant-on-accent:#fff;
+  display:grid!important;
+  grid-template-columns:minmax(210px,.72fr) minmax(0,2.28fr)!important;
+  gap:0!important;
+  padding:0!important;
+  overflow:hidden;
+  border:1px solid #ead3df!important;
+  border-left:5px solid var(--variant-accent)!important;
+  border-radius:20px!important;
+  background:#fff!important;
+  box-shadow:0 7px 0 rgba(188,83,132,.07);
+}
+
+.admin-editor-card.is-merch-editor .merch-variant-head{
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:18px;
+  min-width:0;
+  padding:21px 20px;
+  border-right:1px solid #edd9e3;
+  background:#fff9fc;
+  background:linear-gradient(155deg,color-mix(in srgb,var(--variant-accent) 8%,#fff) 0%,#fff 78%);
+}
+
+.merch-variant-member-dot{
+  width:34px;
+  height:8px;
+  border-radius:999px;
+  background:var(--variant-accent);
+  box-shadow:0 0 0 5px color-mix(in srgb,var(--variant-accent) 10%,transparent);
+}
+
+.admin-editor-card.is-merch-editor .merch-variant-head>div{
+  display:grid;
+  gap:5px;
+  min-width:0;
+}
+.admin-editor-card.is-merch-editor .merch-variant-kicker{
+  color:var(--variant-accent);
+  font-size:.72rem;
+  letter-spacing:.13em;
+}
+.admin-editor-card.is-merch-editor .merch-variant-head strong{
+  font-size:1.05rem;
+  line-height:1.25;
+  color:#402b39;
+}
+.admin-editor-card.is-merch-editor .merch-variant-state{
+  align-self:flex-start;
+  margin-top:auto;
+  font-size:.77rem;
+  padding:7px 10px;
+}
+
+.admin-editor-card.is-merch-editor .merch-variant-fields{
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  grid-template-areas:
+    "price stock"
+    "confirm save";
+  gap:12px 14px;
+  align-items:stretch;
+  min-width:0;
+  width:100%;
+  padding:18px;
+  background:linear-gradient(180deg,#fff 0%,#fffdfd 100%);
+}
+.admin-editor-card.is-merch-editor .merch-variant-fields>.merch-variant-field:nth-child(1){grid-area:price}
+.admin-editor-card.is-merch-editor .merch-variant-fields>.merch-variant-field:nth-child(2){grid-area:stock}
+.admin-editor-card.is-merch-editor .merch-variant-confirm{grid-area:confirm}
+.admin-editor-card.is-merch-editor .merch-save-variant{grid-area:save}
+
+.admin-editor-card.is-merch-editor .merch-variant-field{
+  min-width:0;
+  margin:0;
+  padding:12px 13px;
+  border:1px solid #ead6e0;
+  border-radius:15px;
+  background:#fffafd;
+}
+.admin-editor-card.is-merch-editor .merch-variant-field>span{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  font-size:.82rem;
+  color:#5b4050;
+}
+.admin-editor-card.is-merch-editor .merch-variant-field>span::after{
+  content:'✦';
+  color:var(--variant-accent);
+  font-size:.72rem;
+  opacity:.7;
+}
+.admin-page .admin-editor-card.is-merch-editor .merch-variant-field input{
+  min-height:48px;
+  margin-top:2px;
+  border-color:#dfbfce;
+  background:#fff;
+  font-size:1.05rem;
+  font-weight:800;
+}
+.admin-editor-card.is-merch-editor .merch-variant-field>small{
+  margin-top:2px;
+  color:#715b69;
+  font-size:.76rem;
+  line-height:1.35;
+}
+
+.admin-editor-card.is-merch-editor .merch-variant-confirm{
+  min-width:0;
+  min-height:76px;
+  padding:13px 14px;
+  border:1px solid #ead6e0;
+  border-radius:15px;
+  background:linear-gradient(135deg,#fffafd,#fff);
+}
+.admin-editor-card.is-merch-editor .merch-check-visual{
+  width:42px;
+  height:24px;
+}
+.admin-editor-card.is-merch-editor .merch-variant-confirm strong{
+  font-size:.86rem;
+  color:#4f3747;
+}
+.admin-editor-card.is-merch-editor .merch-variant-confirm small{
+  font-size:.76rem;
+  line-height:1.4;
+}
+
+.admin-page .admin-editor-card.is-merch-editor .merch-save-variant{
+  width:100%!important;
+  min-width:0!important;
+  min-height:76px;
+  padding:12px 16px;
+  border:1px solid var(--variant-accent);
+  border-radius:15px;
+  background:var(--variant-accent);
+  color:var(--variant-on-accent);
+  box-shadow:0 5px 0 color-mix(in srgb,var(--variant-accent) 25%,transparent);
+  font-size:.9rem;
+  font-weight:850;
+  line-height:1.3;
+  white-space:normal;
+  transition:transform .16s ease,box-shadow .16s ease,filter .16s ease;
+}
+.admin-page .admin-editor-card.is-merch-editor .merch-save-variant::after{
+  content:'  →';
+}
+.admin-page .admin-editor-card.is-merch-editor .merch-save-variant:hover{
+  transform:translateY(-2px);
+  filter:saturate(1.04) brightness(.98);
+  box-shadow:0 7px 0 color-mix(in srgb,var(--variant-accent) 28%,transparent);
+  color:var(--variant-on-accent);
+}
+.admin-page .admin-editor-card.is-merch-editor .merch-save-variant:active{
+  transform:translateY(1px);
+  box-shadow:0 3px 0 color-mix(in srgb,var(--variant-accent) 24%,transparent);
+}
+
+/* Member accents make inventory scanning faster while keeping generic variants neutral. */
+.admin-editor-card.is-merch-editor .merch-variant-card[data-member="suki"]{--variant-accent:#e84694;--variant-on-accent:#fff}
+.admin-editor-card.is-merch-editor .merch-variant-card[data-member="usi"]{--variant-accent:#df4d62;--variant-on-accent:#fff}
+.admin-editor-card.is-merch-editor .merch-variant-card[data-member="vewe"]{--variant-accent:#c99a18;--variant-on-accent:#342600}
+.admin-editor-card.is-merch-editor .merch-variant-card[data-member="vali"]{--variant-accent:#8f62bf;--variant-on-accent:#fff}
+
+/* Tablet / zoom: identity becomes a compact header, controls retain a two-by-two rhythm. */
+@media(max-width:1120px){
+  .admin-editor-card.is-merch-editor .merch-variant-card{
+    grid-template-columns:minmax(0,1fr)!important;
+    border-left:1px solid #ead3df!important;
+    border-top:5px solid var(--variant-accent)!important;
+  }
+  .admin-editor-card.is-merch-editor .merch-variant-head{
+    display:grid;
+    grid-template-columns:auto minmax(0,1fr) auto;
+    align-items:center;
+    gap:12px;
+    padding:15px 17px;
+    border-right:0;
+    border-bottom:1px solid #edd9e3;
+  }
+  .merch-variant-member-dot{width:8px;height:36px;box-shadow:none}
+  .admin-editor-card.is-merch-editor .merch-variant-state{margin:0;align-self:center}
+}
+
+/* Mobile and large text: controls become a calm vertical checklist, never horizontal-scroll. */
+@media(max-width:700px){
+  .admin-editor-card.is-merch-editor .merch-variant-head{
+    grid-template-columns:auto minmax(0,1fr);
+  }
+  .admin-editor-card.is-merch-editor .merch-variant-state{
+    grid-column:1/-1;
+    margin-left:20px;
+  }
+  .admin-editor-card.is-merch-editor .merch-variant-fields{
+    grid-template-columns:minmax(0,1fr)!important;
+    grid-template-areas:
+      "price"
+      "stock"
+      "confirm"
+      "save";
+    padding:14px;
+  }
+  .admin-page .admin-editor-card.is-merch-editor .merch-save-variant{
+    min-height:52px;
+  }
+}
