@@ -4,11 +4,20 @@ Proyecto: `hvaonobbpzbupanuymkh`. El sitio sigue siendo HTML/CSS/JS estático, p
 
 ## Aplicación reproducible
 
-1. Aplicar los SQL de `migrations/` por orden (`0001` esquema/RLS, `0002` autora, `0003` seed, `0004` Storage, `0005` URLs de Storage, `0006` aislamiento de lectura editorial). No aplicar a otro proyecto. El seed procede de `dist/content.js`; `node scripts/build-seed.mjs` lo regenera, sin inventar stock ni contenido. En el proyecto indicado se verificó que `0006` ya está aplicado.
+1. Aplicar los SQL de `migrations/` por orden (`0001` esquema/RLS, `0002` autora, `0003` seed, `0004` Storage, `0005` URLs de Storage, `0006` aislamiento de lectura editorial, `0007` vídeos del blog, `0008` fuente única de inventario). No aplicar a otro proyecto. El seed procede de `dist/content.js`; `node scripts/build-seed.mjs` lo regenera, sin inventar stock ni contenido. En el proyecto indicado se verificó previamente que `0006` ya estaba aplicado; las migraciones posteriores deben comprobarse antes de desplegar la rama que las consume.
 2. Los buckets son `gimae-products` (lectura pública) y `gimae-blog` (privado). El catálogo local se conserva como respaldo. Las lecturas autenticadas de posts e imágenes del blog solo admiten a su autora y a la admin; una visitante `anon` lee solo lo público y publicado. La página pública crea su propio cliente sin sesión persistente. Véase [`../docs/audit-20260928.md`](../docs/audit-20260928.md) para la prueba reversible de tres perfiles.
 3. En un entorno privado con `SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY`, ejecutar `npm install` y `npm run images:upload` desde `supabase/`. El script sube `dist/images` y actualiza las URL en la base. Es reejecutable y no sobrescribe ediciones posteriores de URLs. Nunca guardar la secret/service_role key en `dist/` o Git.
 4. La publishable key **pública** y la URL `https://hvaonobbpzbupanuymkh.supabase.co` están en `dist/supabase-config.js`. Si la API no responde, el sitio usa el respaldo local. Nunca colocar una secret/service_role key en `dist/`.
 5. Consultar `scripts/summary.sql` para contar registros y verificar los precios. El seed contiene 4 integrantes, 3 enlaces del grupo, 5 productos, 13 variantes y 5 imágenes de producto. Eventos, posts y perfiles parten vacíos; el stock en cero está marcado sin confirmar. Las postales no tienen imagen en el catálogo.
+
+## Regla de inventario de Merch
+
+El stock tiene una sola fuente de verdad:
+
+- Producto **sin variantes**: `products.stock` y `products.stock_confirmed` son el inventario real.
+- Producto **con variantes**: `product_variants.stock` y `product_variants.stock_confirmed` son el inventario real. `products.stock` pasa a ser un resumen automático de las unidades confirmadas y `products.stock_confirmed` solo queda en `true` si todas las variantes fueron confirmadas.
+
+La migración `0008` mantiene ese resumen con triggers y evita que una edición manual de `products.stock` cree una segunda fuente contradictoria. La tienda pública no utiliza el total del producto como fallback para una variante concreta. Véase [`../docs/merch-inventory-model.md`](../docs/merch-inventory-model.md).
 
 ## Equipo
 
