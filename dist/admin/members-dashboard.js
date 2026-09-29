@@ -15,11 +15,17 @@ const isMembersListReady=()=>{
 };
 const validAccent=value=>/^#[0-9a-f]{6}$/i.test(String(value||''));
 const safeAccent=value=>validAccent(value)?String(value):'#e84694';
-const textOnAccent=hex=>{
+const relativeLuminance=hex=>{
   const value=safeAccent(hex).slice(1);
   const rgb=[0,2,4].map(index=>parseInt(value.slice(index,index+2),16)/255).map(channel=>channel<=.03928?channel/12.92:((channel+.055)/1.055)**2.4);
-  const luminance=.2126*rgb[0]+.7152*rgb[1]+.0722*rgb[2];
-  return luminance>.48?'#2f2430':'#ffffff';
+  return .2126*rgb[0]+.7152*rgb[1]+.0722*rgb[2];
+};
+const contrastRatio=(a,b)=>(Math.max(a,b)+.05)/(Math.min(a,b)+.05);
+const textOnAccent=hex=>{
+  const background=relativeLuminance(hex);
+  const dark=relativeLuminance('#321827');
+  const white=1;
+  return contrastRatio(background,dark)>=contrastRatio(background,white)?'#321827':'#ffffff';
 };
 const safeUrl=value=>{
   const raw=String(value??'').trim();
@@ -194,7 +200,11 @@ function buildMemberCard(model,editAction){
 
   const facts=el('div','member-admin-facts');
   const colorFact=el('span','member-admin-fact');
-  colorFact.append(el('small','','Color oficial'),el('b','',`${member.color_label||'Sin nombre'} · ${accent.toUpperCase()}`));
+  colorFact.append(el('small','','Color oficial'));
+  const colorValue=el('span','member-admin-color-value');
+  const hexDot=el('i','member-admin-hex-dot');hexDot.style.background=accent;hexDot.setAttribute('aria-hidden','true');
+  colorValue.append(hexDot,el('b','',`${member.color_label||'Sin nombre'} · ${accent.toUpperCase()}`));
+  colorFact.append(colorValue);
   const socialFact=el('span','member-admin-fact');
   const instagram=instagramUrl(member.socials?.instagram);
   socialFact.append(el('small','','Instagram'));
