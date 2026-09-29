@@ -27,9 +27,9 @@
 }
 .merch-inventory-metric b{font-size:1rem;line-height:1.2;color:#472f40}
 .merch-inventory-metric small{font-size:.72rem;line-height:1.35;color:#735f6e}
-.merch-inventory-metric b[data-state="ok"],.merch-inventory-metric [data-state="ok"]{color:#23734b}
-.merch-inventory-metric [data-state="pending"]{color:#9b6900}
-.merch-inventory-metric [data-state="out"]{color:#a13e58}
+.merch-inventory-metric[data-state="ok"] b{color:#23734b}
+.merch-inventory-metric[data-state="pending"] b{color:#9b6900}
+.merch-inventory-metric[data-state="out"] b{color:#a13e58}
 
 .admin-editor-card.is-merch-editor .is-derived-inventory{
   opacity:.86;
