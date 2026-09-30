@@ -426,9 +426,10 @@ body.dialog-open{overflow:hidden}
 .paypal-wait-amount{margin-top:18px;padding:9px 17px;border:1px solid #edc7db;border-radius:30px;background:white;color:#853363!important;font-weight:700;box-shadow:0 3px 0 #f6dce9}
 .paypal-wait-progress{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:27px;color:#74345c;font-size:.9rem;font-weight:700}.paypal-wait-progress .checkout-loading-spinner{width:26px;height:26px}
 .paypal-wait .paypal-wait-note{margin-top:23px;font-size:.79rem!important;color:#806d7a!important}
-.paypal-cancelled-art{display:grid;place-items:center;width:90px;height:90px;margin-bottom:24px;border:2px solid #edb9d4;border-radius:30px;background:#fff0f8;color:#c32371;font:600 3.5rem var(--display);box-shadow:6px 7px 0 #f7dce9;transform:rotate(-5deg)}
-.paypal-cancelled .eyebrow{color:#a73470}
-.paypal-cancelled h2{margin:10px 0 16px;font-size:clamp(2rem,5vw,3rem)}
+.paypal-cancelled{border-top:7px solid #bc3e58;background:radial-gradient(circle at 15% 14%,#fff0d8 0,transparent 35%),radial-gradient(circle at 85% 88%,#ffe5e9 0,transparent 34%),#fff9f8}
+.paypal-cancelled-art{display:grid;place-items:center;width:88px;height:88px;margin-bottom:26px;border:3px solid #b83e57;border-radius:50%;background:#fff1f2;color:#a92e48;font:500 4.5rem/1 var(--body);box-shadow:0 0 0 8px #ffe3e8}
+.paypal-cancelled .eyebrow{padding:6px 14px;border:1px solid #e6aab4;border-radius:100px;background:#ffe8ec;color:#872941;font-size:.78rem;letter-spacing:.11em}
+.paypal-cancelled h2{margin:15px 0 16px;color:#872941;font-size:clamp(2rem,5vw,3rem)}
 .paypal-cancelled>p:not(.eyebrow){max-width:440px;color:#76596d;line-height:1.55}
 .paypal-cancelled .button{width:min(100%,320px);margin-top:30px}
 /* Información comercial breve; la conversión exacta sigue visible antes de pagar. */
