@@ -49,11 +49,8 @@ window.GIMAE = {
     "accountNumber": "COMPLETAR",
     "confirmationEmail": "COMPLETAR"
   },
-  // PAYPAL: publica solo el Client ID. El secret NUNCA debe ir en este archivo.
-  // CLP_PER_USD es un tipo de cambio manual; actualízalo antes de habilitar PayPal.
-  "PAYPAL_CLIENT_ID": "COMPLETAR",
-  "PAYPAL_CURRENCY": "USD",
-  "CLP_PER_USD": null,
+  // PAYPAL: habilitar solo después de configurar y probar las Edge Functions.
+  // El Client ID se entrega desde la función; el secret y el tipo de cambio nunca van aquí.
   // CANALES: Instagram copia el mensaje y abre el perfil. WhatsApp requiere solo dígitos con código de país.
   "ORDER_CONTACTS": {
     "instagram": { "enabled": true, "url": "https://www.instagram.com/gimae_official" },

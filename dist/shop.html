@@ -73,8 +73,8 @@
       <div class="checkout-fields"><label for="buyer-name">Nombre <input id="buyer-name" name="buyerName" type="text" maxlength="60" autocomplete="name" required></label><label for="buyer-contact">Contacto <input id="buyer-contact" name="buyerContact" type="text" maxlength="80" placeholder="Instagram, WhatsApp o correo" autocomplete="email" required></label></div>
       <fieldset class="payment-methods"><legend>Forma de pago</legend><div id="payment-method-list"></div></fieldset>
       <div class="paypal-conversion" id="paypal-conversion" hidden></div>
-      <p class="checkout-privacy">Tus datos no se envían ni guardan en un servidor de Gimae. Este dispositivo conserva el resumen para que puedas reabrirlo.</p>
-      <p class="paypal-risk" id="paypal-risk" hidden>PayPal se calcula en el navegador y el equivalente en USD es referencial. El equipo debe comprobar el monto y el estado del pago en PayPal antes de despachar.</p>
+      <p class="checkout-privacy" id="checkout-privacy">Para PayPal, guardamos tu nombre, contacto y pedido en Supabase para gestionar el retiro. PayPal procesa el pago en USD. Si eliges transferencia, el resumen queda en este dispositivo.</p>
+      <p class="paypal-risk" id="paypal-risk" hidden>PayPal está disponible solo para retiro en persona. Confirmaremos el pedido tras verificar el pago y coordinar disponibilidad contigo.</p>
       <p class="shop-error" id="checkout-error" role="alert" hidden></p>
       <p class="checkout-status" id="checkout-status" aria-live="polite"></p>
       <button class="button primary" id="prepare-payment" type="submit">Generar instrucciones <span aria-hidden="true">↗</span></button>

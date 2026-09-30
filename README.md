@@ -47,11 +47,11 @@ La página `dist/gacha.html` contiene un catálogo editable de 12 cartas que reu
 
 ## Tienda y pagos
 
-El catálogo publicado se lee de Supabase; `dist/content.js` funciona como respaldo si falla la API. La configuración de envío y pago sigue en `dist/content.js`: `SHIPPING`, `PAYMENT_METHODS`, `BANK_TRANSFER`, `PAYPAL_CLIENT_ID`, `PAYPAL_CURRENCY`, `CLP_PER_USD` y `ORDER_CONTACTS`. Los valores `COMPLETAR`, el stock sin confirmar y PayPal desactivado son intencionales: no deben reemplazarse por datos inventados.
+El catálogo publicado se lee de Supabase; `dist/content.js` funciona como respaldo visual si falla la API. PayPal solo permite cobrar cuando el catálogo en Supabase responde y tiene stock confirmado. La configuración de envío y pago sigue en `dist/content.js`: `SHIPPING`, `PAYMENT_METHODS`, `BANK_TRANSFER`, `ORDER_CONTACTS`. Los valores `COMPLETAR`, el stock sin confirmar y PayPal desactivado son intencionales: no deben reemplazarse por datos inventados.
 
-El carrito guarda solo IDs, variantes y cantidades. Al cargar, `dist/shop.js` descarta referencias antiguas y recupera precios desde el catálogo. Los pedidos quedan únicamente en `localStorage`; no existe un backend que reserve stock o confirme pagos.
+El carrito guarda solo IDs, variantes y cantidades. Al cargar, `dist/shop.js` descarta referencias antiguas y recupera precios desde el catálogo. Los pedidos por transferencia siguen siendo locales; los pedidos PayPal se guardan en Supabase. No existe reserva automática de stock.
 
-PayPal usa USD porque CLP no figura en la lista oficial de monedas admitidas. La integración opcional carga el SDK solo al seleccionar PayPal. Al ser completamente cliente, el monto puede manipularse: antes de entregar un pedido se debe verificar en el panel de PayPal el estado, monto, moneda e ID de la operación. Para producción es preferible un enlace de pago administrado por PayPal o una integración con servidor que cree y capture órdenes.
+La integración PayPal segura usa Supabase Edge Functions para calcular precios, crear y capturar órdenes en USD, y verificar el webhook antes de marcar `paid`. Se activa solo tras configurar secretos y probar Sandbox. Véase [`docs/paypal-sandbox.md`](docs/paypal-sandbox.md).
 
 Una CSP es recomendable, pero debe probarse con Google Fonts y los dominios vigentes del SDK de PayPal antes de activarla. En GitHub Pages puede declararse mediante una etiqueta `meta`, aunque las cabeceras HTTP ofrecen mayor control cuando el hosting las permite.
 

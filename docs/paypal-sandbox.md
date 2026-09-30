@@ -1,0 +1,40 @@
+# PayPal para la tienda de Gimae
+
+## Arquitectura y archivos
+
+- `dist/index.html` y `dist/app.js`: portada de Merch, enlaza a `shop.html`; no checkout aquí.
+- `dist/content.js`: activa PayPal solo tras configurar Sandbox; no incluye PayPal Client ID ni tasa manual.
+- `dist/shop.html`, `dist/shop.js`: carrito existente, modales nativos, resumen y SDK oficial `https://www.paypal.com/sdk/js` cargado al preparar el pago.
+- `dist/styles.css`: se reutilizan los estilos y `prefers-reduced-motion`; no necesita cambios.
+- `dist/backend.js`, `dist/supabase-config.js`: catálogo Supabase y URL/publishable key públicas existentes.
+- `supabase/migrations/*_paypal_orders.sql`: pedidos privados, instantáneas del tipo de cambio y deduplicación de webhooks.
+- `supabase/functions/{paypal-create-order,paypal-capture-order,paypal-webhook}` y `_shared/paypal.ts`: pagos y verificación.
+- `supabase/config.toml`: funciones públicas sin JWT Supabase; la autorización de PayPal ocurre por OAuth y firma de webhook. Crear/capturar tienen validación de payload, origen permitido y límites operativos; Origin no sustituye un límite de solicitudes.
+
+## Credenciales y moneda
+
+El SDK de PayPal necesita el Client ID en el navegador. Se guarda en un secret de Edge Functions y se devuelve al comprador al preparar la orden; **no es secreto confidencial**. El Client Secret, token BDE y Supabase secret/service role jamás se envían al navegador. La URL y publishable key Supabase actuales son públicas por diseño. Asegura que el Client ID y Client Secret pertenezcan a la misma app y que su merchant ID sea el de la cuenta receptora.
+
+La fuente del monto CLP son `public.products`/`public.product_variants`, jamás el carrito ni `content.js`. La función consulta la serie oficial `F073.TCO.PRE.Z.D` (dólar observado CLP/USD) del Banco Central, conserva cache hasta 12 horas y exige una observación de menos de cinco días. Redondea una vez el total a centavos USD y guarda el precio CLP, tasa, fecha y total USD. Si la API falla y no hay cache vigente, no permite cobrar. La tasa oficial no es la tasa de conversión final de PayPal ni incluye sus comisiones. Se informa al cliente el monto exacto en USD antes de abrir PayPal. El checkout solo admite `pickup`: no se pide dirección ni se cobra envío. Para habilitar despacho pagado hará falta definir antes zonas y tarifas, almacenarlas en servidor y sumarlas a la orden.
+
+## Antes del despliegue
+
+1. Crea una app REST de **Sandbox** en el [PayPal Developer Dashboard](https://developer.paypal.com/dashboard/applications/sandbox). Identifica Client ID, Client Secret y Merchant ID de la cuenta business Sandbox. Crea también una cuenta buyer Sandbox.
+2. Obtén un token de la [API BDE del Banco Central](https://si3.bcentral.cl/estadisticas/Principal1/Web_Services/acceso_api.html). Guárdalo de forma privada; caduca según la configuración de esa API.
+3. En el proyecto Supabase de pruebas, aplica en orden las migraciones existentes y la nueva (`npx supabase db push` tras `npx supabase link --project-ref <REF_DE_PRUEBA>`). No ejecutes este paso sobre producción antes de probar y revisar el SQL.
+4. Configura las variables desde una terminal privada, **sin valores literales en el historial del shell ni en el repo**. Por ejemplo, usa `npx supabase secrets set --env-file <RUTA_PRIVADA>`; ese archivo debe quedar fuera del repositorio. Variables: `PAYPAL_ENV=sandbox`, `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `PAYPAL_MERCHANT_ID`, `PAYPAL_WEBHOOK_ID`, `BCCH_API_TOKEN`, `PAYPAL_ALLOWED_ORIGINS=https://nachodev-ui.github.io,http://localhost:8000`. La URL y la secret key Supabase son inyectadas por la plataforma; el código acepta `SUPABASE_SECRET_KEYS.default` o la legacy `SUPABASE_SERVICE_ROLE_KEY`. El origen de GitHub Pages no incluye `/gimae-web/`.
+5. Despliega `paypal-create-order`, `paypal-capture-order` y `paypal-webhook` mediante `npx supabase functions deploy <nombre>` desde la raíz del repo. La configuración `verify_jwt=false` es necesaria porque PayPal no tiene JWT Supabase y la tienda es pública.
+6. Registra en la app Sandbox el webhook `https://<REF_DE_PRUEBA>.supabase.co/functions/v1/paypal-webhook` para `PAYMENT.CAPTURE.COMPLETED`. Copia el **Webhook ID** emitido por PayPal a `PAYPAL_WEBHOOK_ID`, que no es el Client ID.
+7. En la base de pruebas confirma stock y un número positivo para una variante o producto. El seed deja todos los inventarios en cero y `stock_confirmed=false`, por lo que ninguna compra pasará sin este paso. En `dist/content.js`, cambia `PAYMENT_METHODS.paypal.enabled` a `true`; apunta `dist/supabase-config.js` al proyecto **de pruebas** si vas a ensayar desde el frontend. No publiques este ajuste en la rama de producción durante Sandbox.
+
+## Pruebas de Sandbox
+
+- `python3 -m http.server 8000 --directory dist`; abre `http://localhost:8000/shop.html` (cualquier `localhost` distinto debe añadirse a `PAYPAL_ALLOWED_ORIGINS`). Agrega la variante confirmada, selecciona **Retiro**, completa nombre y contacto, prepara PayPal y verifica total CLP, monto USD y fecha/tasa.
+- Inicia sesión en el popup con el buyer Sandbox. Comprueba `merch_orders.status`: tras `capture` puede estar `capture_pending`; solo el webhook firmado lo cambia a `paid` y establece `paid_at`. Verifica que el `paypal_capture_id`, el monto USD y el Merchant ID correspondan al panel PayPal Sandbox. El resumen del navegador no es comprobante de pago final.
+- Cancela otro checkout. El carrito debe permanecer y no debe haber un pedido `paid`. Simula una API BDE no disponible o stock agotado; la creación debe fallar sin ofrecer el botón de PayPal.
+- Prueba un POST sin firma a `paypal-webhook`: debe devolver 400/401 y no modificar pedidos. Un `PAYMENT.CAPTURE.COMPLETED` legítimo debe registrarse una sola vez aunque PayPal reenvíe el evento. El simulador de PayPal emite eventos ficticios que no están ligados a tus pedidos reales; úsalo para probar la recepción, no para simular una compra completada de verdad.
+- Desde el cliente público, intenta `select`, `insert`, `update` y `delete` en `merch_orders`, `paypal_fx_rates` y `paypal_webhook_events`. No debe poder leer ni escribir. Con sesión admin, `merch_orders` permite SELECT y deniega escritura directa. Verifica en la base que cambiar montos, cantidades o IDs enviados por el cliente no altere los precios calculados en servidor.
+
+## Publicación y operación
+
+Repite en Live con una app y webhook **Live** separados, `PAYPAL_ENV=live`, secrets Live y un proyecto Supabase o configuración de producción apropiada. Confirma el inventario real antes de activar `PAYMENT_METHODS.paypal.enabled`; no se reservan unidades mientras el comprador tiene abierta la ventana de PayPal, por lo que el equipo debe vigilar ventas simultáneas. Configura límites de solicitudes al endpoint público y alertas sobre errores de funciones/webhook. Si una captura queda `capture_pending` durante demasiado tiempo, concilia contra PayPal y reenvía el webhook; no cobres de nuevo al comprador. Reembolsos y contracargos requieren un procedimiento de revisión aparte; el webhook de esta versión solo marca capturas completadas. Informa en la política de privacidad el almacenamiento de nombre/contacto en Supabase y define un período de conservación.

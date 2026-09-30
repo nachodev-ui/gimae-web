@@ -3,7 +3,7 @@
  * - Productos y precios se leen desde Supabase, con content.js como respaldo.
  * - Entregas y medios de pago se configuran en content.js.
  * - El carrito guarda únicamente IDs, variantes y cantidades; los precios se recalculan al cargar.
- * - Completa los datos bancarios, stock, Client ID público y tipo de cambio exclusivamente en content.js.
+ * - PayPal crea/captura órdenes en Supabase Edge Functions; ningún monto del cliente es confiable.
  * - Nunca pegues aquí un secret de PayPal, contraseña, token o dato privado.
  */
 (async () => {
@@ -51,7 +51,6 @@
   let cart = readCart();
   let selectedShippingId = readShipping();
   let paypalPromise = null;
-  let paypalDraft = null;
 
   function element(tag, className, text) {
     const node = document.createElement(tag);
@@ -412,8 +411,7 @@
   }
 
   function paypalReady() {
-    const clientId = cleanText(config.PAYPAL_CLIENT_ID, 300);
-    return Boolean(config.PAYMENT_METHODS?.paypal?.enabled && clientId && clientId.toUpperCase() !== 'COMPLETAR' && config.PAYPAL_CURRENCY === 'USD' && positiveNumber(config.CLP_PER_USD) > 0);
+    return Boolean(config.PAYMENT_METHODS?.paypal?.enabled && config.backendStatus === 'live' && window.GIMAE_SUPABASE?.url);
   }
 
   function readyMethods() {
@@ -433,7 +431,7 @@
     paymentMethodList.replaceChildren();
     const methods = [
       { id: 'bankTransfer', label: cleanText(config.PAYMENT_METHODS?.bankTransfer?.label || 'Transferencia bancaria', 60), enabled: Boolean(config.PAYMENT_METHODS?.bankTransfer?.enabled), ready: bankReady() },
-      { id: 'paypal', label: cleanText(config.PAYMENT_METHODS?.paypal?.label || 'PayPal', 60), enabled: Boolean(config.PAYMENT_METHODS?.paypal?.enabled), ready: paypalReady() }
+      { id: 'paypal', label: cleanText(config.PAYMENT_METHODS?.paypal?.label || 'PayPal', 60), enabled: Boolean(config.PAYMENT_METHODS?.paypal?.enabled), ready: paypalReady() && selectedShippingId === 'pickup' }
     ].filter(method => method.enabled);
     methods.forEach((method, index) => {
       const label = element('label', `payment-choice${method.ready ? '' : ' is-disabled'}`);
@@ -451,11 +449,6 @@
     return paymentMethodList.querySelector('input[name="paymentMethod"]:checked')?.value || '';
   }
 
-  function paypalAmount() {
-    const rate = positiveNumber(config.CLP_PER_USD);
-    return rate ? Math.round((totals().total / rate) * 100) / 100 : null;
-  }
-
   function updatePaymentUI() {
     const method = chosenPayment();
     const isPaypal = method === 'paypal';
@@ -463,12 +456,9 @@
     paypalConversion.hidden = !isPaypal;
     paypalButtons.hidden = true;
     paypalButtons.replaceChildren();
-    paypalDraft = null;
     if (isPaypal) {
-      const amount = paypalAmount();
-      paypalConversion.textContent = amount === null ? 'Equivalencia pendiente de configuración.' : `${money.format(totals().total)} CLP ≈ ${usd.format(amount)} USD · conversión manual referencial.`;
+      paypalConversion.textContent = 'El monto exacto en USD se calculará en el servidor antes de abrir PayPal.';
       preparePayment.textContent = 'Preparar pago con PayPal';
-      loadPayPal().catch(() => showError(checkoutError, 'No pudimos cargar PayPal. Intenta nuevamente o elige otro método.'));
     } else {
       preparePayment.textContent = 'Generar instrucciones';
     }
@@ -529,65 +519,87 @@
     pendingOrder.hidden = !latestOrder();
   }
 
-  function loadPayPal() {
-    if (!paypalReady()) return Promise.reject(new Error('PAYPAL_NOT_CONFIGURED'));
+  function loadPayPal(clientId) {
     if (window.paypal?.Buttons) return Promise.resolve(window.paypal);
     if (paypalPromise) return paypalPromise;
     paypalPromise = new Promise((resolve, reject) => {
-      const params = new URLSearchParams({ 'client-id': cleanText(config.PAYPAL_CLIENT_ID, 300), currency: 'USD', intent: 'capture', components: 'buttons' });
+      const params = new URLSearchParams({ 'client-id': clientId, currency: 'USD', intent: 'capture', components: 'buttons' });
       const script = document.createElement('script');
       script.src = `https://www.paypal.com/sdk/js?${params.toString()}`;
       script.async = true; script.dataset.gimaePaypal = 'true';
-      script.addEventListener('load', () => window.paypal?.Buttons ? resolve(window.paypal) : reject(new Error('PAYPAL_UNAVAILABLE')), { once: true });
+      script.addEventListener('load', () => window.paypal?.Buttons ? resolve(window.paypal) : (paypalPromise = null, reject(new Error('PAYPAL_UNAVAILABLE'))), { once: true });
       script.addEventListener('error', () => { paypalPromise = null; reject(new Error('PAYPAL_LOAD_ERROR')); }, { once: true });
       document.head.append(script);
     });
     return paypalPromise;
   }
 
+  async function edgeFunction(name, payload) {
+    const url = window.GIMAE_SUPABASE?.url;
+    if (!url) throw new Error('El servidor de pagos no está disponible.');
+    const response = await fetch(`${url}/functions/v1/${name}`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.error || 'No pudimos conectar con el servidor de pagos.');
+    return result;
+  }
+
   async function renderPayPal(order) {
-    checkoutStatus.textContent = 'Cargando PayPal…';
+    if (selectedShippingId !== 'pickup') return showError(checkoutError, 'PayPal solo está disponible para retiro en persona.');
+    checkoutStatus.textContent = 'Confirmando precios, stock y tipo de cambio…';
     showError(checkoutError, '');
-    paypalButtons.replaceChildren(); paypalButtons.hidden = false;
+    paypalButtons.replaceChildren(); paypalButtons.hidden = true;
     preparePayment.hidden = true;
     try {
-      await loadPayPal();
-      const amount = paypalAmount();
-      if (amount === null || amount <= 0) throw new Error('INVALID_AMOUNT');
-      order.paypalUsd = amount;
-      paypalDraft = order;
+      const quote = await edgeFunction('paypal-create-order', {
+        buyerName: order.buyer.name, buyerContact: order.buyer.contact,
+        shippingId: 'pickup',
+        items: cart.map(({ productId, optionId, quantity }) => ({ productId, optionId, quantity }))
+      });
+      order.code = quote.orderCode;
+      order.paypalOrderId = quote.orderId;
+      order.total = quote.totalClp;
+      order.paypalUsd = quote.totalUsd;
+      order.items = quote.items;
+      paypalConversion.textContent = `${money.format(quote.totalClp)} CLP → ${usd.format(Number(quote.totalUsd))} USD · ${Number(quote.clpPerUsd).toLocaleString('es-CL')} CLP/USD (Banco Central, ${quote.rateDate}). Retiro sin costo.`;
+      await loadPayPal(quote.clientId);
+      paypalButtons.hidden = false;
       const buttons = window.paypal.Buttons({
         style: { layout: 'vertical', shape: 'pill', color: 'gold', label: 'paypal' },
-        createOrder: (data, actions) => actions.order.create({
-          purchase_units: [{ reference_id: order.code, custom_id: order.code, description: `Pedido Gimae ${order.code}`, amount: { currency_code: 'USD', value: amount.toFixed(2) } }],
-          application_context: { brand_name: 'Gimae!', shipping_preference: 'NO_SHIPPING', user_action: 'PAY_NOW' }
-        }),
-        onApprove: async (data, actions) => {
-          checkoutStatus.textContent = 'Confirmando el pago con PayPal…';
-          const capture = await actions.order.capture();
-          order.status = 'paypal_verification_pending';
-          order.paypalOrderId = cleanText(data.orderID || capture?.id, 80);
-          saveOrder(order);
-          cart = []; saveCart();
-          checkoutStatus.textContent = 'Pago enviado. Gimae debe verificarlo en PayPal antes del despacho.';
-          checkoutDialog.close();
-          renderOrder(order, preparePayment);
+        createOrder: () => quote.orderId,
+        onApprove: async data => {
+          if (data.orderID !== quote.orderId) throw new Error('La orden aprobada no coincide.');
+          checkoutStatus.textContent = 'Confirmando la captura con PayPal…';
+          try {
+            const result = await edgeFunction('paypal-capture-order', { orderId: quote.orderId });
+            order.status = result.status;
+            saveOrder(order);
+            cart = []; saveCart();
+            checkoutDialog.close();
+            renderOrder(order, preparePayment);
+          } catch (error) {
+            showError(checkoutError, 'No pudimos verificar el resultado. No repitas el pago: contacta a Gimae con el ID ' + quote.orderId + '.');
+            checkoutStatus.textContent = '';
+            paypalButtons.hidden = true;
+          }
         },
         onCancel: () => {
           checkoutStatus.textContent = 'Pago cancelado. Tu carrito sigue guardado y puedes intentarlo otra vez.';
           preparePayment.hidden = false; paypalButtons.hidden = true;
         },
         onError: () => {
-          showError(checkoutError, 'PayPal no pudo completar el pago. No se registró como pagado.');
+          showError(checkoutError, 'PayPal tuvo un error. Antes de intentarlo de nuevo, revisa tu cuenta o consulta a Gimae con el ID ' + quote.orderId + '.');
           checkoutStatus.textContent = '';
           preparePayment.hidden = false; paypalButtons.hidden = true;
         }
       });
       if (buttons.isEligible && !buttons.isEligible()) throw new Error('PAYPAL_INELIGIBLE');
       await buttons.render('#paypal-buttons');
-      checkoutStatus.textContent = 'Revisa el equivalente en USD y continúa en PayPal.';
+      checkoutStatus.textContent = 'Revisa el total exacto en USD y continúa en PayPal.';
     } catch (error) {
-      showError(checkoutError, 'No pudimos preparar PayPal. Intenta nuevamente o usa otro método disponible.');
+      showError(checkoutError, error.message || 'No pudimos preparar PayPal. Intenta nuevamente.');
       checkoutStatus.textContent = '';
       preparePayment.hidden = false; paypalButtons.hidden = true;
     }
@@ -654,7 +666,7 @@
 
   function renderOrder(order, opener) {
     orderSummary.replaceChildren();
-    const status = order.paymentMethod === 'paypal' ? 'Pago enviado · pendiente de verificación' : 'Pendiente de pago';
+    const status = order.paymentMethod === 'paypal' ? 'Captura recibida · confirmación por webhook pendiente' : 'Pendiente de pago';
     orderSummary.append(element('p', 'order-status', status));
     const code = element('div', 'order-code'); code.append(element('span', '', 'Código de pedido'), element('strong', '', cleanText(order.code, 40)), copyButton(order.code));
     orderSummary.append(code);
@@ -679,9 +691,9 @@
       orderSummary.append(section);
     } else {
       orderSummary.append(copyRow('ID de orden PayPal', order.paypalOrderId || 'Pendiente'));
-      orderSummary.append(element('p', 'order-instruction', 'El pago no implica despacho automático. El equipo de Gimae debe revisar en su panel de PayPal que la operación esté completada y que el monto sea correcto.'));
+      orderSummary.append(element('p', 'order-instruction', `Monto cobrado: ${usd.format(Number(order.paypalUsd))} USD. El retiro se coordina tras la confirmación del pago. No repitas el pago si falta la confirmación.`));
     }
-    orderSummary.append(element('p', 'order-local-note', 'Este resumen existe solo en este navegador. El pedido se confirma cuando el equipo recibe y verifica el comprobante o pago.'));
+    orderSummary.append(element('p', 'order-local-note', order.paymentMethod === 'paypal' ? 'El pedido PayPal se guarda en Supabase. Esta copia local sirve para reabrir el resumen.' : 'Este resumen existe solo en este navegador. El pedido se confirma cuando el equipo recibe y verifica el comprobante.'));
     const actions = contactActions(order);
     if (actions.children.length) orderSummary.append(actions);
     openDialog(orderDialog, opener || document.querySelector('[data-open-cart]'));
