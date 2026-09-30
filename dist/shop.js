@@ -42,6 +42,7 @@
   const checkoutStatus = document.querySelector('#checkout-status');
   const paymentMethodList = document.querySelector('#payment-method-list');
   const preparePayment = document.querySelector('#prepare-payment');
+  const checkoutLoading = document.querySelector('#checkout-loading');
   const paypalButtons = document.querySelector('#paypal-buttons');
   const paypalConversion = document.querySelector('#paypal-conversion');
   const paypalRisk = document.querySelector('#paypal-risk');
@@ -55,6 +56,8 @@
   let cart = readCart();
   let selectedShippingId = readShipping();
   let paypalPromise = null;
+  let paypalPreparing = false;
+  let paypalPrepared = false;
 
   function element(tag, className, text) {
     const node = document.createElement(tag);
@@ -454,6 +457,7 @@
   }
 
   function updatePaymentUI() {
+    paypalPrepared = false;
     const method = chosenPayment();
     const isPaypal = method === 'paypal';
     paypalRisk.hidden = !isPaypal;
@@ -551,8 +555,12 @@
   }
 
   async function renderPayPal(order) {
+    if (paypalPreparing || paypalPrepared) return;
     if (selectedShippingId !== 'pickup') return showError(checkoutError, 'PayPal solo está disponible para retiro en persona.');
-    checkoutStatus.textContent = 'Confirmando precios, stock y tipo de cambio…';
+    paypalPreparing = true;
+    preparePayment.disabled = true;
+    checkoutLoading.hidden = false;
+    checkoutStatus.textContent = '';
     showError(checkoutError, '');
     paypalButtons.replaceChildren(); paypalButtons.hidden = true;
     preparePayment.hidden = true;
@@ -570,11 +578,14 @@
       paypalConversion.textContent = `${money.format(quote.totalClp)} CLP → ${usd.format(Number(quote.totalUsd))} USD · ${Number(quote.clpPerUsd).toLocaleString('es-CL')} CLP/USD (Banco Central, ${quote.rateDate}). Retiro sin costo.`;
       await loadPayPal(quote.clientId);
       paypalButtons.hidden = false;
+      let capturing = false;
       const buttons = window.paypal.Buttons({
         style: { layout: 'vertical', shape: 'pill', color: 'gold', label: 'paypal' },
         createOrder: () => quote.orderId,
         onApprove: async data => {
+          if (capturing) return;
           if (data.orderID !== quote.orderId) throw new Error('La orden aprobada no coincide.');
+          capturing = true;
           checkoutStatus.textContent = 'Confirmando la captura con PayPal…';
           try {
             const result = await edgeFunction('paypal-capture-order', { orderId: quote.orderId });
@@ -590,10 +601,12 @@
           }
         },
         onCancel: () => {
+          paypalPrepared = false;
           checkoutStatus.textContent = 'Pago cancelado. Tu carrito sigue guardado y puedes intentarlo otra vez.';
           preparePayment.hidden = false; paypalButtons.hidden = true;
         },
         onError: () => {
+          paypalPrepared = false;
           showError(checkoutError, 'PayPal tuvo un error. Antes de intentarlo de nuevo, revisa tu cuenta o consulta a Gimae con el ID ' + quote.orderId + '.');
           checkoutStatus.textContent = '';
           preparePayment.hidden = false; paypalButtons.hidden = true;
@@ -601,11 +614,17 @@
       });
       if (buttons.isEligible && !buttons.isEligible()) throw new Error('PAYPAL_INELIGIBLE');
       await buttons.render('#paypal-buttons');
+      paypalPrepared = true;
       checkoutStatus.textContent = 'Revisa el total exacto en USD y continúa en PayPal.';
     } catch (error) {
+      paypalPrepared = false;
       showError(checkoutError, error.message || 'No pudimos preparar PayPal. Intenta nuevamente.');
       checkoutStatus.textContent = '';
       preparePayment.hidden = false; paypalButtons.hidden = true;
+    } finally {
+      paypalPreparing = false;
+      preparePayment.disabled = false;
+      checkoutLoading.hidden = true;
     }
   }
 
@@ -744,7 +763,9 @@
   });
 
   document.querySelector('#checkout-form').addEventListener('submit', event => {
-    event.preventDefault(); showError(checkoutError, ''); checkoutStatus.textContent = '';
+    event.preventDefault();
+    if (paypalPreparing || (paypalPrepared && chosenPayment() === 'paypal')) return;
+    showError(checkoutError, ''); checkoutStatus.textContent = '';
     const buyer = buyerData();
     if (buyer.error) return showError(checkoutError, buyer.error);
     const method = chosenPayment();

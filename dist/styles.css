@@ -404,3 +404,11 @@ html{background:var(--paper);overflow-x:clip;scrollbar-color:#d594b6 var(--paper
 .live-posts img{max-height:220px;width:100%;object-fit:contain;border-radius:12px}
 .admin-hint{margin-top:12px;color:var(--muted)}
 @media(max-width:600px){.live-posts .diary-card{grid-template-columns:1fr}}
+
+/* Espera visible y accesible al preparar una orden PayPal. */
+.checkout-dialog #prepare-payment[hidden],.checkout-dialog #paypal-buttons[hidden],.checkout-loading[hidden]{display:none!important}
+.checkout-loading{display:flex;align-items:center;gap:14px;margin:6px 0 14px;padding:15px 17px;border:1px solid #edc8df;border-radius:14px;background:linear-gradient(115deg,#fff0f8,#f7f0ff);color:#7d3260;box-shadow:0 4px 0 #f5d9e8}
+.checkout-loading-spinner{flex:none;width:31px;height:31px;border:3px solid #f1c8dd;border-top-color:#b82871;border-radius:50%;animation:checkout-loading-spin .8s linear infinite}
+.checkout-loading-copy{display:grid;gap:2px;line-height:1.4}.checkout-loading-copy strong{font:600 1rem var(--display)}.checkout-loading-copy small{color:#694f70;font-size:.79rem}
+@keyframes checkout-loading-spin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.checkout-loading-spinner{display:grid;place-items:center;border-color:#b82871;animation:none}.checkout-loading-spinner:after{content:'✦';font-size:.83rem;line-height:1}}

@@ -7,10 +7,10 @@
   <meta name="description" content="Arma tu pedido de merch Gimae, revisa el total en pesos chilenos y elige una forma de pago disponible.">
   <link rel="icon" type="image/png" sizes="48x48" href="images/favicon.png">
   <link rel="apple-touch-icon" sizes="180x180" href="images/apple-touch-icon.png">
-  <link rel="stylesheet" href="styles.css?v=20260928-supabase">
+  <link rel="stylesheet" href="styles.css?v=20260930-paypal-loading01">
   <link rel="stylesheet" href="shop-gallery.css?v=20260924-2">
   <link rel="stylesheet" href="shop-inventory.css?v=20260929-inventory02">
-  <script src="content.js?v=20260924-final" defer></script><script src="supabase-config.js" defer></script><script src="backend.js?v=20260929-inventory01" defer></script><script src="nav.js" defer></script><script src="effects.js" defer></script><script src="shop-cheki-variants.js?v=20260923-1" defer></script><script src="shop.js?v=20260928-supabase" defer></script><script src="shop-inventory.js?v=20260929-inventory02" defer></script><script src="shop-gallery.js?v=20260928-supabase" defer></script><script src="avatar.js?v=20260924-final" defer></script>
+  <script src="content.js?v=20260924-final" defer></script><script src="supabase-config.js" defer></script><script src="backend.js?v=20260929-inventory01" defer></script><script src="nav.js" defer></script><script src="effects.js" defer></script><script src="shop-cheki-variants.js?v=20260923-1" defer></script><script src="shop.js?v=20260930-paypal-loading01" defer></script><script src="shop-inventory.js?v=20260929-inventory02" defer></script><script src="shop-gallery.js?v=20260928-supabase" defer></script><script src="avatar.js?v=20260924-final" defer></script>
   <script type="module" src="shop-lightstick-3d.js?v=20260924-1"></script>
 </head>
 <body class="tool-page shop-page">
@@ -78,6 +78,10 @@
       <p class="paypal-risk" id="paypal-risk" hidden>PayPal está disponible solo para retiro en persona. Confirmaremos el pedido tras verificar el pago y coordinar disponibilidad contigo.</p>
       <p class="shop-error" id="checkout-error" role="alert" hidden></p>
       <p class="checkout-status" id="checkout-status" aria-live="polite"></p>
+      <div class="checkout-loading" id="checkout-loading" role="status" aria-live="polite" hidden>
+        <span class="checkout-loading-spinner" aria-hidden="true"></span>
+        <span class="checkout-loading-copy"><strong>Preparando tu pago ♡</strong><small>Confirmando precios, stock y tipo de cambio…</small></span>
+      </div>
       <button class="button primary" id="prepare-payment" type="submit">Generar instrucciones <span aria-hidden="true">↗</span></button>
       <div id="paypal-buttons" hidden></div>
     </form>
