@@ -1,12 +1,10 @@
 (() => {
   'use strict';
 
-  const ready = window.GIMAE_READY;
-  if (!ready || typeof ready.then !== 'function') return;
-
   const STORAGE_KEY = 'gimae-seen-event-announcements-v1';
   const PREVIEW = new URLSearchParams(location.search).get('event-announcement') === 'preview';
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  let started = false;
 
   const node = (tag, className, text) => {
     const element = document.createElement(tag);
@@ -62,7 +60,14 @@
       localStorage.removeItem(probe);
       return localStorage;
     } catch {
-      try { return sessionStorage; } catch { return null; }
+      try {
+        const probe = `${STORAGE_KEY}-session-probe`;
+        sessionStorage.setItem(probe, '1');
+        sessionStorage.removeItem(probe);
+        return sessionStorage;
+      } catch {
+        return null;
+      }
     }
   }
 
@@ -77,18 +82,17 @@
     }
   }
 
-  function remember(events) {
+  function remember(event) {
     if (PREVIEW) return;
     const target = storage();
     if (!target) return;
     const seen = readSeen();
-    events.forEach((event, index) => seen.add(eventIdentity(event, index)));
+    seen.add(eventIdentity(event));
     try { target.setItem(STORAGE_KEY, JSON.stringify([...seen].slice(-80))); } catch { /* Progressive enhancement only. */ }
   }
 
-  function visibleEvents() {
-    const all = Array.isArray(window.GIMAE?.events) ? window.GIMAE.events : [];
-    return all
+  function visibleEvents(source) {
+    return (Array.isArray(source) ? source : [])
       .filter(event => event && event.active !== false && eventIsCurrentOrFuture(event))
       .sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at))
       .slice(0, 4);
@@ -154,21 +158,22 @@
     const view = node('button', 'event-announcement-action primary', 'Ver evento en la agenda ↓');
     view.type = 'button';
     view.addEventListener('click', () => {
-      const key = eventDomKey(event);
-      const target = document.querySelector(`[data-event-key="${CSS.escape(key)}"]`);
+      const target = document.getElementById(`gimae-event-${eventDomKey(event)}`);
       dialog.close('view-event');
-      if (!target) {
-        document.querySelector('#eventos')?.scrollIntoView({ behavior: reducedMotion.matches ? 'auto' : 'smooth', block: 'start' });
-        return;
-      }
+      const scrollTarget = target || document.querySelector('#eventos');
+      if (!scrollTarget) return;
       window.setTimeout(() => {
-        target.classList.add('is-announcement-target');
-        target.setAttribute('tabindex', '-1');
-        target.scrollIntoView({ behavior: reducedMotion.matches ? 'auto' : 'smooth', block: 'center' });
-        window.setTimeout(() => {
-          target.focus({ preventScroll: true });
-          window.setTimeout(() => target.classList.remove('is-announcement-target'), 1500);
-        }, reducedMotion.matches ? 0 : 520);
+        if (target) {
+          target.classList.add('is-announcement-target');
+          target.setAttribute('tabindex', '-1');
+        }
+        scrollTarget.scrollIntoView({ behavior: reducedMotion.matches ? 'auto' : 'smooth', block: target ? 'center' : 'start' });
+        if (target) {
+          window.setTimeout(() => {
+            target.focus({ preventScroll: true });
+            window.setTimeout(() => target.classList.remove('is-announcement-target'), 1500);
+          }, reducedMotion.matches ? 0 : 520);
+        }
       }, 60);
     });
     actions.append(view);
@@ -220,20 +225,62 @@
     return dialog;
   }
 
-  function showIfNeeded() {
-    const events = visibleEvents();
+  function showFrom(source, reason = 'renderer') {
+    if (started) return;
+    const events = visibleEvents(source);
     const candidate = candidateFrom(events);
-    if (!candidate) return;
+    if (!candidate) {
+      if (PREVIEW) console.warn(`[GIMAE event preview] No hay eventos activos y futuros disponibles (${reason}).`, source);
+      return;
+    }
+
+    started = true;
     const dialog = buildAnnouncement(candidate);
-    const delay = reducedMotion.matches ? 180 : 1150;
+    const delay = reducedMotion.matches ? 120 : 650;
     window.setTimeout(() => {
       if (!dialog.isConnected || dialog.open) return;
-      document.documentElement.classList.add('event-announcement-open');
-      dialog.showModal();
-      remember(events);
-      dialog.querySelector('.event-announcement-close')?.focus({ preventScroll: true });
+      try {
+        document.documentElement.classList.add('event-announcement-open');
+        dialog.showModal();
+        remember(candidate);
+        dialog.querySelector('.event-announcement-close')?.focus({ preventScroll: true });
+      } catch (error) {
+        started = false;
+        document.documentElement.classList.remove('event-announcement-open');
+        dialog.remove();
+        console.error('No se pudo abrir el anuncio del nuevo evento.', error);
+      }
     }, delay);
   }
 
-  ready.then(showIfNeeded).catch(() => {});
+  window.addEventListener('gimae:public-events-ready', event => {
+    showFrom(event.detail?.events, 'public-events-ready');
+  }, { once: true });
+
+  // Si el renderizador terminó antes de que este archivo se ejecutara, no perdemos
+  // el evento. Esta ruta también hace que ?event-announcement=preview sea determinista.
+  if (window.GIMAE_PUBLIC_EVENTS_READY) {
+    showFrom(window.GIMAE_PUBLIC_EVENTS, 'already-ready');
+  }
+
+  function attachBackend(attempt = 0) {
+    if (started) return;
+    const ready = window.GIMAE_READY;
+    if (ready && typeof ready.then === 'function') {
+      ready.then(() => {
+        if (!started) showFrom(window.GIMAE_PUBLIC_EVENTS_READY ? window.GIMAE_PUBLIC_EVENTS : window.GIMAE?.events, 'backend-ready');
+      }).catch(error => {
+        console.warn('No se pudo preparar el anuncio desde GIMAE_READY.', error);
+        if (!started) showFrom(window.GIMAE?.events, 'backend-fallback');
+      });
+      return;
+    }
+    if (attempt < 80) {
+      window.setTimeout(() => attachBackend(attempt + 1), 50);
+      return;
+    }
+    if (!started) showFrom(window.GIMAE?.events, 'local-timeout');
+  }
+
+  attachBackend();
 })();
