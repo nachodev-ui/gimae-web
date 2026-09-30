@@ -144,6 +144,72 @@ export async function paypal(
   return data;
 }
 
+type CaptureOrder = { id: string; total_usd_cents: number };
+type PayPalCapturedOrder = {
+  id?: string;
+  status?: string;
+  purchase_units?: Array<{
+    payee?: { merchant_id?: string };
+    payments?: { captures?: unknown[] };
+  }>;
+};
+
+// También se usa desde el webhook ORDER.APPROVED: misma clave para la misma captura.
+export async function captureApprovedOrder(
+  db: ReturnType<typeof admin>,
+  local: CaptureOrder,
+  orderId: string,
+  token = await paypalToken(),
+): Promise<void> {
+  const capture = await paypal(
+    `/v2/checkout/orders/${encodeURIComponent(orderId)}/capture`,
+    token,
+    {
+      method: "POST",
+      headers: { "PayPal-Request-Id": local.id },
+      body: "{}",
+    },
+  );
+  await recordCompletedCapture(db, local, orderId, capture);
+}
+
+export async function recordCompletedCapture(
+  db: ReturnType<typeof admin>,
+  local: CaptureOrder,
+  orderId: string,
+  capture: PayPalCapturedOrder,
+): Promise<void> {
+  const units = capture.purchase_units || [];
+  const payments = units.flatMap((unit) => unit.payments?.captures || []);
+  if (
+    capture.id !== orderId || capture.status !== "COMPLETED" ||
+    units.length !== 1 || payments.length !== 1
+  ) {
+    throw new CheckoutError(
+      502,
+      "PayPal aún no confirmó la captura. Consulta el estado antes de reintentar.",
+    );
+  }
+  const payment = payments[0] as {
+    id: string;
+    status: string;
+    amount?: { currency_code: string; value: string };
+  };
+  if (
+    payment.status !== "COMPLETED" ||
+    payment.amount?.currency_code !== "USD" ||
+    cents(payment.amount?.value) !== local.total_usd_cents ||
+    units[0]?.payee?.merchant_id !== paypalMerchantId() || !payment.id
+  ) {
+    throw new CheckoutError(502, "El pago recibido no coincide con el pedido. Contacta a Gimae.");
+  }
+  const { error } = await db.from("merch_orders").update({
+    status: "capture_pending",
+    paypal_capture_id: payment.id,
+  }).eq("id", local.id).eq("status", "awaiting_approval");
+  if (error) throw error;
+}
+
 // Tipo de cambio oficial CLP/USD. Consulta reciente al crear la orden; cache <= 12 h.
 // Se rehúsa a cobrar con una observación de más de 5 días (incluye fines de semana).
 export async function currentRate(db: ReturnType<typeof admin>) {

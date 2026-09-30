@@ -1,9 +1,11 @@
 import {
   admin,
+  captureApprovedOrder,
   cents,
   paypal,
   paypalMerchantId,
   paypalToken,
+  recordCompletedCapture,
 } from "../_shared/paypal.ts";
 
 // PayPal no envía JWT Supabase. Solo se procesa tras verify-webhook-signature.
@@ -56,11 +58,14 @@ Deno.serve(async (req) => {
     ) {
       return new Response("Evento inválido", { status: 400 });
     }
-    if (event.event_type !== "PAYMENT.CAPTURE.COMPLETED") {
+    const approved = event.event_type === "CHECKOUT.ORDER.APPROVED";
+    if (!approved && event.event_type !== "PAYMENT.CAPTURE.COMPLETED") {
       return new Response("Ignorado", { status: 200 });
     }
     const resource = event.resource;
-    const orderId = resource?.supplementary_data?.related_ids?.order_id;
+    const orderId = approved
+      ? resource?.id
+      : resource?.supplementary_data?.related_ids?.order_id;
     if (typeof orderId !== "string") {
       return new Response("Sin order ID", { status: 400 });
     }
@@ -72,6 +77,42 @@ Deno.serve(async (req) => {
       ).maybeSingle();
     if (findError) throw findError;
     if (!order) return new Response("Orden aún no registrada", { status: 503 });
+    if (approved) {
+      if (resource.status !== "APPROVED") {
+        return new Response("Aprobación inválida", { status: 422 });
+      }
+      if (order.status === "awaiting_approval") {
+        // Verifica la orden desde PayPal antes de capturar, incluso con webhook firmado.
+        const remote = await paypal(
+          `/v2/checkout/orders/${encodeURIComponent(orderId)}`,
+          token,
+        );
+        const units = remote.purchase_units || [];
+        if (
+          remote.id !== orderId ||
+          !["APPROVED", "COMPLETED"].includes(remote.status) ||
+          units.length !== 1 || units[0]?.reference_id !== order.id ||
+          units[0]?.payee?.merchant_id !== paypalMerchantId() ||
+          units[0]?.amount?.currency_code !== "USD" ||
+          cents(units[0]?.amount?.value) !== order.total_usd_cents
+        ) {
+          console.error("Orden aprobada discordante", event.id, orderId);
+          return new Response("Orden discordante", { status: 422 });
+        }
+        if (remote.status === "APPROVED") {
+          await captureApprovedOrder(db, order, orderId, token);
+        } else {
+          // El navegador pudo capturar antes de que llegara este evento.
+          await recordCompletedCapture(db, order, orderId, remote);
+        }
+      }
+      const { error: eventError } = await db.from("paypal_webhook_events").upsert(
+        { paypal_event_id: event.id, event_type: event.event_type, paypal_order_id: orderId },
+        { onConflict: "paypal_event_id", ignoreDuplicates: true },
+      );
+      if (eventError) throw eventError;
+      return new Response("OK", { status: 200 });
+    }
     if (
       resource.status !== "COMPLETED" ||
       resource.amount?.currency_code !== "USD" ||
