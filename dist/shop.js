@@ -50,9 +50,11 @@
   const paypalWaitAmount = document.querySelector('#paypal-wait-amount');
   const paypalWaitProgress = document.querySelector('#paypal-wait-progress');
   const paypalWaitNote = document.querySelector('#paypal-wait-note');
+  const paypalCancelled = document.querySelector('#paypal-cancelled');
+  const paypalCancelledBack = document.querySelector('#paypal-cancelled-back');
   const paypalButtons = document.querySelector('#paypal-buttons');
   const paypalConversion = document.querySelector('#paypal-conversion');
-  const paypalRisk = document.querySelector('#paypal-risk');
+  const checkoutPrivacy = document.querySelector('#checkout-privacy');
   const storageNote = document.querySelector('#cart-storage-note');
   const configNote = document.querySelector('#shop-config-note');
   const pendingOrder = document.querySelector('#pending-order');
@@ -477,12 +479,14 @@
     paypalPrepared = false;
     const method = chosenPayment();
     const isPaypal = method === 'paypal';
-    paypalRisk.hidden = !isPaypal;
     paypalConversion.hidden = !isPaypal;
+    checkoutPrivacy.textContent = isPaypal
+      ? 'Usaremos tu nombre y contacto para coordinar el retiro. PayPal cobra en USD.'
+      : 'Tus datos quedan en el resumen del pedido de este dispositivo.';
     paypalButtons.hidden = true;
     paypalButtons.replaceChildren();
     if (isPaypal) {
-      paypalConversion.textContent = 'El monto exacto en USD se calculará en el servidor antes de abrir PayPal.';
+      paypalConversion.textContent = 'Verás el total exacto en USD antes de pagar. Retiro en persona sin costo.';
       preparePayment.textContent = 'Preparar pago con PayPal';
     } else {
       preparePayment.textContent = 'Generar instrucciones';
@@ -629,6 +633,7 @@
     paypalWait.hidden = false;
     checkoutDialog.classList.add('is-paypal-waiting');
     checkoutDialog.setAttribute('aria-labelledby', 'paypal-wait-title');
+    checkoutDialog.scrollTop = 0;
   }
 
   function clearPayPalWait() {
@@ -638,6 +643,25 @@
     checkoutDetails.removeAttribute('aria-hidden');
     checkoutDialog.classList.remove('is-paypal-waiting');
     checkoutDialog.setAttribute('aria-labelledby', 'checkout-title');
+  }
+
+  function showPayPalCancelled() {
+    clearPayPalWait();
+    checkoutDetails.hidden = true;
+    paypalCancelled.hidden = false;
+    checkoutDialog.classList.add('is-paypal-cancelled');
+    checkoutDialog.setAttribute('aria-labelledby', 'paypal-cancelled-title');
+    checkoutDialog.scrollTop = 0;
+    paypalCancelledBack.focus();
+  }
+
+  function returnToCheckout() {
+    paypalCancelled.hidden = true;
+    checkoutDetails.hidden = false;
+    checkoutDialog.classList.remove('is-paypal-cancelled');
+    checkoutDialog.setAttribute('aria-labelledby', 'checkout-title');
+    checkoutDialog.scrollTop = 0;
+    preparePayment.focus();
   }
 
   async function renderPayPal(order) {
@@ -661,7 +685,7 @@
       order.total = quote.totalClp;
       order.paypalUsd = quote.totalUsd;
       order.items = quote.items;
-      paypalConversion.textContent = `${money.format(quote.totalClp)} CLP → ${usd.format(Number(quote.totalUsd))} USD · ${Number(quote.clpPerUsd).toLocaleString('es-CL')} CLP/USD (Banco Central, ${quote.rateDate}). Retiro sin costo.`;
+      paypalConversion.textContent = `${money.format(quote.totalClp)} CLP → ${usd.format(Number(quote.totalUsd))} USD · Retiro sin costo.`;
       await loadPayPal(quote.clientId);
       paypalButtons.hidden = false;
       let capturing = false;
@@ -703,10 +727,11 @@
         },
         onCancel: () => {
           if (capturing) return;
-          clearPayPalWait();
           paypalPrepared = false;
-          checkoutStatus.textContent = 'Pago cancelado. Tu carrito sigue guardado y puedes intentarlo otra vez.';
+          checkoutStatus.textContent = '';
+          paypalConversion.textContent = 'Verás el total exacto en USD antes de pagar. Retiro en persona sin costo.';
           preparePayment.hidden = false; paypalButtons.hidden = true;
+          showPayPalCancelled();
         },
         onError: () => {
           if (capturing) return;
@@ -886,13 +911,20 @@
     if (dialog?.open) dialog.close();
   }
 
+  paypalCancelledBack.addEventListener('click', returnToCheckout);
+
   document.querySelectorAll('.shop-dialog').forEach(dialog => {
     dialog.querySelector('[data-close-dialog]')?.addEventListener('click', () => closeDialog(dialog));
     dialog.addEventListener('cancel', event => {
       if (dialog === checkoutDialog && checkoutDialog.classList.contains('is-paypal-waiting')) event.preventDefault();
+      if (dialog === checkoutDialog && checkoutDialog.classList.contains('is-paypal-cancelled')) {
+        event.preventDefault();
+        returnToCheckout();
+      }
     });
     dialog.addEventListener('click', event => {
       if (dialog === checkoutDialog && checkoutDialog.classList.contains('is-paypal-waiting')) return;
+      if (dialog === checkoutDialog && checkoutDialog.classList.contains('is-paypal-cancelled')) return;
       if (event.target !== dialog) return;
       const bounds = dialog.getBoundingClientRect();
       if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) closeDialog(dialog);

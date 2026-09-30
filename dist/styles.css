@@ -413,20 +413,29 @@ html{background:var(--paper);overflow-x:clip;scrollbar-color:#d594b6 var(--paper
 @keyframes checkout-loading-spin{to{transform:rotate(360deg)}}
 @media(prefers-reduced-motion:reduce){.checkout-loading-spinner{display:grid;place-items:center;border-color:#b82871;animation:none}.checkout-loading-spinner:after{content:'✦';font-size:.83rem;line-height:1}}
 
-/* Vista de espera durante la ventana de PayPal: conserva el iframe del SDK montado. */
-.paypal-wait[hidden]{display:none!important}
-.checkout-dialog.is-paypal-waiting{position:relative;min-height:min(540px,88vh);padding:0;overflow:hidden}
-.checkout-dialog.is-paypal-waiting #checkout-details{position:absolute;inset:0;opacity:0;pointer-events:none}
-.checkout-dialog.is-paypal-waiting>.dialog-close{display:none}
-.paypal-wait{min-height:min(540px,88vh);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:42px clamp(22px,6vw,64px);background:radial-gradient(circle at 18% 15%,#fff1c8 0,transparent 34%),radial-gradient(circle at 85% 90%,#f3e5ff 0,transparent 33%),#fffafd}
+/* El iframe de PayPal sigue montado mientras la ventana externa está abierta. */
+.checkout-dialog #checkout-details[hidden],.paypal-wait[hidden],.paypal-cancelled[hidden]{display:none!important}
+body.dialog-open{overflow:hidden}
+.checkout-dialog:is(.is-paypal-waiting,.is-paypal-cancelled){position:fixed;inset:0;margin:auto;max-height:calc(100dvh - 32px);padding:0;overflow:auto}
+.checkout-dialog.is-paypal-waiting #checkout-details{position:absolute;inset:0 0 auto;height:0;overflow:hidden;opacity:0;pointer-events:none}
+.checkout-dialog:is(.is-paypal-waiting,.is-paypal-cancelled)>.dialog-close{display:none}
+.paypal-wait,.paypal-cancelled{min-height:min(540px,calc(100dvh - 32px));display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:42px clamp(22px,6vw,64px);background:radial-gradient(circle at 18% 15%,#fff1c8 0,transparent 34%),radial-gradient(circle at 85% 90%,#f3e5ff 0,transparent 33%),#fffafd}
 .paypal-wait-art{position:relative;display:grid;place-items:center;width:108px;height:108px;margin-bottom:23px;border:2px solid #efb4d1;border-radius:36px;background:#fff0f8;box-shadow:7px 8px 0 #f8dbe9;transform:rotate(-5deg);color:#c32371;font:600 4rem var(--display)}
 .paypal-wait-art>span:first-child{transform:rotate(5deg)}.paypal-wait-orbit{position:absolute;right:-15px;top:-19px;color:#e6ac27;font-size:2rem;animation:paypal-wait-float 2.2s ease-in-out infinite alternate}
 .paypal-wait .eyebrow{font-size:.72rem;letter-spacing:.16em;color:#a73470}.paypal-wait h2{margin:10px 0 13px;max-width:580px;font-size:clamp(2rem,5vw,3rem);line-height:1.1}.paypal-wait>p:not(.eyebrow){max-width:490px;line-height:1.55;color:#76596d;font-size:.93rem}
 .paypal-wait-amount{margin-top:18px;padding:9px 17px;border:1px solid #edc7db;border-radius:30px;background:white;color:#853363!important;font-weight:700;box-shadow:0 3px 0 #f6dce9}
 .paypal-wait-progress{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:27px;color:#74345c;font-size:.9rem;font-weight:700}.paypal-wait-progress .checkout-loading-spinner{width:26px;height:26px}
 .paypal-wait .paypal-wait-note{margin-top:23px;font-size:.79rem!important;color:#806d7a!important}
+.paypal-cancelled-art{display:grid;place-items:center;width:90px;height:90px;margin-bottom:24px;border:2px solid #edb9d4;border-radius:30px;background:#fff0f8;color:#c32371;font:600 3.5rem var(--display);box-shadow:6px 7px 0 #f7dce9;transform:rotate(-5deg)}
+.paypal-cancelled .eyebrow{color:#a73470}
+.paypal-cancelled h2{margin:10px 0 16px;font-size:clamp(2rem,5vw,3rem)}
+.paypal-cancelled>p:not(.eyebrow){max-width:440px;color:#76596d;line-height:1.55}
+.paypal-cancelled .button{width:min(100%,320px);margin-top:30px}
+/* Información comercial breve; la conversión exacta sigue visible antes de pagar. */
+.checkout-dialog .checkout-privacy{margin-top:9px;padding:0;background:none;color:#665b69;font-size:.82rem}
+.checkout-dialog .paypal-conversion{background:#f7eefc;color:#684f74}
 @keyframes paypal-wait-float{to{transform:translateY(7px)}}
-@media(max-width:620px){.paypal-wait{padding:34px 21px}.paypal-wait-art{width:90px;height:90px;font-size:3.3rem}.paypal-wait h2{font-size:2rem}}
+@media(max-width:620px){.paypal-wait,.paypal-cancelled{padding:34px 21px}.paypal-wait-art{width:90px;height:90px;font-size:3.3rem}.paypal-wait h2{font-size:2rem}}
 @media(prefers-reduced-motion:reduce){.paypal-wait-orbit{animation:none}}
 .order-status.is-paid{background:#e8f8ec;color:#236540}
 

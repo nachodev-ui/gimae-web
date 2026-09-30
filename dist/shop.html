@@ -7,10 +7,10 @@
   <meta name="description" content="Arma tu pedido de merch Gimae, revisa el total en pesos chilenos y elige una forma de pago disponible.">
   <link rel="icon" type="image/png" sizes="48x48" href="images/favicon.png">
   <link rel="apple-touch-icon" sizes="180x180" href="images/apple-touch-icon.png">
-  <link rel="stylesheet" href="styles.css?v=20260930-order-card01">
+  <link rel="stylesheet" href="styles.css?v=20260930-paypal-cancel01">
   <link rel="stylesheet" href="shop-gallery.css?v=20260924-2">
   <link rel="stylesheet" href="shop-inventory.css?v=20260929-inventory02">
-  <script src="content.js?v=20260924-final" defer></script><script src="supabase-config.js" defer></script><script src="backend.js?v=20260929-inventory01" defer></script><script src="nav.js" defer></script><script src="effects.js" defer></script><script src="shop-cheki-variants.js?v=20260923-1" defer></script><script src="shop.js?v=20260930-order-card01" defer></script><script src="shop-inventory.js?v=20260929-inventory02" defer></script><script src="shop-gallery.js?v=20260928-supabase" defer></script><script src="avatar.js?v=20260924-final" defer></script>
+  <script src="content.js?v=20260924-final" defer></script><script src="supabase-config.js" defer></script><script src="backend.js?v=20260929-inventory01" defer></script><script src="nav.js" defer></script><script src="effects.js" defer></script><script src="shop-cheki-variants.js?v=20260923-1" defer></script><script src="shop.js?v=20260930-paypal-cancel01" defer></script><script src="shop-inventory.js?v=20260929-inventory02" defer></script><script src="shop-gallery.js?v=20260928-supabase" defer></script><script src="avatar.js?v=20260924-final" defer></script>
   <script type="module" src="shop-lightstick-3d.js?v=20260924-1"></script>
 </head>
 <body class="tool-page shop-page">
@@ -88,8 +88,7 @@
       <div class="checkout-fields"><label for="buyer-name">Nombre <input id="buyer-name" name="buyerName" type="text" maxlength="60" autocomplete="name" required></label><label for="buyer-contact">Contacto <input id="buyer-contact" name="buyerContact" type="text" maxlength="80" placeholder="Instagram, WhatsApp o correo" autocomplete="email" required></label></div>
       <fieldset class="payment-methods"><legend>Forma de pago</legend><div id="payment-method-list"></div></fieldset>
       <div class="paypal-conversion" id="paypal-conversion" hidden></div>
-      <p class="checkout-privacy" id="checkout-privacy">Para PayPal, guardamos tu nombre, contacto y pedido en Supabase para gestionar el retiro. PayPal procesa el pago en USD. Si eliges transferencia, el resumen queda en este dispositivo.</p>
-      <p class="paypal-risk" id="paypal-risk" hidden>PayPal está disponible solo para retiro en persona. Confirmaremos el pedido tras verificar el pago y coordinar disponibilidad contigo.</p>
+      <p class="checkout-privacy" id="checkout-privacy">Usaremos tu nombre y contacto para coordinar el retiro. PayPal cobra en USD.</p>
       <p class="shop-error" id="checkout-error" role="alert" hidden></p>
       <p class="checkout-status" id="checkout-status" aria-live="polite"></p>
       <div class="checkout-loading" id="checkout-loading" role="status" aria-live="polite" hidden>
@@ -108,6 +107,13 @@
       <p class="paypal-wait-amount" id="paypal-wait-amount"></p>
       <div class="paypal-wait-progress"><span class="checkout-loading-spinner" aria-hidden="true"></span><span id="paypal-wait-progress">Esperando tu decisión en PayPal…</span></div>
       <p class="paypal-wait-note" id="paypal-wait-note">Mantén abierta esta página. Al terminar en PayPal, te mostraremos el resultado aquí. Si cancelas, conservarás tu carrito.</p>
+    </section>
+    <section class="paypal-cancelled" id="paypal-cancelled" aria-labelledby="paypal-cancelled-title" hidden>
+      <div class="paypal-cancelled-art" aria-hidden="true">♡</div>
+      <p class="eyebrow">TU CARRITO SIGUE AQUÍ</p>
+      <h2 id="paypal-cancelled-title">Pago cancelado</h2>
+      <p>No se completó el pago. Tus productos y datos siguen listos por si quieres intentarlo otra vez.</p>
+      <button class="button primary" id="paypal-cancelled-back" type="button">Volver a mi pedido <span aria-hidden="true">↗</span></button>
     </section>
   </dialog>
 
