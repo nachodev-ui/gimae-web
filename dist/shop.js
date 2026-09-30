@@ -57,6 +57,13 @@
   const configNote = document.querySelector('#shop-config-note');
   const pendingOrder = document.querySelector('#pending-order');
   const reopenOrder = document.querySelector('#reopen-order');
+  const recentOrder = document.querySelector('#recent-order');
+  const recentOrderDescription = document.querySelector('#recent-order-description');
+  const recentOrderState = document.querySelector('#recent-order-state');
+  const recentOrderCode = document.querySelector('#recent-order-code');
+  const recentOrderTotal = document.querySelector('#recent-order-total');
+  const recentOrderOpen = document.querySelector('#recent-order-open');
+  const recentOrderShortcut = document.querySelector('#shop-order-shortcut');
   const orderSummary = document.querySelector('#order-summary');
   const dialogOpeners = new WeakMap();
   let storageAvailable = testStorage();
@@ -67,6 +74,7 @@
   let paypalPrepared = false;
   let paypalWaitTimer = null;
   let statusPollEpoch = 0;
+  let recentOrderPolling = false;
 
   function element(tag, className, text) {
     const node = document.createElement(tag);
@@ -533,7 +541,49 @@
   }
 
   function renderPendingOrder() {
-    pendingOrder.hidden = !latestOrder();
+    const order = latestOrder();
+    pendingOrder.hidden = !order;
+    recentOrder.hidden = !order;
+    recentOrderShortcut.hidden = !order;
+    if (!order) return;
+    const firstItem = order.items[0];
+    const more = order.items.length - 1;
+    recentOrderDescription.textContent = firstItem
+      ? `${firstItem.quantity}× ${cleanText(firstItem.name, 80)}${more ? ` y ${more} producto${more === 1 ? '' : 's'} más` : ''}. Consulta aquí los detalles de tu compra.`
+      : 'Consulta aquí los detalles de tu compra.';
+    const paid = order.paymentMethod === 'paypal' && order.status === 'paid';
+    if (order.paymentMethod === 'paypal' && !paid) recentOrderDescription.textContent += ' No repitas el pago mientras confirmamos.';
+    recentOrderState.textContent = paid ? 'Pago confirmado' : order.paymentMethod === 'paypal' ? 'Confirmación en curso' : 'Pendiente de pago';
+    recentOrderState.classList.toggle('is-paid', paid);
+    recentOrderCode.textContent = `Pedido ${cleanText(order.code, 40)}`;
+    recentOrderTotal.textContent = money.format(Number(order.total) || 0);
+  }
+
+  async function pollRecentOrderStatus() {
+    if (recentOrderPolling || orderDialog.open || document.hidden) return;
+    const current = latestOrder();
+    if (current?.paymentMethod !== 'paypal' || !current.paypalOrderId || current.status === 'paid') return;
+    recentOrderPolling = true;
+    try {
+      for (let attempt = 0; attempt < 12; attempt += 1) {
+        if (orderDialog.open || document.hidden) break;
+        const latest = latestOrder();
+        if (latest?.code !== current.code || latest.paypalOrderId !== current.paypalOrderId) break;
+        try {
+          const result = await edgeFunction('paypal-order-status', { orderCode: current.code, orderId: current.paypalOrderId });
+          if (result.status === 'paid' && latestOrder()?.code === current.code) {
+            latest.status = 'paid';
+            saveOrder(latest);
+            break;
+          }
+        } catch (error) {
+          // El botón Ver mi pedido permite consultar de nuevo sin iniciar otro cobro.
+        }
+        if (attempt < 11) await new Promise(resolve => window.setTimeout(resolve, 2500));
+      }
+    } finally {
+      recentOrderPolling = false;
+    }
   }
 
   function loadPayPal(clientId) {
@@ -848,10 +898,13 @@
       if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) closeDialog(dialog);
     });
     dialog.addEventListener('close', () => {
-      if (dialog === orderDialog) statusPollEpoch += 1;
+      if (dialog === orderDialog) {
+        statusPollEpoch += 1;
+        void pollRecentOrderStatus();
+      }
       if (dialog === checkoutDialog) clearPayPalWait();
       if (!document.querySelector('.shop-dialog[open]')) document.body.classList.remove('dialog-open');
-      const opener = dialogOpeners.get(dialog);
+      const opener = dialog === orderDialog && !recentOrder.hidden ? recentOrderOpen : dialogOpeners.get(dialog);
       if (opener?.isConnected) opener.focus();
     });
   });
@@ -892,5 +945,18 @@
     cartDialog.close(); window.setTimeout(() => renderOrder(order, reopenOrder), 0);
   });
 
+  recentOrderOpen.addEventListener('click', () => {
+    const order = latestOrder();
+    if (order) renderOrder(order, recentOrderOpen);
+  });
+  recentOrderShortcut.addEventListener('click', () => {
+    const order = latestOrder();
+    if (order) renderOrder(order, recentOrderShortcut);
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) void pollRecentOrderStatus();
+  });
+
   renderProducts(); renderShipping(); renderCart(); renderConfigNote();
+  void pollRecentOrderStatus();
 })();
