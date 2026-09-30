@@ -22,8 +22,9 @@
 
   const month = new Intl.DateTimeFormat('es-CL', { month: 'short', timeZone: 'America/Santiago' });
   const year = new Intl.DateTimeFormat('es-CL', { year: 'numeric', timeZone: 'America/Santiago' });
+  const day = new Intl.DateTimeFormat('es-CL', { day: '2-digit', timeZone: 'America/Santiago' });
   const time = new Intl.DateTimeFormat('es-CL', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Santiago' });
-  const dateKey = new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'America/Santiago' });
+  const localDateParts = new Intl.DateTimeFormat('es-CL', { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'America/Santiago' });
 
   const node = (tag, className, text) => {
     const element = document.createElement(tag);
@@ -32,11 +33,16 @@
     return element;
   };
 
+  const dayKey = date => {
+    const parts = Object.fromEntries(localDateParts.formatToParts(date).filter(part => part.type !== 'literal').map(part => [part.type, part.value]));
+    return `${parts.year}-${parts.month}-${parts.day}`;
+  };
+
   const relativeLabel = start => {
     if (!start) return 'Fecha por confirmar';
     const now = new Date();
-    const startDay = Date.parse(`${dateKey.format(start)}T00:00:00Z`);
-    const today = Date.parse(`${dateKey.format(now)}T00:00:00Z`);
+    const startDay = Date.parse(`${dayKey(start)}T00:00:00Z`);
+    const today = Date.parse(`${dayKey(now)}T00:00:00Z`);
     const days = Math.round((startDay - today) / 86400000);
     if (days === 0) return 'Hoy ♡';
     if (days === 1) return 'Mañana ✦';
@@ -50,8 +56,7 @@
     const now = new Date();
     if (!start) return false;
     if (end) return end >= now;
-    const today = dateKey.format(now);
-    return start >= now || dateKey.format(start) === today;
+    return start >= now || dayKey(start) === dayKey(now);
   };
 
   function buildCard(event, index) {
@@ -61,7 +66,7 @@
     const date = node('div', 'public-event-date');
     date.append(
       node('span', 'month', start ? month.format(start).replace('.', '').toUpperCase() : 'FECHA'),
-      node('strong', 'day', start ? String(Number(new Intl.DateTimeFormat('es-CL', { day: '2-digit', timeZone: 'America/Santiago' }).format(start))).padStart(2, '0') : '—'),
+      node('strong', 'day', start ? day.format(start) : '—'),
       node('span', 'year', start ? year.format(start) : 'POR CONFIRMAR'),
       node('span', 'spark', '✦')
     );
