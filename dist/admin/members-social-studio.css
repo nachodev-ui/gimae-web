@@ -1,0 +1,36 @@
+.member-social-studio{position:relative;overflow:hidden}
+.member-social-studio::before{content:"";position:absolute;inset:0;pointer-events:none;background:
+  radial-gradient(circle at 8% 10%,rgba(232,70,148,.08) 0 2px,transparent 2.5px),
+  radial-gradient(circle at 92% 18%,rgba(143,98,191,.08) 0 2px,transparent 2.5px);background-size:28px 28px,34px 34px;opacity:.7}
+.member-social-studio>*{position:relative;z-index:1}
+.member-social-ribbon{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-top:20px;padding:14px 16px;border:1px solid #efd4e1;border-radius:16px;background:linear-gradient(90deg,#fff7fb 0%,#fff 52%,#fbf7ff 100%)}
+.member-social-ribbon-copy{display:grid;gap:2px}.member-social-ribbon-kicker{color:#cf3f80;font-size:.68rem;font-weight:900;letter-spacing:.16em}.member-social-ribbon-copy strong{color:#432f3c;font-size:.92rem}.member-social-ribbon-deco{color:#d54b88;font-size:1rem;letter-spacing:.16em}
+
+.member-social-card{position:relative;overflow:hidden!important;border-width:1px!important;box-shadow:0 6px 0 rgba(205,78,139,.05);transition:border-color .18s ease,box-shadow .18s ease,transform .18s ease}
+.member-social-card::after{content:"";position:absolute;right:-34px;bottom:-42px;width:120px;height:120px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.9),rgba(255,255,255,0) 68%);pointer-events:none}
+.member-social-card--instagram{padding:22px!important;background:linear-gradient(135deg,#fff8fc 0%,#fff 48%,#fff6fb 100%)!important;border-color:#efc7dc!important}
+.member-social-card--instagram::before{content:"";position:absolute;inset:0 auto 0 0;width:5px;background:linear-gradient(#ff6ca8,#d74695,#9c6dd7)}
+.member-social-card--tiktok{background:linear-gradient(145deg,#fbfdff 0%,#fff 58%,#fff7fb 100%)!important;border-color:#d9d7eb!important}
+.member-social-card--x{background:linear-gradient(145deg,#fff 0%,#fbf8ff 68%,#fff7fb 100%)!important;border-color:#ded3eb!important}
+.member-social-card.is-configured{box-shadow:0 7px 0 rgba(196,68,128,.08)}
+
+.member-social-brand{position:relative;display:grid!important;width:52px!important;height:52px!important;place-items:center!important;border-radius:17px!important;isolation:isolate;overflow:visible}
+.member-social-brand::before,.member-social-brand::after{content:"";position:absolute;z-index:-1;border-radius:inherit}
+.member-social-brand-svg{width:25px;height:25px;display:block}
+.member-social-card--instagram .member-social-brand{background:linear-gradient(145deg,#ffe7f2,#f6e9ff)!important;color:#d83f86!important;box-shadow:inset 0 0 0 1px #f2c8dc,0 4px 10px rgba(217,64,135,.08)}
+.member-social-card--tiktok .member-social-brand{background:#20222b!important;color:#fff!important;box-shadow:-3px 3px 0 rgba(51,221,214,.45),3px -3px 0 rgba(255,95,147,.28)}
+.member-social-card--x .member-social-brand{background:linear-gradient(145deg,#3f3547,#5f4b69)!important;color:#fff!important;box-shadow:0 0 0 4px #f4ebff}
+
+.member-social-head{align-items:center!important}.member-social-head>strong{font-size:1rem!important;letter-spacing:-.01em}.member-social-badges{display:flex;align-items:center;justify-content:flex-end;gap:7px;margin-left:auto}.member-social-kind,.member-social-state{display:inline-flex;min-height:26px;align-items:center;gap:5px;padding:5px 9px;border-radius:999px;font-size:.68rem!important;font-weight:900!important;white-space:nowrap}.member-social-kind{background:#fff0f7!important;color:#a93569!important}.member-social-card--tiktok .member-social-kind,.member-social-card--x .member-social-kind{background:#f5efff!important;color:#6e4d91!important}.member-social-state{border:1px solid #ead5df;background:#fff;color:#7e6472}.member-social-state::before{content:"";width:7px;height:7px;border-radius:50%;background:#c9b8c1}.member-social-state.is-active{border-color:#bde3cf;background:#effbf4;color:#26744c}.member-social-state.is-active::before{background:#38a36a;box-shadow:0 0 0 3px rgba(56,163,106,.12)}
+
+.member-social-fields{gap:14px!important}.member-social-card--instagram .member-social-fields{grid-template-columns:minmax(0,.72fr) minmax(0,1.28fr)!important}.member-social-card .member-editor-field-heading,.member-social-card .member-extra-social-field>span{color:#4a3441!important;font-size:.82rem!important;font-weight:850!important}.member-social-card input{min-height:50px!important;border-radius:15px!important;background:rgba(255,255,255,.92)!important}.member-social-card input:hover{border-color:#d89fba!important}.member-social-card input:focus{background:#fff!important}
+
+.member-social-public-preview{display:flex;align-items:center;gap:11px;margin-top:15px;padding:11px 13px;border:1px dashed #e8cedb;border-radius:14px;background:rgba(255,255,255,.72)}
+.member-social-preview-sparkle{display:grid;width:31px;height:31px;flex:none;place-items:center;border-radius:10px;background:#ffeaf4;color:#ca3c7b;font-size:.85rem}.member-social-card--tiktok .member-social-preview-sparkle{background:#edfafa;color:#1a7e82}.member-social-card--x .member-social-preview-sparkle{background:#f1eaff;color:#73529d}
+.member-social-preview-copy{display:grid;gap:2px;min-width:0}.member-social-preview-copy small{color:#9b7387;font-size:.62rem;font-weight:900;letter-spacing:.12em}.member-social-preview-copy strong{overflow:hidden;color:#513846;font-size:.82rem;text-overflow:ellipsis;white-space:nowrap}
+
+.member-social-secondary-grid{gap:16px!important;margin-top:16px!important}.member-social-secondary-grid .member-social-card{padding:19px!important}.member-social-secondary-grid .member-social-head{min-height:28px}.member-social-secondary-grid .member-social-content{gap:13px!important}
+
+@media(prefers-reduced-motion:no-preference){.member-social-card:hover{transform:translateY(-2px)}.member-social-card input{transition:border-color .16s ease,background .16s ease}.member-social-card{transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease}}
+@media(max-width:820px){.member-social-card--instagram .member-social-fields{grid-template-columns:minmax(0,1fr)!important}.member-social-ribbon{align-items:flex-start;flex-direction:column}.member-social-ribbon-deco{align-self:flex-end}}
+@media(max-width:560px){.member-social-card--instagram{padding:18px!important}.member-social-head{align-items:flex-start!important;flex-direction:column!important}.member-social-badges{margin-left:0;justify-content:flex-start;flex-wrap:wrap}.member-social-brand{width:46px!important;height:46px!important;border-radius:15px!important}.member-social-public-preview{align-items:flex-start}.member-social-preview-copy strong{white-space:normal}.member-social-ribbon{padding:13px}}
