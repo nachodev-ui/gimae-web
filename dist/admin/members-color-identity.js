@@ -80,3 +80,13 @@ if(memberColorEditor&&memberColorTab){
   memberColorTab.addEventListener('click',()=>requestAnimationFrame(scanMemberColor));
   scanMemberColor();
 }
+
+/* Capa visual adicional para Instagram/TikTok/X. La lógica de guardado permanece en members-profile-media.js. */
+if(!document.querySelector('link[data-members-social-studio]')){
+  const style=document.createElement('link');
+  style.rel='stylesheet';
+  style.href='members-social-studio.css?v=20260929-social01';
+  style.dataset.membersSocialStudio='true';
+  document.head.append(style);
+}
+import('./members-social-studio.js?v=20260929-social01').catch(error=>console.warn('No se pudo cargar Social Studio:',error));
