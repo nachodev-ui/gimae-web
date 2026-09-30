@@ -49,6 +49,7 @@
   const paypalWaitMessage = document.querySelector('#paypal-wait-message');
   const paypalWaitAmount = document.querySelector('#paypal-wait-amount');
   const paypalWaitProgress = document.querySelector('#paypal-wait-progress');
+  const paypalWaitNote = document.querySelector('#paypal-wait-note');
   const paypalButtons = document.querySelector('#paypal-buttons');
   const paypalConversion = document.querySelector('#paypal-conversion');
   const paypalRisk = document.querySelector('#paypal-risk');
@@ -570,6 +571,9 @@
       : 'Revisa y aprueba la compra en la ventana segura de PayPal que se abrió.';
     paypalWaitAmount.textContent = `${money.format(Number(order.total))} CLP → ${usd.format(Number(order.paypalUsd))} USD`;
     paypalWaitProgress.textContent = verifying ? 'Confirmando el resultado…' : 'Esperando tu decisión en PayPal…';
+    paypalWaitNote.textContent = verifying
+      ? 'Mantén abierta esta página mientras confirmamos el resultado. No repitas el pago.'
+      : 'Mantén abierta esta página. Al terminar en PayPal, te mostraremos el resultado aquí. Si cancelas, conservarás tu carrito.';
     checkoutDetails.inert = true;
     checkoutDetails.setAttribute('aria-hidden', 'true');
     paypalWait.hidden = false;
