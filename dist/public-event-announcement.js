@@ -1,9 +1,7 @@
 (() => {
   'use strict';
 
-  const STORAGE_KEY = 'gimae-seen-event-announcements-v1';
-  const MODE = new URLSearchParams(location.search).get('event-announcement');
-  const PREVIEW = MODE === 'preview' || MODE === 'kawaii';
+  const STORAGE_KEY = 'gimae-seen-event-announcements-v2';
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   let started = false;
 
@@ -84,7 +82,6 @@
   }
 
   function remember(event) {
-    if (PREVIEW) return;
     const target = storage();
     if (!target) return;
     const seen = readSeen();
@@ -107,7 +104,6 @@
       const createdB = validDate(b.created_at)?.getTime() || validDate(b.starts_at)?.getTime() || 0;
       return createdB - createdA;
     });
-    if (PREVIEW) return newestFirst[0];
     return newestFirst.find(event => !seen.has(eventIdentity(event))) || null;
   }
 
@@ -230,14 +226,10 @@
     return dialog;
   }
 
-  function showFrom(source, reason = 'renderer') {
+  function showFrom(source) {
     if (started) return;
-    const events = visibleEvents(source);
-    const candidate = candidateFrom(events);
-    if (!candidate) {
-      if (PREVIEW) console.warn(`[GIMAE event preview] No hay eventos activos y futuros disponibles (${reason}).`, source);
-      return;
-    }
+    const candidate = candidateFrom(visibleEvents(source));
+    if (!candidate) return;
 
     started = true;
     const dialog = buildAnnouncement(candidate);
@@ -259,11 +251,11 @@
   }
 
   window.addEventListener('gimae:public-events-ready', event => {
-    showFrom(event.detail?.events, 'public-events-ready');
+    showFrom(event.detail?.events);
   }, { once: true });
 
   if (window.GIMAE_PUBLIC_EVENTS_READY) {
-    showFrom(window.GIMAE_PUBLIC_EVENTS, 'already-ready');
+    showFrom(window.GIMAE_PUBLIC_EVENTS);
   }
 
   function attachBackend(attempt = 0) {
@@ -271,10 +263,10 @@
     const ready = window.GIMAE_READY;
     if (ready && typeof ready.then === 'function') {
       ready.then(() => {
-        if (!started) showFrom(window.GIMAE_PUBLIC_EVENTS_READY ? window.GIMAE_PUBLIC_EVENTS : window.GIMAE?.events, 'backend-ready');
+        if (!started) showFrom(window.GIMAE_PUBLIC_EVENTS_READY ? window.GIMAE_PUBLIC_EVENTS : window.GIMAE?.events);
       }).catch(error => {
         console.warn('No se pudo preparar el anuncio desde GIMAE_READY.', error);
-        if (!started) showFrom(window.GIMAE?.events, 'backend-fallback');
+        if (!started) showFrom(window.GIMAE?.events);
       });
       return;
     }
@@ -282,7 +274,7 @@
       window.setTimeout(() => attachBackend(attempt + 1), 50);
       return;
     }
-    if (!started) showFrom(window.GIMAE?.events, 'local-timeout');
+    if (!started) showFrom(window.GIMAE?.events);
   }
 
   attachBackend();
