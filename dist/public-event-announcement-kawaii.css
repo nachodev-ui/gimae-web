@@ -1,0 +1,243 @@
+/* Variant: kawaii pop-up card — sticker-book / idol fanclub announcement. */
+.event-announcement--kawaii{
+  width:min(820px,calc(100% - 24px));
+  max-width:820px;
+}
+.event-announcement--kawaii::backdrop{
+  background:rgba(65,45,70,.48);
+  backdrop-filter:blur(11px) saturate(1.08);
+}
+.event-announcement--kawaii .event-announcement-shell{
+  grid-template-columns:minmax(0,1fr) 188px;
+  border:3px solid #fff;
+  border-radius:34px;
+  background:
+    radial-gradient(circle at 18% 14%,rgba(255,255,255,.95) 0 3px,transparent 4px) 0 0/26px 26px,
+    radial-gradient(circle at 85% 12%,rgba(255,231,112,.34),transparent 22%),
+    radial-gradient(circle at 16% 82%,rgba(159,124,255,.18),transparent 24%),
+    linear-gradient(135deg,#fff8fc 0%,#fffdfa 52%,#f8f0ff 100%);
+  box-shadow:
+    0 0 0 3px #f08dbe,
+    0 13px 0 #f6bfd9,
+    0 32px 72px rgba(74,46,77,.28);
+  overflow:hidden;
+}
+.event-announcement--kawaii .event-announcement-shell::before{
+  content:"♡  ✦  ♡  ✦  ♡";
+  position:absolute;
+  inset:auto 22px 14px auto;
+  z-index:0;
+  color:rgba(232,70,148,.15);
+  font-size:1.2rem;
+  letter-spacing:.35em;
+  transform:rotate(-5deg);
+}
+.event-announcement--kawaii .event-announcement-shell::after{
+  content:"KIRAKIRA CLUB";
+  position:absolute;
+  top:22px;
+  right:178px;
+  z-index:0;
+  color:rgba(149,104,184,.12);
+  font:900 2.8rem/1 var(--display);
+  letter-spacing:-.04em;
+  transform:rotate(5deg);
+  pointer-events:none;
+}
+.event-announcement--kawaii .event-announcement-content{
+  padding:34px 30px 28px;
+}
+.event-announcement--kawaii .event-announcement-kicker{
+  min-height:30px;
+  padding:0 12px;
+  border:2px solid #f3b2d2;
+  border-radius:999px;
+  background:#fff;
+  color:#b62f72;
+  box-shadow:0 4px 0 #f8d3e4;
+}
+.event-announcement--kawaii .event-announcement-content h2{
+  max-width:520px;
+  font-size:clamp(2.15rem,4.5vw,3.5rem);
+  line-height:.96;
+}
+.event-announcement--kawaii .event-announcement-content h2 em{
+  display:inline-block;
+  color:#e84694;
+  text-shadow:2px 2px 0 #fff,4px 4px 0 rgba(246,191,217,.65);
+  transform:rotate(-1deg);
+}
+.event-announcement--kawaii .event-announcement-lede{
+  max-width:510px;
+  margin-top:14px;
+  color:#765f70;
+  font-size:.9rem;
+}
+.event-announcement--kawaii .event-announcement-pass{
+  grid-template-columns:116px minmax(0,1fr);
+  margin-top:21px;
+  border:2px solid #efbdd6;
+  border-radius:24px;
+  background:#fff;
+  box-shadow:0 7px 0 #f7d6e6;
+  overflow:hidden;
+}
+.event-announcement--kawaii .event-announcement-date{
+  min-height:166px;
+  border-right:2px dashed #efbdd6;
+  background:
+    radial-gradient(circle at 22% 18%,rgba(255,255,255,.8),transparent 18%),
+    linear-gradient(180deg,#ffddea 0%,#f6e7ff 100%);
+  color:#4a344d;
+}
+.event-announcement--kawaii .event-announcement-date::before{
+  content:"♡";
+  position:absolute;
+  left:10px;
+  top:8px;
+  color:#e84694;
+  font-size:1rem;
+}
+.event-announcement--kawaii .event-announcement-date::after{
+  content:"✦";
+  color:#a36bc0;
+}
+.event-announcement--kawaii .event-announcement-date span:first-child{color:#b53e78}
+.event-announcement--kawaii .event-announcement-date strong{color:#3f2d43}
+.event-announcement--kawaii .event-announcement-date span:last-of-type{color:#8d718b}
+.event-announcement--kawaii .event-announcement-info{
+  gap:9px;
+  padding:19px 20px 18px;
+}
+.event-announcement--kawaii .event-announcement-badge{
+  border:2px solid #f0c65f;
+  background:#fff3ad;
+  color:#775b18;
+  box-shadow:0 3px 0 #f9e3a0;
+}
+.event-announcement--kawaii .event-announcement-badge::before{content:"♡"}
+.event-announcement--kawaii .event-announcement-title{
+  font-size:1.4rem;
+  color:#3c2a40;
+}
+.event-announcement--kawaii .event-announcement-description{
+  color:#796675;
+}
+.event-announcement--kawaii .event-announcement-meta{
+  padding:9px 10px;
+  border-radius:13px;
+  background:#fff8fc;
+  border:1px dashed #eec7da;
+}
+.event-announcement--kawaii .event-announcement-meta b{color:#e84694}
+.event-announcement--kawaii .event-announcement-actions{
+  gap:10px;
+  margin-top:20px;
+}
+.event-announcement--kawaii .event-announcement-action{
+  border-radius:999px;
+}
+.event-announcement--kawaii .event-announcement-action.primary{
+  background:linear-gradient(180deg,#ff69ad 0%,#e84694 100%);
+  box-shadow:0 5px 0 #c93277,0 10px 22px rgba(232,70,148,.18);
+}
+.event-announcement--kawaii .event-announcement-action.secondary{
+  border:2px solid #ddb9ee;
+  background:#faf5ff;
+  color:#76528d;
+  box-shadow:0 4px 0 #eadbf1;
+}
+.event-announcement--kawaii .event-announcement-stub{
+  gap:10px;
+  padding:28px 15px;
+  border-left:2px dashed #d9bee5;
+  background:
+    radial-gradient(circle at 50% 18%,rgba(255,255,255,.65),transparent 19%),
+    linear-gradient(180deg,#eee1ff 0%,#f9e2f0 55%,#fff4b8 100%);
+  color:#5b4264;
+}
+.event-announcement--kawaii .event-announcement-stub::before{
+  inset:14px;
+  border:2px solid rgba(255,255,255,.8);
+  border-radius:25px;
+}
+.event-announcement--kawaii .event-announcement-stub-label{color:#704d7d}
+.event-announcement--kawaii .event-announcement-stub-star{
+  width:92px;
+  height:92px;
+  border:3px solid #fff;
+  background:linear-gradient(135deg,#ffc7df,#dfcaff);
+  color:#fff;
+  box-shadow:0 0 0 2px #cf9be5,0 7px 0 #e6c7ef;
+}
+.event-announcement--kawaii .event-announcement-stub small{color:#8d668f}
+.event-announcement--kawaii .event-announcement-stub strong{color:#7c4166}
+.event-announcement--kawaii .event-announcement-ribbon{
+  left:26px;
+  top:-10px;
+  border:2px solid #ef7eb5;
+  border-radius:10px;
+  background:#fff;
+  color:#b73374;
+  box-shadow:0 4px 0 #f4c4da;
+  transform:rotate(-3deg);
+}
+.event-announcement--kawaii .event-announcement-close{
+  border:2px solid #e79abe;
+  background:#fff;
+  color:#a84f79;
+  box-shadow:0 4px 0 #f3c9dc;
+}
+.event-announcement--kawaii .event-announcement-spark.is-1,
+.event-announcement--kawaii .event-announcement-spark.is-4{color:#e84694}
+.event-announcement--kawaii .event-announcement-spark.is-2{color:#efbd38}
+.event-announcement--kawaii .event-announcement-spark.is-3{color:#9b77c2}
+
+@media(max-width:720px){
+  .event-announcement--kawaii{width:min(100% - 18px,600px)}
+  .event-announcement--kawaii .event-announcement-shell{grid-template-columns:1fr;border-radius:26px}
+  .event-announcement--kawaii .event-announcement-shell::after{right:18px;top:88px;font-size:2rem}
+  .event-announcement--kawaii .event-announcement-content{padding:28px 17px 21px}
+  .event-announcement--kawaii .event-announcement-content h2{padding-right:34px;font-size:clamp(1.8rem,8vw,2.4rem)}
+  .event-announcement--kawaii .event-announcement-pass{grid-template-columns:1fr}
+  .event-announcement--kawaii .event-announcement-date{
+    min-height:0;
+    grid-template-columns:auto auto minmax(0,1fr);
+    grid-template-areas:"day month year";
+    justify-items:start;
+    align-items:baseline;
+    gap:6px 9px;
+    padding:13px 15px;
+    border-right:0;
+    border-bottom:2px dashed #efbdd6;
+    text-align:left;
+  }
+  .event-announcement--kawaii .event-announcement-date span:first-child{grid-area:month;align-self:center}
+  .event-announcement--kawaii .event-announcement-date strong{grid-area:day;font-size:2.45rem}
+  .event-announcement--kawaii .event-announcement-date span:last-of-type{grid-area:year;align-self:center}
+  .event-announcement--kawaii .event-announcement-info{padding:16px 15px}
+  .event-announcement--kawaii .event-announcement-actions{display:grid;grid-template-columns:1fr}
+  .event-announcement--kawaii .event-announcement-action{width:100%}
+  .event-announcement--kawaii .event-announcement-stub{
+    min-height:88px;
+    display:grid;
+    grid-template-columns:1fr 68px 1fr;
+    align-items:center;
+    gap:10px;
+    padding:14px 16px;
+    border-left:0;
+    border-top:2px dashed #d9bee5;
+  }
+  .event-announcement--kawaii .event-announcement-stub-star{width:62px;height:62px;font-size:2rem}
+  .event-announcement--kawaii .event-announcement-stub small{display:none}
+  .event-announcement--kawaii .event-announcement-stub strong{text-align:right;font-size:.8rem}
+}
+
+@media(max-width:390px){
+  .event-announcement--kawaii .event-announcement-content{padding:25px 12px 17px}
+  .event-announcement--kawaii .event-announcement-content h2{font-size:1.62rem}
+  .event-announcement--kawaii .event-announcement-lede{font-size:.78rem}
+  .event-announcement--kawaii .event-announcement-title{font-size:1.08rem}
+  .event-announcement--kawaii .event-announcement-stub{grid-template-columns:minmax(0,1fr) 56px minmax(0,1fr);padding-inline:11px}
+  .event-announcement--kawaii .event-announcement-stub-star{width:54px;height:54px;font-size:1.8rem}
+}
