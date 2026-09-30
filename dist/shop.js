@@ -15,6 +15,9 @@
   // Acceso temporal a PayPal Sandbox solo desde la web local de prueba.
   const localPaypalSandbox = window.location.origin === 'http://localhost:8000' &&
     new URLSearchParams(window.location.search).get('paypal-sandbox') === '1';
+  // Prueba solo local: recorre el callback de error del SDK sin abrir PayPal ni cobrar.
+  const localPaypalErrorTest = localPaypalSandbox &&
+    new URLSearchParams(window.location.search).get('paypal-test-error') === '1';
   const paypalEnabled = Boolean(config.PAYMENT_METHODS?.paypal?.enabled || localPaypalSandbox);
   const catalog = Array.isArray(config.merch) ? config.merch.filter(product => product?.active !== false) : [];
   const CART_KEY = 'gimae-shop-cart-v1';
@@ -538,6 +541,18 @@
     renderPendingOrder();
   }
 
+  function forgetOrder(code) {
+    const orders = storageGet(ORDERS_KEY, []);
+    if (Array.isArray(orders)) storageSet(ORDERS_KEY, orders.filter(order => order?.code !== code));
+    renderPendingOrder();
+  }
+
+  function clearCartForOrder(order) {
+    if (cart.length !== order.items.length || !cart.every(line => order.items.some(item =>
+      item.productId === line.productId && item.optionId === line.optionId && item.quantity === line.quantity))) return;
+    cart = []; saveCart();
+  }
+
   function latestOrder() {
     const orders = storageGet(ORDERS_KEY, []);
     if (!Array.isArray(orders)) return null;
@@ -556,15 +571,16 @@
       ? `${firstItem.quantity}× ${cleanText(firstItem.name, 80)}${more ? ` y ${more} producto${more === 1 ? '' : 's'} más` : ''}. Consulta aquí los detalles de tu compra.`
       : 'Consulta aquí los detalles de tu compra.';
     const paid = order.paymentMethod === 'paypal' && order.status === 'paid';
-    if (order.paymentMethod === 'paypal' && !paid) recentOrderDescription.textContent += ' No repitas el pago mientras confirmamos.';
-    recentOrderState.textContent = paid ? 'Pago confirmado' : order.paymentMethod === 'paypal' ? 'Confirmación en curso' : 'Pendiente de pago';
+    if (order.paymentMethod === 'paypal' && !paid) recentOrderDescription.textContent += ' Comprueba el estado antes de intentar otro pago.';
+    recentOrderState.textContent = paid ? 'Pago confirmado' : order.paymentMethod === 'paypal'
+      ? (order.status === 'capture_pending' ? 'Confirmación en curso' : 'Pago sin confirmar') : 'Pendiente de pago';
     recentOrderState.classList.toggle('is-paid', paid);
     recentOrderCode.textContent = `Pedido ${cleanText(order.code, 40)}`;
     recentOrderTotal.textContent = money.format(Number(order.total) || 0);
   }
 
   async function pollRecentOrderStatus() {
-    if (recentOrderPolling || orderDialog.open || document.hidden) return;
+    if (recentOrderPolling || orderDialog.open || checkoutDialog.open || document.hidden) return;
     const current = latestOrder();
     if (current?.paymentMethod !== 'paypal' || !current.paypalOrderId || current.status === 'paid') return;
     recentOrderPolling = true;
@@ -577,9 +593,16 @@
           const result = await edgeFunction('paypal-order-status', { orderCode: current.code, orderId: current.paypalOrderId });
           if (result.status === 'paid' && latestOrder()?.code === current.code) {
             latest.status = 'paid';
+            clearCartForOrder(latest);
             saveOrder(latest);
             break;
           }
+          if (result.status === 'capture_pending' && latest.status === 'awaiting_approval') {
+            latest.status = 'capture_pending';
+            clearCartForOrder(latest);
+            saveOrder(latest);
+          }
+          if (result.status === 'awaiting_approval') break;
         } catch (error) {
           // El botón Ver mi pedido permite consultar de nuevo sin iniciar otro cobro.
         }
@@ -685,10 +708,21 @@
       order.total = quote.totalClp;
       order.paypalUsd = quote.totalUsd;
       order.items = quote.items;
+      // Persistir las dos IDs antes de abrir PayPal permite consultar el pago tras recargar o perder conexión.
+      order.status = 'awaiting_approval';
+      saveOrder(order);
       paypalConversion.textContent = `${money.format(quote.totalClp)} CLP → ${usd.format(Number(quote.totalUsd))} USD · Retiro sin costo.`;
       await loadPayPal(quote.clientId);
       paypalButtons.hidden = false;
       let capturing = false;
+      const handlePayPalError = () => {
+        if (capturing) return;
+        clearPayPalWait();
+        paypalPrepared = false;
+        showError(checkoutError, 'PayPal no pudo continuar. Guardamos el intento: cierra esta ventana y consulta “Tu pedido” antes de volver a pagar.');
+        checkoutStatus.textContent = '';
+        preparePayment.hidden = true; paypalButtons.hidden = true;
+      };
       const buttons = window.paypal.Buttons({
         style: { layout: 'vertical', shape: 'pill', color: 'gold', label: 'paypal' },
         createOrder: () => quote.orderId,
@@ -714,13 +748,13 @@
             const result = await edgeFunction('paypal-capture-order', { orderId: quote.orderId });
             order.status = result.status;
             saveOrder(order);
-            cart = []; saveCart();
+            clearCartForOrder(order);
             clearPayPalWait();
             checkoutDialog.close();
             renderOrder(order, preparePayment);
           } catch (error) {
             clearPayPalWait();
-            showError(checkoutError, 'No pudimos verificar el resultado. No repitas el pago: contacta a Gimae con el ID ' + quote.orderId + '.');
+            showError(checkoutError, 'No pudimos comprobar el resultado. Cierra esta ventana y consulta “Tu pedido” antes de pagar otra vez. ID PayPal: ' + quote.orderId + '.');
             checkoutStatus.textContent = '';
             paypalButtons.hidden = true;
           }
@@ -728,27 +762,30 @@
         onCancel: () => {
           if (capturing) return;
           paypalPrepared = false;
+          forgetOrder(order.code);
           checkoutStatus.textContent = '';
           paypalConversion.textContent = 'Verás el total exacto en USD antes de pagar. Retiro en persona sin costo.';
           preparePayment.hidden = false; paypalButtons.hidden = true;
           showPayPalCancelled();
         },
-        onError: () => {
-          if (capturing) return;
-          clearPayPalWait();
-          paypalPrepared = false;
-          showError(checkoutError, 'PayPal tuvo un error. Antes de intentarlo de nuevo, revisa tu cuenta o consulta a Gimae con el ID ' + quote.orderId + '.');
-          checkoutStatus.textContent = '';
-          preparePayment.hidden = false; paypalButtons.hidden = true;
-        }
+        onError: handlePayPalError
       });
       if (buttons.isEligible && !buttons.isEligible()) throw new Error('PAYPAL_INELIGIBLE');
+      if (localPaypalErrorTest) {
+        // Simula exactamente el callback del SDK; no abre PayPal ni hace un cargo.
+        handlePayPalError();
+        forgetOrder(order.code);
+        preparePayment.hidden = false;
+        showError(checkoutError, 'Prueba Sandbox: PayPal no pudo continuar. Tu carrito sigue guardado y puedes volver a intentarlo.');
+        return;
+      }
       await buttons.render('#paypal-buttons');
       paypalPrepared = true;
       checkoutStatus.textContent = 'Revisa el total exacto en USD y continúa en PayPal.';
     } catch (error) {
       clearPayPalWait();
       paypalPrepared = false;
+      if (order.status === 'awaiting_approval') forgetOrder(order.code);
       showError(checkoutError, error.message || 'No pudimos preparar PayPal. Intenta nuevamente.');
       checkoutStatus.textContent = '';
       preparePayment.hidden = false; paypalButtons.hidden = true;
@@ -823,10 +860,11 @@
     orderSummary.replaceChildren();
     const isPayPal = order.paymentMethod === 'paypal';
     const paid = isPayPal && order.status === 'paid';
+    const awaiting = isPayPal && order.status === 'awaiting_approval';
     let pendingConfirmation = null;
-    document.querySelector('#order-title').textContent = paid ? '¡Pago confirmado!' : 'Tu pedido quedó guardado';
+    document.querySelector('#order-title').textContent = paid ? '¡Pago confirmado!' : awaiting ? 'Revisa tu pago' : 'Tu pedido quedó guardado';
     const status = element('p', `order-status${paid ? ' is-paid' : ''}`,
-      isPayPal ? (paid ? 'Pago confirmado · pedido recibido' : 'Captura recibida · verificando confirmación') : 'Pendiente de pago');
+      isPayPal ? (paid ? 'Pago confirmado · pedido recibido' : awaiting ? 'Pago sin confirmar' : 'Captura recibida · verificando confirmación') : 'Pendiente de pago');
     status.setAttribute('role', 'status');
     status.setAttribute('aria-live', 'polite');
     orderSummary.append(status);
@@ -855,14 +893,23 @@
       orderSummary.append(copyRow('ID de orden PayPal', order.paypalOrderId || 'Pendiente'));
       const instruction = element('p', 'order-instruction', paid
         ? `Pago confirmado: ${usd.format(Number(order.paypalUsd))} USD. Coordinaremos contigo el retiro.`
-        : `PayPal recibió ${usd.format(Number(order.paypalUsd))} USD. Estamos verificando la confirmación segura. No repitas el pago.`);
+        : awaiting
+          ? 'Aún no consta una captura. Si aprobaste el pago en PayPal, usa el botón de abajo para comprobarlo y completarlo. Evita iniciar una compra nueva.'
+          : `Estamos verificando la captura de ${usd.format(Number(order.paypalUsd))} USD. No repitas el pago.`);
       orderSummary.append(instruction);
       if (!paid && order.paypalOrderId && order.code) {
         const check = element('button', 'copy-button', 'Consultar confirmación');
         check.type = 'button';
-        check.addEventListener('click', () => confirmPayPalOrder(order, status, instruction, check));
+        let recover = null;
+        if (awaiting) {
+          recover = element('button', 'button primary order-recover-payment', 'Comprobar y completar si aprobaste en PayPal');
+          recover.type = 'button';
+          recover.addEventListener('click', () => recoverPayPalOrder(order, instruction, recover));
+          orderSummary.append(recover);
+        }
+        check.addEventListener('click', () => confirmPayPalOrder(order, status, instruction, check, recover));
         orderSummary.append(check);
-        pendingConfirmation = () => confirmPayPalOrder(order, status, instruction, check);
+        pendingConfirmation = () => confirmPayPalOrder(order, status, instruction, check, recover);
       }
     }
     orderSummary.append(element('p', 'order-local-note', order.paymentMethod === 'paypal' ? 'El pedido PayPal se guarda en Supabase. Esta copia local sirve para reabrir el resumen.' : 'Este resumen existe solo en este navegador. El pedido se confirma cuando el equipo recibe y verifica el comprobante.'));
@@ -872,7 +919,31 @@
     pendingConfirmation?.();
   }
 
-  async function confirmPayPalOrder(order, statusNode, instruction, check) {
+  async function recoverPayPalOrder(order, instruction, button) {
+    if (button.disabled) return;
+    button.disabled = true;
+    instruction.textContent = 'Consultando el estado seguro de tu pedido…';
+    try {
+      const current = await edgeFunction('paypal-order-status', { orderCode: order.code, orderId: order.paypalOrderId });
+      const result = current.status === 'awaiting_approval'
+        ? await edgeFunction('paypal-capture-order', { orderId: order.paypalOrderId })
+        : current;
+      if (result.status !== 'paid' && result.status !== 'capture_pending') {
+        instruction.textContent = 'El pago aún no está confirmado. Revisa tu actividad en PayPal o consulta a Gimae con el ID de orden antes de intentarlo de nuevo.';
+        return;
+      }
+      order.status = result.status;
+      clearCartForOrder(order);
+      saveOrder(order);
+      renderOrder(order, button);
+    } catch (error) {
+      instruction.textContent = 'No pudimos comprobar si PayPal recibió tu aprobación. Conserva este pedido y su ID; inténtalo cuando vuelva la conexión o consulta a Gimae antes de pagar otra vez.';
+    } finally {
+      if (button.isConnected) button.disabled = false;
+    }
+  }
+
+  async function confirmPayPalOrder(order, statusNode, instruction, check, recover) {
     const epoch = ++statusPollEpoch;
     check.disabled = true;
     for (let attempt = 0; attempt < 12; attempt += 1) {
@@ -883,12 +954,28 @@
         if (epoch !== statusPollEpoch || !orderDialog.open) return;
         if (result.status === 'paid') {
           order.status = 'paid';
+          clearCartForOrder(order);
           saveOrder(order);
           document.querySelector('#order-title').textContent = '¡Pago confirmado!';
           statusNode.textContent = 'Pago confirmado · pedido recibido';
           statusNode.classList.add('is-paid');
           instruction.textContent = `Pago confirmado: ${usd.format(Number(order.paypalUsd))} USD. Coordinaremos contigo el retiro.`;
+          recover?.remove();
           check.remove();
+          return;
+        }
+        if (result.status === 'capture_pending' && order.status === 'awaiting_approval') {
+          order.status = 'capture_pending';
+          clearCartForOrder(order);
+          saveOrder(order);
+          statusNode.textContent = 'Captura recibida · verificando confirmación';
+          instruction.textContent = 'Estamos verificando la captura. No repitas el pago.';
+          recover?.remove();
+        }
+        if (result.status === 'awaiting_approval') {
+          statusNode.textContent = 'Pago sin confirmar';
+          instruction.textContent = 'Aún no consta una captura. Si aprobaste el pago en PayPal, pulsa “Comprobar y completar” para recuperar tu compra.';
+          check.disabled = false;
           return;
         }
       } catch (error) {
@@ -897,7 +984,7 @@
     }
     if (epoch !== statusPollEpoch || !orderDialog.open) return;
     statusNode.textContent = 'Verificación aún en curso';
-    instruction.textContent = `Recibimos la captura de ${usd.format(Number(order.paypalUsd))} USD. Puedes cerrar este resumen y consultar la confirmación más tarde. No repitas el pago.`;
+    instruction.textContent = 'Todavía no recibimos la confirmación final. Puedes cerrar este resumen y consultarlo más tarde; no repitas el pago.';
     check.disabled = false;
   }
 
@@ -988,6 +1075,7 @@
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) void pollRecentOrderStatus();
   });
+  window.addEventListener('online', () => { void pollRecentOrderStatus(); });
 
   renderProducts(); renderShipping(); renderCart(); renderConfigNote();
   void pollRecentOrderStatus();

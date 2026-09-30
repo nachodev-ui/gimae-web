@@ -435,6 +435,7 @@ body.dialog-open{overflow:hidden}
 /* Información comercial breve; la conversión exacta sigue visible antes de pagar. */
 .checkout-dialog .checkout-privacy{margin-top:9px;padding:0;background:none;color:#665b69;font-size:.82rem}
 .checkout-dialog .paypal-conversion{background:#f7eefc;color:#684f74}
+.order-dialog .order-recover-payment{display:flex;width:100%;margin:18px 0 12px;min-height:48px;text-align:center;white-space:normal}
 @keyframes paypal-wait-float{to{transform:translateY(7px)}}
 @media(max-width:620px){.paypal-wait,.paypal-cancelled{padding:34px 21px}.paypal-wait-art{width:90px;height:90px;font-size:3.3rem}.paypal-wait h2{font-size:2rem}}
 @media(prefers-reduced-motion:reduce){.paypal-wait-orbit{animation:none}}
