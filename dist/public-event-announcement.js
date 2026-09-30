@@ -2,7 +2,9 @@
   'use strict';
 
   const STORAGE_KEY = 'gimae-seen-event-announcements-v1';
-  const PREVIEW = new URLSearchParams(location.search).get('event-announcement') === 'preview';
+  const MODE = new URLSearchParams(location.search).get('event-announcement');
+  const POSTER = MODE === 'poster';
+  const PREVIEW = MODE === 'preview' || POSTER;
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   let started = false;
 
@@ -113,20 +115,30 @@
   function buildAnnouncement(event) {
     const start = validDate(event.starts_at);
     const href = safeUrl(event.url);
-    const dialog = node('dialog', 'event-announcement');
+    const dialog = node('dialog', POSTER ? 'event-announcement event-announcement--poster' : 'event-announcement');
     dialog.setAttribute('aria-labelledby', 'event-announcement-title');
     dialog.setAttribute('aria-describedby', 'event-announcement-description');
 
     const shell = node('div', 'event-announcement-shell');
-    const ribbon = node('span', 'event-announcement-ribbon', '✦ NUEVA FECHA ✦');
+    const ribbon = node('span', 'event-announcement-ribbon', POSTER ? '✦ LIVE! LIVE! LIVE! ✦' : '✦ NUEVA FECHA ✦');
     ribbon.setAttribute('aria-hidden', 'true');
 
     const content = node('div', 'event-announcement-content');
-    content.append(node('p', 'event-announcement-kicker', 'GIMAE! LIVE · SAVE THE DATE'));
-    const heading = node('h2', '', 'Tenemos una nueva cita. ');
+    content.append(node('p', 'event-announcement-kicker', POSTER ? 'GIMAE! PRESENTA · LIVE SHOW' : 'GIMAE! LIVE · SAVE THE DATE'));
+
+    const heading = node('h2', '', POSTER ? 'Una noche para cantar juntas. ' : 'Tenemos una nueva cita. ');
     heading.id = 'event-announcement-title';
-    heading.append(node('em', '', 'Nos vemos allí ♡'));
-    content.append(heading, node('p', 'event-announcement-lede', 'Una nueva fecha acaba de sumarse a la agenda de Gimae!. Te dejamos lo importante para que no se te pase.'));
+    heading.append(node('em', '', POSTER ? 'Nos vemos en vivo ✦' : 'Nos vemos allí ♡'));
+    content.append(
+      heading,
+      node(
+        'p',
+        'event-announcement-lede',
+        POSTER
+          ? 'Luces arriba, música fuerte y una nueva fecha en el calendario. Este es el próximo escenario donde queremos encontrarnos contigo.'
+          : 'Una nueva fecha acaba de sumarse a la agenda de Gimae!. Te dejamos lo importante para que no se te pase.'
+      )
+    );
 
     const pass = node('div', 'event-announcement-pass');
     const date = node('div', 'event-announcement-date');
@@ -137,7 +149,7 @@
     );
 
     const info = node('div', 'event-announcement-info');
-    info.append(node('span', 'event-announcement-badge', 'NUEVO EVENTO'));
+    info.append(node('span', 'event-announcement-badge', POSTER ? 'PRÓXIMA FECHA' : 'NUEVO EVENTO'));
     info.append(node('h3', 'event-announcement-title', event.title || 'Evento Gimae!'));
 
     const description = node('p', 'event-announcement-description', event.description || 'Muy pronto compartiremos más detalles de esta fecha.');
@@ -155,7 +167,7 @@
     content.append(pass);
 
     const actions = node('div', 'event-announcement-actions');
-    const view = node('button', 'event-announcement-action primary', 'Ver evento en la agenda ↓');
+    const view = node('button', 'event-announcement-action primary', POSTER ? 'Quiero ver esta fecha ↓' : 'Ver evento en la agenda ↓');
     view.type = 'button';
     view.addEventListener('click', () => {
       const target = document.getElementById(`gimae-event-${eventDomKey(event)}`);
@@ -179,7 +191,7 @@
     actions.append(view);
 
     if (href) {
-      const details = node('a', 'event-announcement-action secondary', 'Abrir información ↗');
+      const details = node('a', 'event-announcement-action secondary', POSTER ? 'Ver info oficial ↗' : 'Abrir información ↗');
       details.href = href;
       details.target = '_blank';
       details.rel = 'noopener noreferrer';
@@ -191,9 +203,9 @@
     const stub = node('aside', 'event-announcement-stub');
     stub.setAttribute('aria-hidden', 'true');
     stub.append(
-      node('span', 'event-announcement-stub-label', 'GIMAE! LIVE'),
+      node('span', 'event-announcement-stub-label', POSTER ? 'GIMAE! ON STAGE' : 'GIMAE! LIVE'),
       node('span', 'event-announcement-stub-star', '✳'),
-      node('small', '', 'ADMIT ONE DREAMER'),
+      node('small', '', POSTER ? 'SEE YOU UNDER THE LIGHTS' : 'ADMIT ONE DREAMER'),
       node('strong', '', start ? `${day.format(start)} ${month.format(start).replace('.', '').toUpperCase()}` : 'SAVE THE DATE')
     );
 
@@ -258,7 +270,7 @@
   }, { once: true });
 
   // Si el renderizador terminó antes de que este archivo se ejecutara, no perdemos
-  // el evento. Esta ruta también hace que ?event-announcement=preview sea determinista.
+  // el evento. Las variantes de preview tampoco dependen del historial de vistos.
   if (window.GIMAE_PUBLIC_EVENTS_READY) {
     showFrom(window.GIMAE_PUBLIC_EVENTS, 'already-ready');
   }
