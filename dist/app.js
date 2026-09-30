@@ -1,10 +1,11 @@
 window.GIMAE_READY.then(() => {
 const $ = (selector) => document.querySelector(selector);
 const config = window.GIMAE;
-const platformLabels = { instagram: 'Instagram', tiktok: 'TikTok', spotify: 'Spotify' };
+const platformLabels = { instagram: 'Instagram', tiktok: 'TikTok', x: 'X', spotify: 'Spotify' };
 const icons = {
   instagram: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r=".8" fill="currentColor" stroke="none"/></svg>',
   tiktok: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M14 3v13a4.5 4.5 0 1 1-4-4.5M14 3c.5 3.5 2.5 5.5 6 5.5v3c-2.2 0-4.2-.8-6-2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  x: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 4l14 16M19 4L5 20" stroke-linecap="round"/></svg>',
   spotify: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M6.5 9c4-1.5 7-1.2 11 1M7.5 12c3-1 6-.7 9 1M8.5 15c2-.6 4-.4 7 .8" stroke-linecap="round"/></svg>'
 };
 function safeUrl(value) {

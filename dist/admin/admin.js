@@ -25,14 +25,14 @@ async function init(){
     await session();
   }catch(error){notice(`No se pudo iniciar el panel: ${error.message}`);toast('error','No se pudo iniciar el panel',error.message)}
 }
-function showLogin(){workspace.hidden=true;login.hidden=false;$('#logout').hidden=true;notice('Ingresa con tu cuenta del equipo.');}
+function showLogin(){workspace.hidden=true;login.hidden=false;$('#logout').hidden=true;notice('Ingresa con una cuenta autorizada del equipo.');}
 async function session(){
   const {data,error}=await client.auth.getSession();if(error||!data?.session){showLogin();return}
   const id=data.user?.id||data.session.user?.id;
-  profile=(await query(client.from('profiles').select('*').eq('user_id',id)))[0];
-  if(!profile){await client.auth.signOut();showLogin();$('#login-error').textContent='Esta cuenta no tiene rol asignado. Consulta con la administradora.';return}
+  profile=(await query(client.from('profiles').select('user_id,email').eq('user_id',id)))[0];
+  if(!profile){await client.auth.signOut();showLogin();$('#login-error').textContent='Esta cuenta no tiene acceso al Backstage. Consulta con la administradora.';return}
   login.hidden=true;workspace.hidden=false;$('#logout').hidden=false;
-  document.querySelectorAll('[data-admin]').forEach(node=>node.hidden=profile.role!=='admin');
+  document.querySelectorAll('[data-admin]').forEach(node=>node.hidden=false);
   await openTab('posts');
 }
 async function signIn(event){event.preventDefault();const button=event.submitter;button.disabled=true;$('#login-error').textContent='';notice('Verificando acceso…');
@@ -52,18 +52,17 @@ async function changePassword(event){
 }
 const titles={posts:'Entradas del blog',products:'Productos de merch',members:'Integrantes',events:'Eventos'};
 const singular={posts:'entrada',products:'producto',members:'integrante',events:'evento'};
-async function openTab(next){if(next!=='posts'&&profile.role!=='admin')return;tab=next;notice(`Cargando ${titles[tab].toLowerCase()}…`);
+async function openTab(next){tab=next;notice(`Cargando ${titles[tab].toLowerCase()}…`);
   try{
     document.querySelectorAll('[data-tab]').forEach(b=>b.setAttribute('aria-current',String(b.dataset.tab===tab)));
-    let listQuery=client.from(tab).select('*');
-    if(tab==='posts'&&profile.role==='integrante')listQuery=listQuery.eq('author_id',profile.user_id);
+    const listQuery=client.from(tab).select('*');
     [items,members]=await Promise.all([query(listQuery.order(tab==='events'?'starts_at':tab==='posts'?'updated_at':'display_order',{ascending:tab!=='posts'})),query(client.from('members').select('*').order('display_order'))]);
     records.replaceChildren();const heading=document.createElement('h2');heading.textContent=titles[tab];records.append(heading);
     const create=document.createElement('button');create.type='button';create.textContent='＋ Crear';create.addEventListener('click',()=>form(null));records.append(create);
     const list=document.createElement('div');list.className='admin-list';
     for(const row of items){const button=document.createElement('button');button.type='button';button.textContent=tab==='posts'?`${row.title} · ${row.status} · ${row.visibility}`:tab==='products'?`${row.name} · $${row.price_clp.toLocaleString('es-CL')}`:row.name||row.title;button.addEventListener('click',()=>form(row));list.append(button)}
     if(!items.length){const empty=document.createElement('p');empty.textContent='Todavía no hay registros. Puedes crear el primero.';list.append(empty)}records.append(list);
-    editor.replaceChildren();notice(`${items.length} registros. ${profile.role==='admin'?'Rol administrador.':'Solo puedes editar tus propias entradas.'}`);
+    editor.replaceChildren();notice(`${items.length} registros. Acceso administrativo.`);
   }catch(error){notice(`No se pudo cargar: ${error.message}`);toast('error',`No se pudieron cargar ${titles[tab].toLowerCase()}`,error.message)}
 }
 function form(row){const title=row?'Editar':'Crear';let fields='';

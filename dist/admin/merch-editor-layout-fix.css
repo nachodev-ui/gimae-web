@@ -1,0 +1,70 @@
+/* Final layout correction for Merch variant cards.
+   The variant identity and editable controls must never compete for the same horizontal row. */
+
+/* Stack the variant heading above its controls so the form always receives the full card width. */
+.admin-editor-card.is-merch-editor .merch-variant-card{
+  grid-template-columns:minmax(0,1fr)!important;
+  align-items:stretch!important;
+}
+
+.admin-editor-card.is-merch-editor .merch-variant-head{
+  width:100%;
+  min-width:0;
+}
+
+.admin-editor-card.is-merch-editor .merch-variant-fields{
+  width:100%;
+  min-width:0;
+  grid-template-columns:minmax(150px,.9fr) minmax(150px,.9fr) minmax(260px,1.35fr) minmax(180px,.8fr)!important;
+  gap:14px;
+  align-items:end;
+}
+
+.admin-editor-card.is-merch-editor .merch-variant-field,
+.admin-editor-card.is-merch-editor .merch-variant-confirm,
+.admin-editor-card.is-merch-editor .merch-save-variant{
+  min-width:0;
+  max-width:100%;
+  box-sizing:border-box;
+}
+
+.admin-page .admin-editor-card.is-merch-editor .merch-save-variant{
+  width:100%!important;
+  min-width:0!important;
+  min-height:48px;
+  justify-self:stretch;
+  align-self:end;
+  white-space:normal;
+  text-align:center;
+}
+
+/* Switch to two columns before controls become cramped. */
+@media(max-width:1180px){
+  .admin-editor-card.is-merch-editor .merch-variant-fields{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  }
+  .admin-editor-card.is-merch-editor .merch-variant-confirm{
+    min-height:72px;
+  }
+  .admin-page .admin-editor-card.is-merch-editor .merch-save-variant{
+    grid-column:1/-1;
+    width:min(100%,320px)!important;
+    justify-self:end;
+  }
+}
+
+/* One-column reflow for mobile, large zoom and narrow windows. */
+@media(max-width:720px){
+  .admin-editor-card.is-merch-editor .merch-variant-head{
+    align-items:flex-start;
+    flex-direction:column;
+  }
+  .admin-editor-card.is-merch-editor .merch-variant-fields{
+    grid-template-columns:minmax(0,1fr)!important;
+  }
+  .admin-page .admin-editor-card.is-merch-editor .merch-save-variant{
+    grid-column:auto;
+    width:100%!important;
+    justify-self:stretch;
+  }
+}

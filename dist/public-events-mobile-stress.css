@@ -1,0 +1,73 @@
+/* 390px stress hardening for long public event copy. */
+@media (max-width:400px){
+  .public-event-card h3{
+    max-width:100%;
+    text-wrap:pretty;
+    overflow-wrap:break-word;
+    word-break:normal;
+    hyphens:auto;
+    line-height:1.22;
+  }
+
+  .public-event-description{
+    max-width:100%;
+    text-wrap:pretty;
+    overflow-wrap:break-word;
+    word-break:normal;
+    hyphens:auto;
+  }
+
+  .public-event-meta{
+    gap:7px;
+  }
+
+  .public-event-meta span{
+    min-width:0;
+    max-width:100%;
+    align-items:flex-start;
+    line-height:1.42;
+    overflow-wrap:break-word;
+    word-break:normal;
+    hyphens:auto;
+  }
+
+  .public-event-meta span::before{
+    flex:0 0 auto;
+    margin-top:.05em;
+  }
+
+  .public-event-side,
+  .public-event-countdown,
+  .public-event-link{
+    max-width:100%;
+  }
+
+  .public-event-countdown{
+    overflow-wrap:break-word;
+    word-break:normal;
+  }
+
+  .public-event-link{
+    white-space:normal;
+    text-align:center;
+    padding-block:10px;
+    line-height:1.25;
+  }
+
+  .public-event-date>*{
+    min-width:0;
+  }
+
+  .public-event-date .month,
+  .public-event-date .year{
+    white-space:nowrap;
+  }
+
+  .public-event-stub-label,
+  .public-event-stub-caption,
+  .public-event-stub-count{
+    min-width:0;
+    overflow-wrap:break-word;
+    word-break:normal;
+  }
+}

@@ -1,0 +1,474 @@
+/* Mobile polish for the public Gimae! events ticket.
+   Keeps the desktop composition intact while turning each event into a compact
+   ticket pass on phones, with readable dates and touch-friendly CTAs. */
+
+@media (max-width:760px){
+  .events.section-shell{
+    width:calc(100% - 32px);
+    max-width:var(--max);
+  }
+
+  .event-ticket.event-ticket--redesign{
+    border-radius:22px;
+    box-shadow:0 9px 0 #eadff6,0 22px 42px rgba(91,62,116,.09);
+  }
+
+  .public-event-main{
+    padding:30px 20px 26px;
+  }
+
+  .public-event-main::before{
+    width:112px;
+    left:24px;
+    height:19px;
+  }
+
+  .public-event-heading{
+    margin-bottom:22px;
+  }
+
+  .public-event-heading-copy{
+    max-width:none;
+  }
+
+  .public-event-heading h2{
+    font-size:clamp(2rem,9vw,2.7rem);
+    line-height:1.02;
+    text-wrap:balance;
+  }
+
+  .public-event-heading-copy>p:last-child{
+    margin-top:13px;
+    font-size:.89rem;
+    line-height:1.62;
+  }
+
+  .public-event-live-chip{
+    min-height:34px;
+    margin-top:15px;
+    padding-inline:12px;
+    font-size:.63rem;
+  }
+
+  .public-events-list{
+    gap:16px;
+  }
+
+  .public-event-card{
+    min-width:0;
+  }
+
+  .public-event-body,
+  .public-event-side,
+  .public-event-meta{
+    min-width:0;
+  }
+
+  .public-event-card h3,
+  .public-event-description,
+  .public-event-meta span{
+    overflow-wrap:anywhere;
+  }
+
+  .public-event-link{
+    min-height:46px;
+  }
+
+  /* On touch screens avoid a sticky desktop hover after tapping a card. */
+  .public-event-card:hover{
+    transform:none;
+  }
+
+  .public-event-link:active{
+    background:#d93c84;
+    color:#fff;
+    transform:translateY(1px);
+    box-shadow:0 3px 0 #c93277;
+  }
+
+  .public-event-stub{
+    min-height:150px;
+    grid-template-columns:minmax(0,1fr) 72px minmax(0,1fr);
+    padding:24px 20px;
+    gap:14px;
+  }
+
+  .public-event-stub-label,
+  .public-event-stub-count{
+    min-width:0;
+  }
+
+  .public-event-stub-label{
+    text-align:left;
+  }
+
+  .public-event-stub-count{
+    text-align:right;
+  }
+}
+
+@media (max-width:560px){
+  .events{
+    padding-block:22px 52px;
+  }
+
+  .event-ticket.event-ticket--redesign{
+    border-radius:20px;
+  }
+
+  .public-event-main{
+    padding:27px 16px 22px;
+  }
+
+  .public-event-main::before{
+    left:18px;
+    width:94px;
+  }
+
+  .public-event-heading .eyebrow{
+    margin-bottom:9px;
+    font-size:.68rem;
+  }
+
+  .public-event-heading h2{
+    font-size:clamp(1.9rem,10.5vw,2.35rem);
+  }
+
+  .public-event-heading-copy>p:last-child{
+    font-size:.85rem;
+  }
+
+  /* The event becomes a vertical mini ticket instead of squeezing three columns. */
+  .public-event-card{
+    grid-template-columns:1fr;
+    gap:0;
+    border-radius:18px;
+    overflow:hidden;
+    box-shadow:0 6px 0 rgba(136,95,170,.11);
+  }
+
+  .public-event-card:hover{
+    box-shadow:0 6px 0 rgba(136,95,170,.11);
+  }
+
+  .public-event-card::before,
+  .public-event-card::after{
+    top:54px;
+    bottom:auto;
+    width:20px;
+    height:20px;
+    background:#efe8fb;
+    border-color:#d7c7e4;
+  }
+
+  .public-event-card::before{
+    left:-11px;
+  }
+
+  .public-event-card::after{
+    left:auto;
+    right:-11px;
+  }
+
+  .public-event-date{
+    grid-row:auto;
+    min-height:0;
+    display:grid;
+    grid-template-columns:auto auto minmax(0,1fr) auto;
+    grid-template-areas:"day month year spark";
+    align-items:baseline;
+    justify-items:start;
+    gap:5px 9px;
+    padding:13px 17px 12px;
+    border-right:0;
+    border-bottom:1px dashed #cdb9dc;
+    text-align:left;
+    background:
+      radial-gradient(circle at 90% 20%,rgba(255,255,255,.65),transparent 23%),
+      linear-gradient(105deg,#f9dded 0%,#f2e7fb 72%,#eee5fa 100%);
+  }
+
+  .public-event-date .day{
+    grid-area:day;
+    font-size:2.35rem;
+    line-height:.9;
+  }
+
+  .public-event-date .month{
+    grid-area:month;
+    align-self:center;
+    font-size:.67rem;
+    letter-spacing:.14em;
+  }
+
+  .public-event-date .year{
+    grid-area:year;
+    align-self:center;
+    font-size:.64rem;
+  }
+
+  .public-event-date .spark{
+    grid-area:spark;
+    position:static;
+    align-self:center;
+    justify-self:end;
+    font-size:1rem;
+  }
+
+  .public-event-body{
+    padding:17px 17px 13px;
+    gap:7px;
+  }
+
+  .public-event-kicker{
+    font-size:.61rem;
+  }
+
+  .public-event-card h3{
+    font-size:1.2rem;
+    line-height:1.17;
+  }
+
+  .public-event-description{
+    font-size:.8rem;
+    line-height:1.48;
+    -webkit-line-clamp:3;
+  }
+
+  .public-event-meta{
+    display:grid;
+    gap:6px;
+    margin-top:4px;
+    font-size:.75rem;
+  }
+
+  .public-event-meta span{
+    width:100%;
+  }
+
+  .public-event-side{
+    grid-column:1;
+    padding:0 17px 17px;
+    display:flex;
+    flex-direction:column;
+    align-items:stretch;
+    gap:10px;
+    text-align:left;
+  }
+
+  .public-event-countdown{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    min-height:38px;
+    padding:8px 11px;
+    border:1px solid #e3d7e7;
+    border-radius:11px;
+    background:#fbf8fc;
+    font-size:.62rem;
+    letter-spacing:.04em;
+  }
+
+  .public-event-countdown strong{
+    margin:0;
+    text-align:right;
+    font-size:.78rem;
+    letter-spacing:0;
+  }
+
+  .public-event-link{
+    width:100%;
+    min-height:48px;
+    border-radius:14px;
+    font-size:.8rem;
+    box-shadow:0 4px 0 rgba(201,50,119,.14);
+  }
+
+  .public-event-link.is-disabled{
+    min-height:44px;
+  }
+
+  .public-event-empty{
+    grid-template-columns:66px minmax(0,1fr);
+    gap:13px;
+    min-height:0;
+    padding:17px;
+    border-radius:16px;
+  }
+
+  .public-event-empty-card{
+    border-radius:13px;
+  }
+
+  .public-event-empty-card strong{
+    font-size:1.45rem;
+  }
+
+  .public-event-empty-copy h3{
+    font-size:1.08rem;
+  }
+
+  .public-event-empty-copy p{
+    font-size:.78rem;
+    line-height:1.48;
+  }
+
+  /* The decorative stub turns into a compact wristband-like footer. */
+  .public-event-stub{
+    min-height:112px;
+    grid-template-columns:minmax(0,1fr) 58px minmax(0,1fr);
+    gap:10px;
+    padding:18px 16px;
+  }
+
+  .public-event-stub-orbit{
+    width:58px;
+    height:58px;
+    font-size:2.15rem;
+  }
+
+  .public-event-stub-label{
+    font-size:.6rem;
+    letter-spacing:.15em;
+  }
+
+  .public-event-stub-caption{
+    font-size:.55rem;
+    letter-spacing:.12em;
+  }
+
+  .public-event-stub-count{
+    font-size:.88rem;
+  }
+}
+
+@media (max-width:400px){
+  .events.section-shell{
+    width:calc(100% - 20px);
+  }
+
+  .event-ticket.event-ticket--redesign{
+    border-radius:17px;
+    box-shadow:0 7px 0 #eadff6;
+  }
+
+  .public-event-main{
+    padding:24px 12px 18px;
+  }
+
+  .public-event-main::before{
+    left:15px;
+    width:80px;
+    height:16px;
+  }
+
+  .public-event-heading{
+    margin-bottom:18px;
+  }
+
+  .public-event-heading h2{
+    font-size:1.78rem;
+    letter-spacing:-.035em;
+  }
+
+  .public-event-heading-copy>p:last-child{
+    font-size:.81rem;
+    line-height:1.55;
+  }
+
+  .public-event-live-chip{
+    width:max-content;
+    max-width:100%;
+    min-height:32px;
+    font-size:.59rem;
+  }
+
+  .public-event-card{
+    border-radius:16px;
+  }
+
+  .public-event-date{
+    padding:12px 14px 11px;
+    gap:4px 7px;
+  }
+
+  .public-event-date .day{
+    font-size:2.08rem;
+  }
+
+  .public-event-date .month{
+    font-size:.62rem;
+    letter-spacing:.11em;
+  }
+
+  .public-event-date .year{
+    font-size:.59rem;
+  }
+
+  .public-event-body{
+    padding:15px 14px 11px;
+  }
+
+  .public-event-card h3{
+    font-size:1.12rem;
+  }
+
+  .public-event-description{
+    font-size:.77rem;
+  }
+
+  .public-event-side{
+    padding:0 14px 14px;
+  }
+
+  .public-event-countdown{
+    align-items:flex-start;
+    flex-direction:column;
+    gap:2px;
+  }
+
+  .public-event-countdown strong{
+    text-align:left;
+  }
+
+  .public-event-link{
+    min-height:48px;
+  }
+
+  .public-event-stub{
+    min-height:102px;
+    grid-template-columns:minmax(0,1fr) 52px minmax(0,1fr);
+    padding:16px 12px;
+    gap:8px;
+  }
+
+  .public-event-stub-orbit{
+    width:52px;
+    height:52px;
+    font-size:1.9rem;
+  }
+
+  .public-event-stub-count{
+    font-size:.8rem;
+  }
+}
+
+@media (hover:none) and (pointer:coarse){
+  .public-event-card:hover{
+    transform:none;
+  }
+
+  .public-event-link:hover{
+    background:#fff3f8;
+    color:#9c285f;
+    transform:none;
+    box-shadow:0 4px 0 rgba(201,50,119,.14);
+  }
+
+  .public-event-link.is-disabled:hover{
+    background:#f8f5f9;
+    color:#8c7c8d;
+    box-shadow:none;
+  }
+}
