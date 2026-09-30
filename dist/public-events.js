@@ -38,6 +38,11 @@
     return `${parts.year}-${parts.month}-${parts.day}`;
   };
 
+  const eventKey = (event, index = 0) => {
+    const raw = event?.id || `${event?.created_at || event?.starts_at || 'event'}-${index}`;
+    return String(raw).replace(/[^a-zA-Z0-9_-]/g, '-');
+  };
+
   const relativeLabel = start => {
     if (!start) return 'Fecha por confirmar';
     const now = new Date();
@@ -62,6 +67,9 @@
   function buildCard(event, index) {
     const start = validDate(event.starts_at);
     const card = node('article', `public-event-card${index === 0 ? ' is-featured' : ''}`);
+    const key = eventKey(event, index);
+    card.id = `gimae-event-${key}`;
+    card.dataset.eventKey = key;
 
     const date = node('div', 'public-event-date');
     date.append(
@@ -175,6 +183,7 @@
     }
 
     ticket.append(main, buildStub(events.length));
+    window.dispatchEvent(new CustomEvent('gimae:public-events-rendered', { detail: { events } }));
   }
 
   ready.then(() => {
