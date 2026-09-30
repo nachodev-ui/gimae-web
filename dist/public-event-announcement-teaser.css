@@ -1,0 +1,268 @@
+/* Variant: idol/live teaser — cinematic stage reveal with neon lights. */
+.event-announcement--teaser{
+  width:min(920px,calc(100% - 24px));
+  max-width:920px;
+}
+.event-announcement--teaser::backdrop{
+  background:rgba(20,13,29,.72);
+  backdrop-filter:blur(12px) saturate(1.1);
+}
+.event-announcement--teaser .event-announcement-shell{
+  grid-template-columns:minmax(0,1fr) 250px;
+  border:1px solid rgba(255,255,255,.16);
+  border-radius:30px;
+  background:
+    radial-gradient(circle at 20% 18%,rgba(255,88,170,.22),transparent 26%),
+    radial-gradient(circle at 76% 22%,rgba(133,95,255,.24),transparent 25%),
+    radial-gradient(circle at 70% 86%,rgba(255,210,93,.12),transparent 22%),
+    linear-gradient(135deg,#21152b 0%,#2f1a3b 46%,#1c1730 100%);
+  box-shadow:0 20px 0 rgba(13,8,18,.36),0 42px 90px rgba(0,0,0,.5),0 0 45px rgba(232,70,148,.18);
+  overflow:hidden;
+}
+.event-announcement--teaser .event-announcement-shell::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:
+    repeating-linear-gradient(90deg,transparent 0 68px,rgba(255,255,255,.022) 69px 70px),
+    repeating-linear-gradient(0deg,transparent 0 68px,rgba(255,255,255,.018) 69px 70px),
+    linear-gradient(120deg,rgba(255,255,255,.05),transparent 26% 72%,rgba(255,255,255,.03));
+  pointer-events:none;
+}
+.event-announcement--teaser .event-announcement-shell::after{
+  content:"LIVE / 2026";
+  position:absolute;
+  left:28px;
+  bottom:16px;
+  z-index:0;
+  color:rgba(255,255,255,.055);
+  font:900 4rem/1 var(--display);
+  letter-spacing:-.05em;
+  transform:rotate(-4deg);
+  pointer-events:none;
+}
+.event-announcement--teaser .event-announcement-content{
+  position:relative;
+  z-index:1;
+  padding:38px 34px 30px;
+}
+.event-announcement--teaser .event-announcement-kicker{
+  min-height:30px;
+  padding:0 12px;
+  border:1px solid rgba(255,255,255,.26);
+  border-radius:999px;
+  background:rgba(255,255,255,.08);
+  color:#ffd75f;
+  box-shadow:none;
+  backdrop-filter:blur(6px);
+}
+.event-announcement--teaser .event-announcement-content h2{
+  max-width:580px;
+  color:#fff;
+  font-size:clamp(2.35rem,4.8vw,3.8rem);
+  line-height:.94;
+  text-shadow:0 8px 26px rgba(0,0,0,.3);
+}
+.event-announcement--teaser .event-announcement-content h2 em{
+  color:#ff64ad;
+  text-shadow:0 0 20px rgba(255,100,173,.35);
+}
+.event-announcement--teaser .event-announcement-lede{
+  max-width:560px;
+  margin-top:15px;
+  color:rgba(255,255,255,.72);
+  font-size:.92rem;
+  line-height:1.58;
+}
+.event-announcement--teaser .event-announcement-pass{
+  grid-template-columns:138px minmax(0,1fr);
+  margin-top:24px;
+  border:1px solid rgba(255,255,255,.13);
+  border-radius:22px;
+  background:rgba(255,255,255,.055);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 9px 24px rgba(0,0,0,.16);
+  backdrop-filter:blur(8px);
+  overflow:hidden;
+}
+.event-announcement--teaser .event-announcement-date{
+  min-height:175px;
+  border-right:1px solid rgba(255,255,255,.12);
+  background:
+    radial-gradient(circle at 50% 18%,rgba(255,255,255,.14),transparent 20%),
+    linear-gradient(180deg,#dc3b91 0%,#8a4fd2 100%);
+  color:#fff;
+}
+.event-announcement--teaser .event-announcement-date::before{
+  content:"LIVE";
+  position:absolute;
+  left:10px;
+  top:9px;
+  padding:3px 6px;
+  border:1px solid rgba(255,255,255,.35);
+  border-radius:999px;
+  font-size:.5rem;
+  font-weight:900;
+  letter-spacing:.13em;
+}
+.event-announcement--teaser .event-announcement-date::after{color:#ffd75f}
+.event-announcement--teaser .event-announcement-date span:first-child,
+.event-announcement--teaser .event-announcement-date span:last-of-type{color:rgba(255,255,255,.86)}
+.event-announcement--teaser .event-announcement-date strong{color:#fff;font-size:3.8rem}
+.event-announcement--teaser .event-announcement-info{
+  gap:10px;
+  padding:20px 21px 19px;
+}
+.event-announcement--teaser .event-announcement-badge{
+  border:1px solid rgba(255,215,95,.44);
+  background:rgba(255,215,95,.10);
+  color:#ffd75f;
+}
+.event-announcement--teaser .event-announcement-badge::before{content:"●";color:#ff64ad}
+.event-announcement--teaser .event-announcement-title{color:#fff;font-size:1.5rem}
+.event-announcement--teaser .event-announcement-description{color:rgba(255,255,255,.70)}
+.event-announcement--teaser .event-announcement-meta{
+  gap:7px;
+  padding:10px 11px;
+  border-left:2px solid #ff64ad;
+  background:rgba(255,255,255,.045);
+  color:rgba(255,255,255,.76);
+}
+.event-announcement--teaser .event-announcement-meta b{color:#ffd75f}
+.event-announcement--teaser .event-announcement-actions{
+  gap:11px;
+  margin-top:22px;
+}
+.event-announcement--teaser .event-announcement-action{
+  min-height:49px;
+  border-radius:12px;
+}
+.event-announcement--teaser .event-announcement-action.primary{
+  border-color:#ff5fa9;
+  background:linear-gradient(180deg,#ff5fa9 0%,#e84694 100%);
+  color:#fff;
+  box-shadow:0 5px 0 #b82e70,0 0 24px rgba(255,95,169,.18);
+}
+.event-announcement--teaser .event-announcement-action.primary:hover,
+.event-announcement--teaser .event-announcement-action.primary:focus-visible{
+  background:linear-gradient(180deg,#ff72b6 0%,#e84694 100%);
+  box-shadow:0 7px 0 #b82e70,0 0 30px rgba(255,95,169,.24);
+}
+.event-announcement--teaser .event-announcement-action.secondary{
+  border-color:rgba(255,255,255,.25);
+  background:rgba(255,255,255,.08);
+  color:#fff;
+  box-shadow:none;
+}
+.event-announcement--teaser .event-announcement-action.secondary:hover,
+.event-announcement--teaser .event-announcement-action.secondary:focus-visible{
+  background:rgba(255,255,255,.14);
+}
+.event-announcement--teaser .event-announcement-stub{
+  position:relative;
+  z-index:1;
+  gap:13px;
+  padding:32px 20px;
+  border-left:1px solid rgba(255,255,255,.12);
+  background:
+    radial-gradient(circle at 50% 20%,rgba(255,97,172,.22),transparent 22%),
+    radial-gradient(circle at 50% 78%,rgba(255,215,95,.10),transparent 25%),
+    linear-gradient(180deg,#25172f 0%,#1b1427 100%);
+  color:#fff;
+}
+.event-announcement--teaser .event-announcement-stub::before{
+  inset:18px;
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:20px;
+}
+.event-announcement--teaser .event-announcement-stub::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:linear-gradient(180deg,transparent,rgba(232,70,148,.10));
+  pointer-events:none;
+}
+.event-announcement--teaser .event-announcement-stub-label{color:#ffd75f}
+.event-announcement--teaser .event-announcement-stub-star{
+  width:104px;
+  height:104px;
+  border:1px solid rgba(255,255,255,.16);
+  background:
+    radial-gradient(circle,rgba(255,255,255,.10),rgba(255,255,255,.02)),
+    conic-gradient(from 0deg,#e84694,#8d65c8,#ffd75f,#e84694);
+  color:#fff;
+  box-shadow:0 0 30px rgba(232,70,148,.25);
+  font-size:3.3rem;
+}
+.event-announcement--teaser .event-announcement-stub small{color:rgba(255,255,255,.58)}
+.event-announcement--teaser .event-announcement-stub strong{color:#fff;font-size:1.04rem}
+.event-announcement--teaser .event-announcement-ribbon{
+  left:30px;
+  top:-10px;
+  border:1px solid rgba(255,255,255,.18);
+  border-radius:3px;
+  background:#ffd75f;
+  color:#302219;
+  box-shadow:0 4px 0 rgba(0,0,0,.22);
+  transform:rotate(-1deg);
+}
+.event-announcement--teaser .event-announcement-close{
+  border:1px solid rgba(255,255,255,.24);
+  background:rgba(24,16,33,.72);
+  color:#fff;
+  box-shadow:none;
+  backdrop-filter:blur(6px);
+}
+.event-announcement--teaser .event-announcement-close:hover{background:#e84694;color:#fff}
+.event-announcement--teaser .event-announcement-spark{filter:drop-shadow(0 0 8px currentColor)}
+.event-announcement--teaser .event-announcement-spark.is-1,
+.event-announcement--teaser .event-announcement-spark.is-4{color:#ff64ad}
+.event-announcement--teaser .event-announcement-spark.is-2{color:#ffd75f}
+.event-announcement--teaser .event-announcement-spark.is-3{color:#a782ff}
+
+@media(max-width:760px){
+  .event-announcement--teaser{width:min(100% - 18px,640px)}
+  .event-announcement--teaser .event-announcement-shell{grid-template-columns:1fr;border-radius:24px}
+  .event-announcement--teaser .event-announcement-content{padding:29px 17px 22px}
+  .event-announcement--teaser .event-announcement-content h2{padding-right:36px;font-size:clamp(1.9rem,8vw,2.55rem)}
+  .event-announcement--teaser .event-announcement-pass{grid-template-columns:1fr}
+  .event-announcement--teaser .event-announcement-date{
+    min-height:0;
+    grid-template-columns:auto auto minmax(0,1fr);
+    grid-template-areas:"day month year";
+    justify-items:start;
+    align-items:baseline;
+    gap:6px 9px;
+    padding:13px 15px;
+    border-right:0;
+    border-bottom:1px solid rgba(255,255,255,.12);
+    text-align:left;
+  }
+  .event-announcement--teaser .event-announcement-date span:first-child{grid-area:month;align-self:center}
+  .event-announcement--teaser .event-announcement-date strong{grid-area:day;font-size:2.55rem}
+  .event-announcement--teaser .event-announcement-date span:last-of-type{grid-area:year;align-self:center}
+  .event-announcement--teaser .event-announcement-info{padding:16px 15px}
+  .event-announcement--teaser .event-announcement-actions{display:grid;grid-template-columns:1fr}
+  .event-announcement--teaser .event-announcement-action{width:100%}
+  .event-announcement--teaser .event-announcement-stub{
+    min-height:96px;
+    display:grid;
+    grid-template-columns:1fr 72px 1fr;
+    align-items:center;
+    gap:10px;
+    padding:14px 16px;
+    border-left:0;
+    border-top:1px solid rgba(255,255,255,.12);
+  }
+  .event-announcement--teaser .event-announcement-stub-star{width:66px;height:66px;font-size:2rem}
+  .event-announcement--teaser .event-announcement-stub small{display:none}
+  .event-announcement--teaser .event-announcement-stub strong{text-align:right;font-size:.82rem}
+}
+
+@media(max-width:390px){
+  .event-announcement--teaser .event-announcement-content{padding:25px 12px 18px}
+  .event-announcement--teaser .event-announcement-content h2{font-size:1.67rem}
+  .event-announcement--teaser .event-announcement-lede{font-size:.78rem}
+  .event-announcement--teaser .event-announcement-title{font-size:1.1rem}
+  .event-announcement--teaser .event-announcement-stub{grid-template-columns:minmax(0,1fr) 56px minmax(0,1fr);padding-inline:11px}
+  .event-announcement--teaser .event-announcement-stub-star{width:54px;height:54px;font-size:1.75rem}
+}
