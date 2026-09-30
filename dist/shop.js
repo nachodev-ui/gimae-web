@@ -12,6 +12,10 @@
   await window.GIMAE_READY;
 
   const config = window.GIMAE || {};
+  // Acceso temporal a PayPal Sandbox solo desde la web local de prueba.
+  const localPaypalSandbox = window.location.origin === 'http://localhost:8000' &&
+    new URLSearchParams(window.location.search).get('paypal-sandbox') === '1';
+  const paypalEnabled = Boolean(config.PAYMENT_METHODS?.paypal?.enabled || localPaypalSandbox);
   const catalog = Array.isArray(config.merch) ? config.merch.filter(product => product?.active !== false) : [];
   const CART_KEY = 'gimae-shop-cart-v1';
   const SHIPPING_KEY = 'gimae-shop-shipping-v1';
@@ -411,7 +415,7 @@
   }
 
   function paypalReady() {
-    return Boolean(config.PAYMENT_METHODS?.paypal?.enabled && config.backendStatus === 'live' && window.GIMAE_SUPABASE?.url);
+    return Boolean(paypalEnabled && config.backendStatus === 'live' && window.GIMAE_SUPABASE?.url);
   }
 
   function readyMethods() {
@@ -431,7 +435,7 @@
     paymentMethodList.replaceChildren();
     const methods = [
       { id: 'bankTransfer', label: cleanText(config.PAYMENT_METHODS?.bankTransfer?.label || 'Transferencia bancaria', 60), enabled: Boolean(config.PAYMENT_METHODS?.bankTransfer?.enabled), ready: bankReady() },
-      { id: 'paypal', label: cleanText(config.PAYMENT_METHODS?.paypal?.label || 'PayPal', 60), enabled: Boolean(config.PAYMENT_METHODS?.paypal?.enabled), ready: paypalReady() && selectedShippingId === 'pickup' }
+      { id: 'paypal', label: localPaypalSandbox ? 'PayPal Sandbox · prueba sin dinero real' : cleanText(config.PAYMENT_METHODS?.paypal?.label || 'PayPal', 60), enabled: paypalEnabled, ready: paypalReady() && selectedShippingId === 'pickup' }
     ].filter(method => method.enabled);
     methods.forEach((method, index) => {
       const label = element('label', `payment-choice${method.ready ? '' : ' is-disabled'}`);
