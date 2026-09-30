@@ -1,9 +1,6 @@
 (() => {
   'use strict';
 
-  const ready = window.GIMAE_READY;
-  if (!ready || typeof ready.then !== 'function') return;
-
   const safeUrl = value => {
     if (typeof value !== 'string' || !value.trim()) return null;
     try {
@@ -38,10 +35,8 @@
     return `${parts.year}-${parts.month}-${parts.day}`;
   };
 
-  const eventKey = (event, index = 0) => {
-    const raw = event?.id || `${event?.created_at || event?.starts_at || 'event'}-${index}`;
-    return String(raw).replace(/[^a-zA-Z0-9_-]/g, '-');
-  };
+  const eventIdentity = (event, index = 0) => String(event?.id || `${event?.created_at || event?.starts_at || 'event'}-${index}`);
+  const eventDomKey = (event, index = 0) => eventIdentity(event, index).replace(/[^a-zA-Z0-9_-]/g, '-');
 
   const relativeLabel = start => {
     if (!start) return 'Fecha por confirmar';
@@ -56,8 +51,8 @@
   };
 
   const eventIsCurrentOrFuture = event => {
-    const start = validDate(event.starts_at);
-    const end = validDate(event.ends_at);
+    const start = validDate(event?.starts_at);
+    const end = validDate(event?.ends_at);
     const now = new Date();
     if (!start) return false;
     if (end) return end >= now;
@@ -67,9 +62,9 @@
   function buildCard(event, index) {
     const start = validDate(event.starts_at);
     const card = node('article', `public-event-card${index === 0 ? ' is-featured' : ''}`);
-    const key = eventKey(event, index);
-    card.id = `gimae-event-${key}`;
-    card.dataset.eventKey = key;
+    card.id = `gimae-event-${eventDomKey(event, index)}`;
+    card.dataset.eventKey = eventDomKey(event, index);
+    card.dataset.eventId = eventIdentity(event, index);
 
     const date = node('div', 'public-event-date');
     date.append(
@@ -82,13 +77,13 @@
     const body = node('div', 'public-event-body');
     body.append(node('span', 'public-event-kicker', index === 0 ? 'Próxima fecha' : 'También en agenda'));
     body.append(node('h3', '', event.title || 'Evento Gimae!'));
-
     if (event.description) body.append(node('p', 'public-event-description', event.description));
 
     const meta = node('div', 'public-event-meta');
-    const timeItem = node('span', 'time', start ? `${time.format(start)} hrs` : 'Hora por confirmar');
-    const placeItem = node('span', 'place', event.venue || 'Lugar por confirmar');
-    meta.append(timeItem, placeItem);
+    meta.append(
+      node('span', 'time', start ? `${time.format(start)} hrs` : 'Hora por confirmar'),
+      node('span', 'place', event.venue || 'Lugar por confirmar')
+    );
     body.append(meta);
 
     const side = node('div', 'public-event-side');
@@ -105,29 +100,28 @@
       link.setAttribute('aria-label', `Ver detalles de ${event.title || 'este evento'} (se abre en otra pestaña)`);
       side.append(link);
     } else {
-      const noLink = node('span', 'public-event-link is-disabled', 'Info en redes ♡');
-      side.append(noLink);
+      side.append(node('span', 'public-event-link is-disabled', 'Info en redes ♡'));
     }
 
     card.append(date, body, side);
     return card;
   }
 
-  function buildEmpty() {
+  function buildEmpty(provisional) {
     const empty = node('div', 'public-event-empty');
     const card = node('div', 'public-event-empty-card');
     card.setAttribute('aria-hidden', 'true');
-    card.append(node('strong', '', '♡'), node('small', '', 'SAVE THE DATE'));
+    card.append(node('strong', '', provisional ? '✦' : '♡'), node('small', '', provisional ? 'LOADING LIVE' : 'SAVE THE DATE'));
     const copy = node('div', 'public-event-empty-copy');
     copy.append(
-      node('h3', '', 'La próxima fecha todavía es un pequeño secreto.'),
-      node('p', '', 'Cuando tengamos un nuevo escenario, aparecerá aquí con todos los detalles. Mientras tanto, quédate cerquita en nuestras redes ♡')
+      node('h3', '', provisional ? 'Preparando la agenda de Gimae!…' : 'La próxima fecha todavía es un pequeño secreto.'),
+      node('p', '', provisional ? 'Estamos consultando las fechas publicadas para mostrarte la información más reciente.' : 'Cuando tengamos un nuevo escenario, aparecerá aquí con todos los detalles. Mientras tanto, quédate cerquita en nuestras redes ♡')
     );
     empty.append(card, copy);
     return empty;
   }
 
-  function buildStub(count) {
+  function buildStub(count, provisional) {
     const stub = node('aside', 'public-event-stub');
     stub.setAttribute('aria-label', 'Ticket decorativo de Gimae! Live');
     const orbit = node('div', 'public-event-stub-orbit', '✳');
@@ -135,27 +129,29 @@
     stub.append(
       node('span', 'public-event-stub-label', 'GIMAE! LIVE'),
       orbit,
-      node('span', 'public-event-stub-caption', count ? 'NEXT SHOW' : 'STAY TUNED'),
+      node('span', 'public-event-stub-caption', provisional ? 'LOADING' : (count ? 'NEXT SHOW' : 'STAY TUNED')),
       node('span', 'public-event-stub-rule', ''),
-      node('strong', 'public-event-stub-count', count ? `${String(count).padStart(2, '0')} ${count === 1 ? 'DATE' : 'DATES'}` : 'SOON ♡'),
+      node('strong', 'public-event-stub-count', provisional ? '♡' : (count ? `${String(count).padStart(2, '0')} ${count === 1 ? 'DATE' : 'DATES'}` : 'SOON ♡')),
       node('span', 'public-event-stub-code', 'G M A — 0 0 4'),
       node('span', 'public-event-stub-note', 'admit one dreamer')
     );
     return stub;
   }
 
-  function render() {
-    const section = document.querySelector('#eventos');
-    const ticket = section?.querySelector('.event-ticket');
-    if (!section || !ticket || ticket.dataset.publicEventsReady === 'true') return;
-
-    const allEvents = Array.isArray(window.GIMAE?.events) ? window.GIMAE.events : [];
-    const events = allEvents
+  function normalizeEvents(source) {
+    return (Array.isArray(source) ? source : [])
       .filter(event => event && event.active !== false && eventIsCurrentOrFuture(event))
       .sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at))
       .slice(0, 4);
+  }
 
-    ticket.dataset.publicEventsReady = 'true';
+  function render(source, { provisional = false } = {}) {
+    const section = document.querySelector('#eventos');
+    const ticket = section?.querySelector('.event-ticket');
+    if (!section || !ticket) return [];
+
+    const events = normalizeEvents(source);
+    ticket.dataset.publicEventsReady = provisional ? 'pending' : 'true';
     ticket.classList.add('event-ticket--redesign');
     ticket.replaceChildren();
 
@@ -171,7 +167,7 @@
       title,
       node('p', '', 'Fechas, escenarios y pequeños momentos que queremos compartir contigo. Guarda tu favorita y ven a vivirla con Gimae! ♡')
     );
-    heading.append(copy, node('span', 'public-event-live-chip', events.length ? 'AGENDA ABIERTA' : 'PRÓXIMAMENTE'));
+    heading.append(copy, node('span', 'public-event-live-chip', provisional ? 'CARGANDO AGENDA' : (events.length ? 'AGENDA ABIERTA' : 'PRÓXIMAMENTE')));
     main.append(heading);
 
     if (events.length) {
@@ -179,16 +175,49 @@
       events.forEach((event, index) => list.append(buildCard(event, index)));
       main.append(list);
     } else {
-      main.append(buildEmpty());
+      main.append(buildEmpty(provisional));
     }
 
-    ticket.append(main, buildStub(events.length));
-    window.dispatchEvent(new CustomEvent('gimae:public-events-rendered', { detail: { events } }));
+    ticket.append(main, buildStub(events.length, provisional));
+
+    if (provisional) {
+      const legacySink = node('div', 'ticket-main public-events-legacy-sink');
+      legacySink.hidden = true;
+      legacySink.setAttribute('aria-hidden', 'true');
+      ticket.append(legacySink);
+    } else {
+      window.GIMAE_PUBLIC_EVENTS = events;
+      window.GIMAE_PUBLIC_EVENTS_READY = true;
+      window.dispatchEvent(new CustomEvent('gimae:public-events-ready', { detail: { events } }));
+    }
+
+    return events;
   }
 
-  ready.then(() => {
-    requestAnimationFrame(() => requestAnimationFrame(render));
-  }).catch(() => {
-    requestAnimationFrame(() => requestAnimationFrame(render));
-  });
+  // El HTML conserva un fallback antiguo por si JavaScript está desactivado. Lo
+  // sustituimos de inmediato para que nunca quede visible mientras responde Supabase.
+  render(window.GIMAE?.events, { provisional: true });
+
+  function finish() {
+    render(window.GIMAE?.events, { provisional: false });
+  }
+
+  function attachReady(attempt = 0) {
+    const ready = window.GIMAE_READY;
+    if (ready && typeof ready.then === 'function') {
+      ready.then(finish).catch(error => {
+        console.warn('No se pudo actualizar la agenda desde el backend; se mantiene el respaldo local.', error);
+        finish();
+      });
+      return;
+    }
+    if (attempt < 80) {
+      window.setTimeout(() => attachReady(attempt + 1), 50);
+      return;
+    }
+    console.warn('GIMAE_READY no estuvo disponible; se finalizó la agenda con los datos locales.');
+    finish();
+  }
+
+  attachReady();
 })();
