@@ -106,7 +106,7 @@
     return newestFirst.find(event => !seen.has(eventIdentity(event))) || null;
   }
 
-  function buildAnnouncement(event, displayedEvents) {
+  function buildAnnouncement(event) {
     const start = validDate(event.starts_at);
     const href = safeUrl(event.url);
     const dialog = node('dialog', 'event-announcement');
@@ -118,9 +118,7 @@
     ribbon.setAttribute('aria-hidden', 'true');
 
     const content = node('div', 'event-announcement-content');
-    content.append(
-      node('p', 'event-announcement-kicker', 'GIMAE! LIVE · SAVE THE DATE')
-    );
+    content.append(node('p', 'event-announcement-kicker', 'GIMAE! LIVE · SAVE THE DATE'));
     const heading = node('h2', '', 'Tenemos una nueva cita. ');
     heading.id = 'event-announcement-title';
     heading.append(node('em', '', 'Nos vemos allí ♡'));
@@ -136,18 +134,11 @@
 
     const info = node('div', 'event-announcement-info');
     info.append(node('span', 'event-announcement-badge', 'NUEVO EVENTO'));
-    const eventTitle = node('h3', 'event-announcement-title', event.title || 'Evento Gimae!');
-    info.append(eventTitle);
+    info.append(node('h3', 'event-announcement-title', event.title || 'Evento Gimae!'));
 
-    if (event.description) {
-      const description = node('p', 'event-announcement-description', event.description);
-      description.id = 'event-announcement-description';
-      info.append(description);
-    } else {
-      const description = node('p', 'event-announcement-description', 'Muy pronto compartiremos más detalles de esta fecha.');
-      description.id = 'event-announcement-description';
-      info.append(description);
-    }
+    const description = node('p', 'event-announcement-description', event.description || 'Muy pronto compartiremos más detalles de esta fecha.');
+    description.id = 'event-announcement-description';
+    info.append(description);
 
     const meta = node('div', 'event-announcement-meta');
     const when = node('span', '', start ? `${longDate.format(start)} · ${time.format(start)} hrs` : 'Fecha y horario por confirmar');
@@ -163,7 +154,8 @@
     const view = node('button', 'event-announcement-action primary', 'Ver evento en la agenda ↓');
     view.type = 'button';
     view.addEventListener('click', () => {
-      const target = document.querySelector(`[data-event-key="${CSS.escape(eventDomKey(event))}"]`);
+      const key = eventDomKey(event);
+      const target = document.querySelector(`[data-event-key="${CSS.escape(key)}"]`);
       dialog.close('view-event');
       if (!target) {
         document.querySelector('#eventos')?.scrollIntoView({ behavior: reducedMotion.matches ? 'auto' : 'smooth', block: 'start' });
@@ -225,7 +217,6 @@
     }, { once: true });
 
     document.body.append(dialog);
-    remember(displayedEvents);
     return dialog;
   }
 
@@ -233,12 +224,13 @@
     const events = visibleEvents();
     const candidate = candidateFrom(events);
     if (!candidate) return;
-    const dialog = buildAnnouncement(candidate, events);
+    const dialog = buildAnnouncement(candidate);
     const delay = reducedMotion.matches ? 180 : 1150;
     window.setTimeout(() => {
       if (!dialog.isConnected || dialog.open) return;
       document.documentElement.classList.add('event-announcement-open');
       dialog.showModal();
+      remember(events);
       dialog.querySelector('.event-announcement-close')?.focus({ preventScroll: true });
     }, delay);
   }
