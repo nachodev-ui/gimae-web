@@ -32,24 +32,14 @@
   letter-spacing:.35em;
   transform:rotate(-5deg);
 }
-.event-announcement--kawaii .event-announcement-shell::after{
-  content:"KIRAKIRA CLUB";
-  position:absolute;
-  top:22px;
-  right:178px;
-  z-index:0;
-  color:rgba(149,104,184,.12);
-  font:900 2.8rem/1 var(--display);
-  letter-spacing:-.04em;
-  transform:rotate(5deg);
-  pointer-events:none;
-}
 .event-announcement--kawaii .event-announcement-content{
-  padding:34px 30px 28px;
+  padding:48px 30px 28px;
 }
 .event-announcement--kawaii .event-announcement-kicker{
   min-height:30px;
   padding:0 12px;
+  margin-top:10px;
+  margin-bottom:16px;
   border:2px solid #f3b2d2;
   border-radius:999px;
   background:#fff;
@@ -174,7 +164,7 @@
 .event-announcement--kawaii .event-announcement-stub strong{color:#7c4166}
 .event-announcement--kawaii .event-announcement-ribbon{
   left:26px;
-  top:-10px;
+  top:12px;
   border:2px solid #ef7eb5;
   border-radius:10px;
   background:#fff;
@@ -194,9 +184,8 @@
 .event-announcement--kawaii .event-announcement-spark.is-3{color:#9b77c2}
 
 @media(max-width:720px){
-  .event-announcement--kawaii{width:min(100% - 18px,600px)}
+  .event-announcement--kawaii{width:min(calc(100% - 18px),600px)}
   .event-announcement--kawaii .event-announcement-shell{grid-template-columns:1fr;border-radius:26px}
-  .event-announcement--kawaii .event-announcement-shell::after{right:18px;top:88px;font-size:2rem}
   .event-announcement--kawaii .event-announcement-content{padding:28px 17px 21px}
   .event-announcement--kawaii .event-announcement-content h2{padding-right:34px;font-size:clamp(1.8rem,8vw,2.4rem)}
   .event-announcement--kawaii .event-announcement-pass{grid-template-columns:1fr}
