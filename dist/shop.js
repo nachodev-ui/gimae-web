@@ -55,6 +55,9 @@
   const paypalWaitNote = document.querySelector('#paypal-wait-note');
   const paypalCancelled = document.querySelector('#paypal-cancelled');
   const paypalCancelledBack = document.querySelector('#paypal-cancelled-back');
+  const paypalError = document.querySelector('#paypal-error');
+  const paypalErrorMessage = document.querySelector('#paypal-error-message');
+  const paypalErrorAction = document.querySelector('#paypal-error-action');
   const paypalButtons = document.querySelector('#paypal-buttons');
   const paypalConversion = document.querySelector('#paypal-conversion');
   const checkoutPrivacy = document.querySelector('#checkout-privacy');
@@ -78,6 +81,7 @@
   let paypalPreparing = false;
   let paypalPrepared = false;
   let paypalWaitTimer = null;
+  let paypalErrorOrder = null;
   let statusPollEpoch = 0;
   let recentOrderPolling = false;
 
@@ -687,6 +691,43 @@
     preparePayment.focus();
   }
 
+  function clearPayPalError() {
+    paypalError.hidden = true;
+    paypalErrorOrder = null;
+    checkoutDetails.hidden = false;
+    checkoutDialog.classList.remove('is-paypal-error');
+    checkoutDialog.setAttribute('aria-labelledby', 'checkout-title');
+  }
+
+  function showPayPalError(order, message) {
+    clearPayPalWait();
+    paypalPrepared = false;
+    paypalButtons.hidden = true;
+    checkoutStatus.textContent = '';
+    showError(checkoutError, '');
+    paypalErrorOrder = order;
+    paypalErrorMessage.textContent = message;
+    paypalErrorAction.firstChild.textContent = order ? 'Ver estado de mi pedido ' : 'Volver a mis datos ';
+    checkoutDetails.hidden = true;
+    paypalError.hidden = false;
+    checkoutDialog.classList.add('is-paypal-error');
+    checkoutDialog.setAttribute('aria-labelledby', 'paypal-error-title');
+    checkoutDialog.scrollTop = 0;
+    paypalErrorAction.focus();
+  }
+
+  function leavePayPalError() {
+    const order = paypalErrorOrder;
+    clearPayPalError();
+    if (order) {
+      checkoutDialog.close();
+      window.setTimeout(() => renderOrder(order, document.querySelector('#shop-order-shortcut')), 0);
+    } else {
+      checkoutDialog.scrollTop = 0;
+      preparePayment.focus();
+    }
+  }
+
   async function renderPayPal(order) {
     if (paypalPreparing || paypalPrepared) return;
     if (selectedShippingId !== 'pickup') return showError(checkoutError, 'PayPal solo está disponible para retiro en persona.');
@@ -715,13 +756,16 @@
       await loadPayPal(quote.clientId);
       paypalButtons.hidden = false;
       let capturing = false;
-      const handlePayPalError = () => {
+      const handlePayPalError = (simulated = false) => {
         if (capturing) return;
-        clearPayPalWait();
-        paypalPrepared = false;
-        showError(checkoutError, 'PayPal no pudo continuar. Guardamos el intento: cierra esta ventana y consulta “Tu pedido” antes de volver a pagar.');
-        checkoutStatus.textContent = '';
-        preparePayment.hidden = true; paypalButtons.hidden = true;
+        if (simulated) {
+          forgetOrder(order.code);
+          preparePayment.hidden = false;
+          showPayPalError(null, 'Esta es una prueba de error. Tu carrito sigue guardado y puedes volver a tus datos.');
+          return;
+        }
+        preparePayment.hidden = true;
+        showPayPalError(order, 'No pudimos confirmar el resultado. Dejamos guardado tu intento: revisa el estado del pedido antes de volver a pagar.');
       };
       const buttons = window.paypal.Buttons({
         style: { layout: 'vertical', shape: 'pill', color: 'gold', label: 'paypal' },
@@ -737,9 +781,7 @@
           if (capturing) return;
           if (data.orderID !== quote.orderId) {
             capturing = true;
-            clearPayPalWait();
-            showError(checkoutError, 'La orden aprobada no coincide. Contacta a Gimae con el ID ' + quote.orderId + '.');
-            paypalButtons.hidden = true;
+            showPayPalError(order, 'La orden aprobada no coincide con tu pedido. Revisa su estado y contacta a Gimae con el ID ' + quote.orderId + '.');
             return;
           }
           capturing = true;
@@ -753,10 +795,7 @@
             checkoutDialog.close();
             renderOrder(order, preparePayment);
           } catch (error) {
-            clearPayPalWait();
-            showError(checkoutError, 'No pudimos comprobar el resultado. Cierra esta ventana y consulta “Tu pedido” antes de pagar otra vez. ID PayPal: ' + quote.orderId + '.');
-            checkoutStatus.textContent = '';
-            paypalButtons.hidden = true;
+            showPayPalError(order, 'No pudimos comprobar el resultado. Revisa el estado de tu pedido antes de pagar otra vez.');
           }
         },
         onCancel: () => {
@@ -768,15 +807,12 @@
           preparePayment.hidden = false; paypalButtons.hidden = true;
           showPayPalCancelled();
         },
-        onError: handlePayPalError
+        onError: () => handlePayPalError()
       });
       if (buttons.isEligible && !buttons.isEligible()) throw new Error('PAYPAL_INELIGIBLE');
       if (localPaypalErrorTest) {
-        // Simula exactamente el callback del SDK; no abre PayPal ni hace un cargo.
-        handlePayPalError();
-        forgetOrder(order.code);
-        preparePayment.hidden = false;
-        showError(checkoutError, 'Prueba Sandbox: PayPal no pudo continuar. Tu carrito sigue guardado y puedes volver a intentarlo.');
+        // Recorre el mismo manejo del callback del SDK sin abrir PayPal ni hacer un cargo.
+        handlePayPalError(true);
         return;
       }
       await buttons.render('#paypal-buttons');
@@ -999,6 +1035,7 @@
   }
 
   paypalCancelledBack.addEventListener('click', returnToCheckout);
+  paypalErrorAction.addEventListener('click', leavePayPalError);
 
   document.querySelectorAll('.shop-dialog').forEach(dialog => {
     dialog.querySelector('[data-close-dialog]')?.addEventListener('click', () => closeDialog(dialog));
@@ -1008,10 +1045,15 @@
         event.preventDefault();
         returnToCheckout();
       }
+      if (dialog === checkoutDialog && checkoutDialog.classList.contains('is-paypal-error')) {
+        event.preventDefault();
+        leavePayPalError();
+      }
     });
     dialog.addEventListener('click', event => {
       if (dialog === checkoutDialog && checkoutDialog.classList.contains('is-paypal-waiting')) return;
       if (dialog === checkoutDialog && checkoutDialog.classList.contains('is-paypal-cancelled')) return;
+      if (dialog === checkoutDialog && checkoutDialog.classList.contains('is-paypal-error')) return;
       if (event.target !== dialog) return;
       const bounds = dialog.getBoundingClientRect();
       if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) closeDialog(dialog);
@@ -1021,7 +1063,7 @@
         statusPollEpoch += 1;
         void pollRecentOrderStatus();
       }
-      if (dialog === checkoutDialog) clearPayPalWait();
+      if (dialog === checkoutDialog) { clearPayPalWait(); clearPayPalError(); }
       if (!document.querySelector('.shop-dialog[open]')) document.body.classList.remove('dialog-open');
       const opener = dialog === orderDialog && !recentOrder.hidden ? recentOrderOpen : dialogOpeners.get(dialog);
       if (opener?.isConnected) opener.focus();
