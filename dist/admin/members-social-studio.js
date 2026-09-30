@@ -59,6 +59,8 @@ function installPreview(card,kind,input,handleInput){
   input?.addEventListener('input',sync);
   handleInput?.addEventListener('input',sync);
   sync();
+  requestAnimationFrame(sync);
+  [250,800,1800].forEach(delay=>setTimeout(sync,delay));
 }
 
 function decorateCard(card,kind,input,handleInput){
