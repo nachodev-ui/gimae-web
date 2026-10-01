@@ -12,13 +12,14 @@
   await window.GIMAE_READY;
 
   const config = window.GIMAE || {};
-  // Acceso temporal a PayPal Sandbox solo desde la web local de prueba.
-  const localPaypalSandbox = window.location.origin === 'http://localhost:8000' &&
+  // Acceso explícito a Sandbox desde los dos orígenes de prueba autorizados.
+  const sandboxPreview = (window.location.origin === 'http://localhost:8000' ||
+    (window.location.origin === 'https://nachodev-ui.github.io' && window.location.pathname.startsWith('/gimae-web/'))) &&
     new URLSearchParams(window.location.search).get('paypal-sandbox') === '1';
   // Prueba solo local: recorre el callback de error del SDK sin abrir PayPal ni cobrar.
-  const localPaypalErrorTest = localPaypalSandbox &&
+  const localPaypalErrorTest = sandboxPreview && window.location.origin === 'http://localhost:8000' &&
     new URLSearchParams(window.location.search).get('paypal-test-error') === '1';
-  const paypalEnabled = Boolean(config.PAYMENT_METHODS?.paypal?.enabled || localPaypalSandbox);
+  const paypalEnabled = Boolean(config.PAYMENT_METHODS?.paypal?.enabled || sandboxPreview);
   const catalog = Array.isArray(config.merch) ? config.merch.filter(product => product?.active !== false) : [];
   const CART_KEY = 'gimae-shop-cart-v1';
   const SHIPPING_KEY = 'gimae-shop-shipping-v1';
@@ -457,6 +458,7 @@
   function renderConfigNote() {
     const stockPending = catalog.some(product => optionsFor(product).some(option => stockFor(product, option.id) === null));
     const messages = [];
+    if (sandboxPreview) messages.push('Modo de prueba PayPal Sandbox: los pagos no usan dinero real y los pedidos son de prueba.');
     if (!readyMethods().length) messages.push('La compra online está en preparación: puedes armar y guardar tu carrito, pero el pago todavía no está habilitado.');
     if (stockPending) messages.push('Algunos productos muestran disponibilidad por confirmar; el equipo debe validarla antes de confirmar el pedido.');
     configNote.textContent = messages.join(' ');
@@ -467,7 +469,7 @@
     paymentMethodList.replaceChildren();
     const methods = [
       { id: 'bankTransfer', label: cleanText(config.PAYMENT_METHODS?.bankTransfer?.label || 'Transferencia bancaria', 60), enabled: Boolean(config.PAYMENT_METHODS?.bankTransfer?.enabled), ready: bankReady() },
-      { id: 'paypal', label: localPaypalSandbox ? 'PayPal Sandbox · prueba sin dinero real' : cleanText(config.PAYMENT_METHODS?.paypal?.label || 'PayPal', 60), enabled: paypalEnabled, ready: paypalReady() && selectedShippingId === 'pickup' }
+      { id: 'paypal', label: sandboxPreview ? 'PayPal Sandbox · prueba sin dinero real' : cleanText(config.PAYMENT_METHODS?.paypal?.label || 'PayPal', 60), enabled: paypalEnabled, ready: paypalReady() && selectedShippingId === 'pickup' }
     ].filter(method => method.enabled);
     methods.forEach((method, index) => {
       const label = element('label', `payment-choice${method.ready ? '' : ' is-disabled'}`);
@@ -491,7 +493,7 @@
     const isPaypal = method === 'paypal';
     paypalConversion.hidden = !isPaypal;
     checkoutPrivacy.textContent = isPaypal
-      ? 'Usaremos tu nombre y contacto para coordinar el retiro. PayPal cobra en USD.'
+      ? (sandboxPreview ? 'Pago de prueba sin dinero real. El pedido Sandbox no se preparará ni entregará.' : 'Usaremos tu nombre y contacto para coordinar el retiro. PayPal cobra en USD.')
       : 'Tus datos quedan en el resumen del pedido de este dispositivo.';
     paypalButtons.hidden = true;
     paypalButtons.replaceChildren();
@@ -532,6 +534,7 @@
       createdAt: new Date().toISOString(),
       status: method === 'paypal' ? 'preparing_paypal' : 'pending_payment',
       paymentMethod: method,
+      sandbox: method === 'paypal' && sandboxPreview,
       buyer: { name: cleanText(buyer.name, 60), contact: cleanText(buyer.contact, 80) },
       shipping: shipping ? { id: cleanText(shipping.id, 40), label: cleanText(shipping.label, 100), cost: positiveNumber(shipping.cost), eta: cleanText(shipping.eta, 100) } : null,
       items: cartDetails().map(item => ({ productId: item.productId, optionId: item.optionId, name: cleanText(item.product.name, 80), option: cleanText(item.option.label, 60), quantity: item.quantity, unitPrice: item.unitPrice })),
@@ -579,9 +582,10 @@
       : 'Consulta aquí los detalles de tu compra.';
     const paid = order.paymentMethod === 'paypal' && order.status === 'paid';
     const abandoned = order.paymentMethod === 'paypal' && order.status === 'abandoned';
+    if (order.sandbox) recentOrderDescription.textContent += ' Pedido de prueba Sandbox, sin preparación ni entrega.';
     if (abandoned) recentOrderDescription.textContent += ' Este intento se cerró sin pago confirmado.';
     else if (order.paymentMethod === 'paypal' && !paid) recentOrderDescription.textContent += ' Comprueba el estado antes de intentar otro pago.';
-    recentOrderState.textContent = paid ? 'Pago confirmado' : order.paymentMethod === 'paypal'
+    recentOrderState.textContent = paid ? (order.sandbox ? 'Prueba confirmada' : 'Pago confirmado') : order.paymentMethod === 'paypal'
       ? (abandoned ? 'Intento cerrado' : order.status === 'capture_pending' ? 'Confirmación en curso' : 'Pago sin confirmar') : 'Pendiente de pago';
     recentOrderState.classList.toggle('is-paid', paid);
     recentOrderState.classList.toggle('is-abandoned', abandoned);
@@ -921,12 +925,13 @@
     const awaiting = isPayPal && order.status === 'awaiting_approval';
     const abandoned = isPayPal && order.status === 'abandoned';
     let pendingConfirmation = null;
-    document.querySelector('#order-title').textContent = paid ? '¡Pago confirmado!' : abandoned ? 'Intento cerrado' : awaiting ? 'Revisa tu pago' : 'Tu pedido quedó guardado';
+    document.querySelector('#order-title').textContent = paid ? (order.sandbox ? '¡Prueba confirmada!' : '¡Pago confirmado!') : abandoned ? 'Intento cerrado' : awaiting ? 'Revisa tu pago' : 'Tu pedido quedó guardado';
     const status = element('p', `order-status${paid ? ' is-paid' : abandoned ? ' is-abandoned' : ''}`,
-      isPayPal ? (paid ? 'Pago confirmado · pedido recibido' : abandoned ? 'Sin pago confirmado · intento cerrado' : awaiting ? 'Pago sin confirmar' : 'Captura recibida · verificando confirmación') : 'Pendiente de pago');
+      isPayPal ? (paid ? (order.sandbox ? 'Pago Sandbox confirmado · pedido de prueba' : 'Pago confirmado · pedido recibido') : abandoned ? 'Sin pago confirmado · intento cerrado' : awaiting ? 'Pago sin confirmar' : 'Captura recibida · verificando confirmación') : 'Pendiente de pago');
     status.setAttribute('role', 'status');
     status.setAttribute('aria-live', 'polite');
     orderSummary.append(status);
+    if (order.sandbox) orderSummary.append(element('p', 'order-local-note', 'Pedido de prueba Sandbox · sin dinero real, preparación ni entrega.'));
     const code = element('div', 'order-code'); code.append(element('span', '', 'Código de pedido'), element('strong', '', cleanText(order.code, 40)), copyButton(order.code));
     orderSummary.append(code);
     const list = element('div', 'order-lines');
@@ -951,7 +956,7 @@
     } else {
       orderSummary.append(copyRow('ID de orden PayPal', order.paypalOrderId || 'Pendiente'));
       const instruction = element('p', 'order-instruction', paid
-        ? `Pago de ${usd.format(Number(order.paypalUsd))} USD confirmado. Coordinaremos contigo el retiro.`
+        ? (order.sandbox ? `Pago de prueba de ${usd.format(Number(order.paypalUsd))} USD confirmado en Sandbox.` : `Pago de ${usd.format(Number(order.paypalUsd))} USD confirmado. Coordinaremos contigo el retiro.`)
         : abandoned
           ? 'PayPal ya no encontró esta orden o la anuló. Puedes preparar una compra nueva. Si ves un cobro en PayPal, contáctanos con el ID de orden antes de volver a pagar.'
         : awaiting
@@ -974,25 +979,29 @@
       }
     }
     if (!paid) orderSummary.append(element('p', 'order-local-note', order.paymentMethod === 'paypal' ? 'El pedido PayPal se guarda en Supabase. Esta copia local sirve para reabrir el resumen.' : 'Este resumen existe solo en este navegador. El pedido se confirma cuando el equipo recibe y verifica el comprobante.'));
-    const actions = contactActions(order);
-    if (actions.children.length) orderSummary.append(actions);
-    if (paid) showPaidOrder(status);
+    if (!order.sandbox) {
+      const actions = contactActions(order);
+      if (actions.children.length) orderSummary.append(actions);
+    }
+    if (paid) showPaidOrder(status, order.sandbox);
     openDialog(orderDialog, opener || document.querySelector('[data-open-cart]'));
     openOrderConfirmation = pendingConfirmation;
     pendingConfirmation?.();
   }
 
-  function showPaidOrder(status) {
+  function showPaidOrder(status, sandbox = false) {
     orderDialog.classList.add('is-paid');
     const celebration = element('div', 'order-success');
     const art = element('div', 'order-success-art');
     art.setAttribute('aria-hidden', 'true');
     art.append(element('span', 'order-success-check', '✓'));
     const copy = element('div', 'order-success-copy');
-    copy.append(status, element('p', '', '¡Gracias por comprar en Gimae! Ya recibimos tu pedido. Pronto coordinaremos contigo los siguientes pasos.'));
+    copy.append(status, element('p', '', sandbox
+      ? '¡La prueba de PayPal Sandbox se completó! Este pedido no se preparará ni entregará.'
+      : '¡Gracias por comprar en Gimae! Ya recibimos tu pedido. Pronto coordinaremos contigo los siguientes pasos.'));
     celebration.append(art, copy);
     orderSummary.prepend(celebration);
-    orderSummary.querySelector('.order-local-note')?.remove();
+    if (!sandbox) orderSummary.querySelector('.order-local-note')?.remove();
 
     const receipt = element('section', 'order-receipt');
     receipt.setAttribute('aria-label', 'Detalles del pedido');
@@ -1069,13 +1078,13 @@
           order.status = 'paid';
           clearCartForOrder(order);
           saveOrder(order);
-          document.querySelector('#order-title').textContent = '¡Pago confirmado!';
-          statusNode.textContent = 'Pago confirmado · pedido recibido';
+          document.querySelector('#order-title').textContent = order.sandbox ? '¡Prueba confirmada!' : '¡Pago confirmado!';
+          statusNode.textContent = order.sandbox ? 'Pago Sandbox confirmado · pedido de prueba' : 'Pago confirmado · pedido recibido';
           statusNode.classList.add('is-paid');
-          instruction.textContent = `Pago de ${usd.format(Number(order.paypalUsd))} USD confirmado. Coordinaremos contigo el retiro.`;
+          instruction.textContent = order.sandbox ? `Pago de prueba de ${usd.format(Number(order.paypalUsd))} USD confirmado en Sandbox.` : `Pago de ${usd.format(Number(order.paypalUsd))} USD confirmado. Coordinaremos contigo el retiro.`;
           recover?.remove();
           check.remove();
-          showPaidOrder(statusNode);
+          showPaidOrder(statusNode, order.sandbox);
           openOrderConfirmation = null;
           return;
         }
