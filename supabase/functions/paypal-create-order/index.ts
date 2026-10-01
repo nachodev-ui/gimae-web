@@ -11,6 +11,7 @@ import {
   paypalClientId,
   paypalMerchantId,
   paypalToken,
+  rateLimit,
 } from "../_shared/paypal.ts";
 
 type CartLine = { productId: string; optionId: string; quantity: number };
@@ -69,6 +70,7 @@ Deno.serve(async (req) => {
       throw new CheckoutError(400, "El carrito contiene productos repetidos.");
     }
     const db = admin();
+    await rateLimit(db, req, "create");
     const { data: products, error: productError } = await db.from("products")
       .select("id,name,price_clp,active,stock,stock_confirmed,variant_source")
       .in("id", [...new Set(items.map((x) => x.productId))]);
