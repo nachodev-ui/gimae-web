@@ -918,7 +918,6 @@
     status.setAttribute('role', 'status');
     status.setAttribute('aria-live', 'polite');
     orderSummary.append(status);
-    if (paid) showPaidOrder(status);
     const code = element('div', 'order-code'); code.append(element('span', '', 'Código de pedido'), element('strong', '', cleanText(order.code, 40)), copyButton(order.code));
     orderSummary.append(code);
     const list = element('div', 'order-lines');
@@ -943,7 +942,7 @@
     } else {
       orderSummary.append(copyRow('ID de orden PayPal', order.paypalOrderId || 'Pendiente'));
       const instruction = element('p', 'order-instruction', paid
-        ? `Pago confirmado: ${usd.format(Number(order.paypalUsd))} USD. Coordinaremos contigo el retiro.`
+        ? `Pago de ${usd.format(Number(order.paypalUsd))} USD confirmado. Coordinaremos contigo el retiro.`
         : awaiting
           ? 'Aún no consta una captura. Si aprobaste el pago en PayPal, usa el botón de abajo para comprobarlo y completarlo. Evita iniciar una compra nueva.'
           : `Estamos verificando la captura de ${usd.format(Number(order.paypalUsd))} USD. No repitas el pago.`);
@@ -966,6 +965,7 @@
     if (!paid) orderSummary.append(element('p', 'order-local-note', order.paymentMethod === 'paypal' ? 'El pedido PayPal se guarda en Supabase. Esta copia local sirve para reabrir el resumen.' : 'Este resumen existe solo en este navegador. El pedido se confirma cuando el equipo recibe y verifica el comprobante.'));
     const actions = contactActions(order);
     if (actions.children.length) orderSummary.append(actions);
+    if (paid) showPaidOrder(status);
     openDialog(orderDialog, opener || document.querySelector('[data-open-cart]'));
     openOrderConfirmation = pendingConfirmation;
     pendingConfirmation?.();
@@ -982,6 +982,32 @@
     celebration.append(art, copy);
     orderSummary.prepend(celebration);
     orderSummary.querySelector('.order-local-note')?.remove();
+
+    const receipt = element('section', 'order-receipt');
+    receipt.setAttribute('aria-label', 'Detalles del pedido');
+    const heading = element('div', 'order-receipt-heading');
+    heading.append(element('span', '', 'TU COMPRA EN DETALLE'), element('span', 'order-receipt-dots', '● ● ●'));
+    receipt.append(heading, orderSummary.querySelector('.order-code'));
+
+    const products = element('div', 'order-receipt-products');
+    products.append(element('h3', '', 'Lo que elegiste'), orderSummary.querySelector('.order-lines'));
+    receipt.append(products);
+
+    const amounts = element('div', 'order-receipt-amounts');
+    amounts.append(orderSummary.querySelector('.order-total-box'), orderSummary.querySelector('.order-shipping-copy'));
+    receipt.append(amounts);
+
+    const payment = element('div', 'order-receipt-payment');
+    payment.append(element('h3', '', 'Pago registrado'), orderSummary.querySelector('.order-copy-row'), orderSummary.querySelector('.order-instruction'));
+    receipt.append(payment);
+    orderSummary.append(receipt);
+
+    const actions = orderSummary.querySelector('.order-contact-actions');
+    if (actions) {
+      const contact = element('div', 'order-receipt-contact');
+      contact.append(element('p', '', '¿Quieres escribirnos sobre tu pedido?'), actions);
+      orderSummary.append(contact);
+    }
   }
 
   async function recoverPayPalOrder(order, instruction, button) {
@@ -1029,10 +1055,10 @@
           document.querySelector('#order-title').textContent = '¡Pago confirmado!';
           statusNode.textContent = 'Pago confirmado · pedido recibido';
           statusNode.classList.add('is-paid');
-          showPaidOrder(statusNode);
-          instruction.textContent = `Pago confirmado: ${usd.format(Number(order.paypalUsd))} USD. Coordinaremos contigo el retiro.`;
+          instruction.textContent = `Pago de ${usd.format(Number(order.paypalUsd))} USD confirmado. Coordinaremos contigo el retiro.`;
           recover?.remove();
           check.remove();
+          showPaidOrder(statusNode);
           openOrderConfirmation = null;
           return;
         }
