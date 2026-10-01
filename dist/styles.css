@@ -483,3 +483,45 @@ body.dialog-open{overflow:hidden}
 @media(max-width:620px){.order-dialog.is-paid #order-title{margin-bottom:16px}.order-success{gap:16px;min-height:0;padding:21px 18px}.order-success-art{width:68px;height:68px;box-shadow:0 0 0 6px #d9f2e5,4px 6px 0 #a9dac3}.order-success-check{font-size:2.8rem}.order-success-copy>p:last-child{font-size:.84rem}.order-success:after{right:12px;top:9px}}
 @media(max-width:420px){.order-success{align-items:flex-start;flex-direction:column;gap:18px}.order-success-art{margin:5px 0 0 10px}}
 @media(prefers-reduced-motion:reduce){.order-success,.order-success-art,.order-success:after{animation:none}}
+
+/* El resto del pedido comparte la paleta y el ritmo visual de la celebración. */
+.order-dialog.is-paid{border-color:#d3e9df;background:#fffefd}
+.order-dialog.is-paid .order-success{border-color:#c8e6d7;background:radial-gradient(circle at 94% 12%,#ffebe7 0 10%,transparent 34%),radial-gradient(circle at 8% 92%,#e5f6ed 0 12%,transparent 38%),#f1faf5;box-shadow:0 7px 0 #eaf4ed}
+.order-dialog.is-paid .order-success:before{opacity:.25}
+.order-dialog.is-paid .order-success-art{border-color:#b4dfc8;box-shadow:0 0 0 9px #e5f4e9,5px 8px 0 #c9e7d5}
+.order-dialog.is-paid .order-success-check{color:#3d856e}
+.order-dialog.is-paid .order-success-copy>p:last-child{color:#3a6659}
+.order-receipt{position:relative;margin-top:27px;padding:23px 25px 25px;border:1px solid #dcebe3;border-radius:20px;background:#fff;box-shadow:0 7px 0 #eff6f0}
+.order-receipt-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:17px;color:#5a8a78;font-size:.69rem;font-weight:700;letter-spacing:.16em}
+.order-receipt-dots{color:#e6abb9;font-size:.86rem;letter-spacing:.28em;white-space:nowrap}
+.order-dialog.is-paid .order-receipt .order-code{grid-template-columns:minmax(0,1fr) auto;gap:3px 12px;margin:0;padding:16px 18px;border:1px solid #f0dce2;border-radius:13px;background:#fff6f8}
+.order-dialog.is-paid .order-receipt .order-code>span{color:#7b6b73}
+.order-dialog.is-paid .order-receipt .order-code>strong{min-width:0;overflow-wrap:anywhere;color:#925c76;font-size:clamp(1rem,2.4vw,1.3rem);letter-spacing:.015em}
+.order-dialog.is-paid .copy-button{border-color:#e8cfd9;background:#fff;color:#80516b;transition:background .2s,transform .2s}
+.order-dialog.is-paid .copy-button:hover{background:#fff0f4;transform:translateY(-2px)}
+.order-receipt-products{padding:22px 0 20px}
+.order-receipt h3{color:#46685d;font:600 1.1rem/1.2 var(--display)}
+.order-dialog.is-paid .order-lines{gap:8px;margin-top:13px}
+.order-dialog.is-paid .order-lines>div{align-items:center;gap:14px;padding:11px 13px;border:1px solid #e5eee7;border-radius:11px;background:#f9fcfa;color:#514957}
+.order-dialog.is-paid .order-lines strong{flex:none;color:#6b5c66}
+.order-receipt-amounts{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.order-dialog.is-paid .order-total-box,.order-dialog.is-paid .order-shipping-copy{margin:0;min-width:0;min-height:96px;padding:16px 17px;border:1px solid #dcece2;border-radius:13px;background:#f2f9f4}
+.order-dialog.is-paid .order-total-box{grid-template-columns:minmax(0,1fr) auto;align-content:center;gap:4px}
+.order-dialog.is-paid .order-total-box>span,.order-dialog.is-paid .order-shipping-copy:before{color:#657e71;font-size:.71rem;font-weight:700;letter-spacing:.03em}
+.order-dialog.is-paid .order-total-box>strong{color:#537968;font-size:1.5rem}
+.order-dialog.is-paid .order-shipping-copy{display:flex;flex-direction:column;justify-content:center;color:#526b60;font-size:.79rem;line-height:1.45}
+.order-dialog.is-paid .order-shipping-copy:before{content:'ENTREGA';display:block;margin-bottom:5px}
+.order-receipt-payment{margin-top:11px;padding:18px 19px;border:1px solid #f1e3d9;border-radius:13px;background:#fffaf6}
+.order-receipt-payment h3{color:#786c5f}
+.order-dialog.is-paid .order-copy-row{gap:12px;padding:12px 0 8px;border:0}
+.order-dialog.is-paid .order-copy-row span{color:#85766c}
+.order-dialog.is-paid .order-copy-row strong{color:#5d505a}
+.order-dialog.is-paid .order-instruction{margin:3px 0 0;color:#62756c;font-size:.78rem;font-weight:500}
+.order-receipt-contact{display:flex;align-items:center;justify-content:space-between;gap:15px;margin-top:21px;padding:16px 19px;border:1px solid #f1dfe6;border-radius:14px;background:#fff7f9}
+.order-receipt-contact>p{color:#785d6a;font-size:.83rem;font-weight:600}
+.order-dialog.is-paid .order-contact-actions{margin:0;flex:none}
+.order-dialog.is-paid .order-contact-actions .button{border-color:#e6cfda!important;background:#fff;color:#87546f;box-shadow:0 3px 0 #f3e4ea}
+.order-dialog.is-paid .order-contact-actions .button:hover{background:#fff0f5}
+@media(max-width:620px){.order-receipt{padding:19px 16px}.order-receipt-amounts{grid-template-columns:1fr}.order-dialog.is-paid .order-total-box,.order-dialog.is-paid .order-shipping-copy{min-height:0}.order-receipt-contact{align-items:stretch;flex-direction:column}.order-dialog.is-paid .order-contact-actions{width:100%}}
+@media(max-width:420px){.order-dialog.is-paid .order-receipt .order-code{grid-template-columns:minmax(0,1fr) auto}.order-dialog.is-paid .order-receipt .order-code>strong{grid-column:1/-1;grid-row:2}.order-dialog.is-paid .order-receipt .order-code>.copy-button{grid-column:2;grid-row:1}.order-dialog.is-paid .order-copy-row{align-items:flex-start}.order-dialog.is-paid .order-total-box>strong{font-size:1.35rem}}
+@media(prefers-reduced-motion:reduce){.order-dialog.is-paid .copy-button{transition:none}.order-dialog.is-paid .copy-button:hover{transform:none}}
