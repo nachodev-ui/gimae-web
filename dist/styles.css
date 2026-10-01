@@ -462,3 +462,24 @@ body.dialog-open{overflow:hidden}
 .recent-order-action{display:grid;justify-items:end;gap:10px;min-width:145px}.recent-order-action strong{font:600 1.4rem var(--display);color:#ac2869}.recent-order-action .button{border:0;padding:11px 17px;font-size:.78rem;white-space:nowrap}
 @media(max-width:760px){.recent-order-ticket{grid-template-columns:60px minmax(0,1fr);gap:14px;padding:21px}.recent-order-sticker{width:55px;height:55px;font-size:2.2rem}.recent-order-action{grid-column:2;justify-items:start;display:flex;align-items:center;gap:12px;flex-wrap:wrap}.recent-order-action strong{font-size:1.25rem}}
 @media(max-width:440px){.recent-order-ticket{grid-template-columns:1fr;gap:11px}.recent-order-sticker{width:46px;height:46px;font-size:1.9rem}.recent-order-action{grid-column:1}}
+
+/* Una celebración breve para el pedido confirmado. */
+.order-dialog.is-paid{border-color:#a9dbca;background:#fcfffd;box-shadow:0 25px 65px #214b3c3b}
+.order-dialog.is-paid .eyebrow{color:#26806b}
+.order-dialog.is-paid #order-title{margin-bottom:20px;color:#23634f}
+.order-dialog.is-paid .order-code{border-color:#bce3d3;background:#fff}
+.order-dialog.is-paid .order-code>strong,.order-dialog.is-paid .order-total-box>strong{color:#ae4271}
+.order-dialog.is-paid .order-instruction{color:#3b6c5b;font-weight:600}
+.order-success{position:relative;isolation:isolate;display:flex;align-items:center;gap:22px;overflow:hidden;min-height:158px;padding:26px 27px;border:1px solid #a9dec8;border-radius:18px;background:radial-gradient(circle at 94% 12%,#ffe0dc 0 10%,transparent 34%),radial-gradient(circle at 8% 92%,#d9f3ec 0 12%,transparent 38%),#edfaf5;box-shadow:0 7px 0 #e0f2eb;animation:order-success-rise .55s cubic-bezier(.2,.8,.3,1) both}
+.order-success:before{content:'';position:absolute;inset:0;z-index:-1;background-image:radial-gradient(#60c6a8 1.6px,transparent 1.6px),radial-gradient(#f2a3a9 1.5px,transparent 1.5px);background-size:29px 29px,39px 39px;background-position:13px 6px,8px 19px;opacity:.42;mask-image:linear-gradient(90deg,transparent 15%,black 73%);pointer-events:none}
+.order-success:after{content:'✦';position:absolute;right:27px;top:17px;color:#d57686;font-size:1.4rem;line-height:1;animation:order-success-twinkle 2.8s ease-in-out 2}
+.order-success-art{position:relative;flex:none;display:grid;place-items:center;width:94px;height:94px;border:2px solid #93d3b8;border-radius:50%;background:#fffefa;box-shadow:0 0 0 9px #d9f2e5,5px 8px 0 #a9dac3;transform:rotate(-8deg);animation:order-success-pop .6s .12s cubic-bezier(.18,.85,.25,1.35) both}
+.order-success-art:before,.order-success-art:after{content:'';position:absolute;width:9px;height:9px;border-radius:50%;background:#ef9ba0}.order-success-art:before{left:-23px;top:4px}.order-success-art:after{right:-22px;bottom:6px;background:#71c4a4}
+.order-success-check{color:#25836d;font:700 3.8rem/1 var(--display);transform:rotate(8deg)}
+.order-success-copy{position:relative;min-width:0}.order-success-copy .order-status{background:#d3f2e1;color:#21634c;padding:6px 12px;font-size:.76rem}.order-success-copy>p:last-child{max-width:410px;margin-top:12px;color:#315d50;font-size:.96rem;line-height:1.5;font-weight:600}
+@keyframes order-success-rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes order-success-pop{from{opacity:0;transform:rotate(-25deg) scale(.55)}to{opacity:1;transform:rotate(-8deg) scale(1)}}
+@keyframes order-success-twinkle{50%{transform:rotate(25deg) scale(1.35);opacity:.6}}
+@media(max-width:620px){.order-dialog.is-paid #order-title{margin-bottom:16px}.order-success{gap:16px;min-height:0;padding:21px 18px}.order-success-art{width:68px;height:68px;box-shadow:0 0 0 6px #d9f2e5,4px 6px 0 #a9dac3}.order-success-check{font-size:2.8rem}.order-success-copy>p:last-child{font-size:.84rem}.order-success:after{right:12px;top:9px}}
+@media(max-width:420px){.order-success{align-items:flex-start;flex-direction:column;gap:18px}.order-success-art{margin:5px 0 0 10px}}
+@media(prefers-reduced-motion:reduce){.order-success,.order-success-art,.order-success:after{animation:none}}
