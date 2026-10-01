@@ -1,5 +1,6 @@
 import {
   admin,
+  captureApprovedOrder,
   paypal,
   paypalBase,
   paypalMerchantId,
@@ -74,9 +75,9 @@ Deno.serve(async (req) => {
       .not("paypal_order_id", "is", null)
       .lte("reconcile_after", now).order("reconcile_after").limit(8);
     if (error) throw error;
-    if (!due?.length) return result({ checked: 0, paid: 0, approved: 0, errors: 0 });
+    if (!due?.length) return result({ checked: 0, paid: 0, approved: 0, captured: 0, errors: 0 });
     const token = await paypalToken();
-    const counts = { checked: 0, paid: 0, approved: 0, errors: 0 };
+    const counts = { checked: 0, paid: 0, approved: 0, captured: 0, errors: 0 };
     for (const item of due as Candidate[]) {
       // La actualización condicional deja un lease; otra ejecución no procesará esta fila.
       const { data: claim, error: claimError } = await db.from("merch_orders")
@@ -114,13 +115,25 @@ Deno.serve(async (req) => {
             .select("id").maybeSingle();
           if (updateError) throw updateError;
           if (paid) counts.paid++;
+        } else if (state.kind === "approved" && item.status === "awaiting_approval") {
+          counts.approved++;
+          // La orden se verificó directamente con PayPal. El navegador, el webhook
+          // y esta tarea comparten el UUID del pedido como PayPal-Request-Id.
+          await captureApprovedOrder(db, item, item.paypal_order_id, token);
+          const { error: saveError } = await db.from("merch_orders")
+            .update({
+              last_reconciled_at: new Date().toISOString(),
+              reconcile_error: null,
+            }).eq("id", item.id).eq("status", "capture_pending");
+          if (saveError) throw saveError;
+          counts.captured++;
         } else {
           if (state.kind === "approved") counts.approved++;
           const { error: saveError } = await db.from("merch_orders")
             .update({
               reconcile_after: nextCheck(item),
               last_reconciled_at: new Date().toISOString(),
-              reconcile_error: state.kind === "approved" ? "PAYPAL_APPROVED_NOT_CAPTURED"
+              reconcile_error: state.kind === "approved" ? "PAYPAL_APPROVED_CAPTURE_PENDING"
                 : state.kind === "missing" ? "PAYPAL_ORDER_NOT_FOUND" : null,
             }).eq("id", item.id).in("status", ["awaiting_approval", "capture_pending"]);
           if (saveError) throw saveError;
