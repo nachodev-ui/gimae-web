@@ -517,6 +517,7 @@ body.dialog-open{overflow:hidden}
 .order-dialog.is-paid .order-copy-row span{color:#85766c}
 .order-dialog.is-paid .order-copy-row strong{color:#5d505a}
 .order-dialog.is-paid .order-instruction{margin:3px 0 0;color:#62756c;font-size:.78rem;font-weight:500}
+.order-status.is-abandoned,.recent-order-state.is-abandoned{background:#f1edf5;color:#594c69}
 .order-receipt-contact{display:flex;align-items:center;justify-content:space-between;gap:15px;margin-top:21px;padding:16px 19px;border:1px solid #f1dfe6;border-radius:14px;background:#fff7f9}
 .order-receipt-contact>p{color:#785d6a;font-size:.83rem;font-weight:600}
 .order-dialog.is-paid .order-contact-actions{margin:0;flex:none}
