@@ -47,9 +47,11 @@ async function authorized(req: Request, db: ReturnType<typeof admin>): Promise<b
 
 function nextCheck(order: Candidate): string {
   const age = Date.now() - Date.parse(order.created_at);
+  // Cron corre cada dos minutos; 90 s permite tomar el siguiente ciclo.
   const delay = order.status === "capture_pending"
-    ? age < 3600_000 ? 2 * 60_000 : age < 86400_000 ? 15 * 60_000 : 3600_000
-    : age < 3600_000 ? 5 * 60_000 : age < 86400_000 ? 30 * 60_000 : 6 * 3600_000;
+    ? age < 3600_000 ? 90_000 : age < 86400_000 ? 15 * 60_000 : 3600_000
+    : age < 3600_000 ? 90_000 : age < 3 * 3600_000 ? 5 * 60_000
+    : age < 86400_000 ? 30 * 60_000 : 6 * 3600_000;
   return new Date(Date.now() + delay).toISOString();
 }
 
@@ -122,6 +124,7 @@ Deno.serve(async (req) => {
           await captureApprovedOrder(db, item, item.paypal_order_id, token);
           const { error: saveError } = await db.from("merch_orders")
             .update({
+              reconcile_after: new Date(Date.now() + 90_000).toISOString(),
               last_reconciled_at: new Date().toISOString(),
               reconcile_error: null,
             }).eq("id", item.id).eq("status", "capture_pending");
