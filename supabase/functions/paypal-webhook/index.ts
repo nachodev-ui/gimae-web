@@ -134,9 +134,12 @@ Deno.serve(async (req) => {
         status: "paid",
         paid_at: new Date().toISOString(),
         paypal_capture_id: resource.id,
+        abandoned_at: null,
+        abandon_reason: null,
       }).eq("id", order.id).in("status", [
         "awaiting_approval",
         "capture_pending",
+        "abandoned",
       ]);
       if (updateError) throw updateError;
     }
