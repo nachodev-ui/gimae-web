@@ -956,7 +956,7 @@
     } else {
       orderSummary.append(copyRow('ID de orden PayPal', order.paypalOrderId || 'Pendiente'));
       const instruction = element('p', 'order-instruction', paid
-        ? (order.sandbox ? `Pago de prueba de ${usd.format(Number(order.paypalUsd))} USD confirmado en Sandbox.` : `Pago de ${usd.format(Number(order.paypalUsd))} USD confirmado. Coordinaremos contigo el retiro.`)
+        ? (order.sandbox ? `Pago de prueba de ${usd.format(Number(order.paypalUsd))} USD confirmado en Sandbox.` : `Pago de ${usd.format(Number(order.paypalUsd))} USD confirmado. Te contactaremos para coordinar los siguientes pasos.`)
         : abandoned
           ? 'PayPal ya no encontró esta orden o la anuló. Puedes preparar una compra nueva. Si ves un cobro en PayPal, contáctanos con el ID de orden antes de volver a pagar.'
         : awaiting
@@ -1081,7 +1081,7 @@
           document.querySelector('#order-title').textContent = order.sandbox ? '¡Prueba confirmada!' : '¡Pago confirmado!';
           statusNode.textContent = order.sandbox ? 'Pago Sandbox confirmado · pedido de prueba' : 'Pago confirmado · pedido recibido';
           statusNode.classList.add('is-paid');
-          instruction.textContent = order.sandbox ? `Pago de prueba de ${usd.format(Number(order.paypalUsd))} USD confirmado en Sandbox.` : `Pago de ${usd.format(Number(order.paypalUsd))} USD confirmado. Coordinaremos contigo el retiro.`;
+          instruction.textContent = order.sandbox ? `Pago de prueba de ${usd.format(Number(order.paypalUsd))} USD confirmado en Sandbox.` : `Pago de ${usd.format(Number(order.paypalUsd))} USD confirmado. Te contactaremos para coordinar los siguientes pasos.`;
           recover?.remove();
           check.remove();
           showPaidOrder(statusNode, order.sandbox);

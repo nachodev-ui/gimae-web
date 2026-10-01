@@ -22,7 +22,7 @@ export async function renderPayPalAttempts(client, records, notice) {
   const copy = node('div');
   copy.append(node('p', 'paypal-attempts-eyebrow', 'GIMAE! · SEGUIMIENTO DE PAGOS'),
     node('h3', '', 'Cada intento en su lugar'),
-    node('p', '', 'Un intento sin confirmar no es una venta. Los pagos registrados se gestionarán en la etapa de preparación de pedidos.'));
+    node('p', '', 'Un intento sin confirmar no es una venta. Las ventas confirmadas aparecen en Pedidos pagados.'));
   const refresh = node('button', 'paypal-attempts-refresh', 'Actualizar');
   refresh.type = 'button';
   refresh.addEventListener('click', async () => {

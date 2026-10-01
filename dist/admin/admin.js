@@ -1,4 +1,5 @@
 import {renderPayPalAttempts} from './paypal-attempts.js?v=20261001-attempts01';
+import {renderMerchOrders} from './merch-orders.js?v=20261001-stock01';
 const $=s=>document.querySelector(s), settings=window.GIMAE_SUPABASE||{};
 const status=$('#status'), login=$('#login-section'), workspace=$('#workspace'), editor=$('#editor'), records=$('#records');
 const ui=window.GIMAE_UI;
@@ -51,7 +52,7 @@ async function changePassword(event){
   catch(error){$('#password-error').textContent=error.message||'No se pudo guardar la contraseña.';toast('error','No se pudo cambiar la contraseña',error.message||'Inténtalo nuevamente.')}
   finally{button.disabled=false;button.textContent=original}
 }
-const titles={posts:'Entradas del blog',products:'Productos de merch',paypal_attempts:'Intentos PayPal',members:'Integrantes',events:'Eventos'};
+const titles={posts:'Entradas del blog',products:'Productos de merch',paypal_attempts:'Intentos PayPal',orders:'Pedidos pagados',members:'Integrantes',events:'Eventos'};
 const singular={posts:'entrada',products:'producto',members:'integrante',events:'evento'};
 async function openTab(next){tab=next;notice(`Cargando ${titles[tab].toLowerCase()}…`);
   try{
@@ -59,6 +60,11 @@ async function openTab(next){tab=next;notice(`Cargando ${titles[tab].toLowerCase
     if(tab==='paypal_attempts'){
       editor.replaceChildren();
       await renderPayPalAttempts(client,records,notice);
+      return;
+    }
+    if(tab==='orders'){
+      editor.replaceChildren();
+      await renderMerchOrders(client,records,notice);
       return;
     }
     const listQuery=client.from(tab).select('*');
