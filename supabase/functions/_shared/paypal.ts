@@ -159,11 +159,12 @@ export async function captureApprovedOrder(
   db: ReturnType<typeof admin>,
   local: CaptureOrder,
   orderId: string,
-  token = await paypalToken(),
+  token?: string,
 ): Promise<void> {
+  const accessToken = token ?? await paypalToken();
   const capture = await paypal(
     `/v2/checkout/orders/${encodeURIComponent(orderId)}/capture`,
-    token,
+    accessToken,
     {
       method: "POST",
       headers: { "PayPal-Request-Id": local.id },
