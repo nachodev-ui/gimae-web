@@ -33,7 +33,9 @@ Deno.serve(async (req) => {
       return json(req, { orderCode: local.id, status: local.status });
     }
     if (local.status !== "awaiting_approval") {
-      throw new CheckoutError(409, "El pedido no admite captura.");
+      throw new CheckoutError(409, local.status === "abandoned"
+        ? "Este intento de pago ya no está vigente. Prepara una orden nueva."
+        : "El pedido no admite captura.");
     }
     // La misma ID evita capturas duplicadas tras reintentos o respuestas perdidas.
     await captureApprovedOrder(db, local, orderId);
