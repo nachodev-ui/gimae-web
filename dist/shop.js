@@ -84,6 +84,9 @@
   let paypalErrorOrder = null;
   let statusPollEpoch = 0;
   let recentOrderPolling = false;
+  let recentOrderTimer = null;
+  let orderStatusTimer = null;
+  let openOrderConfirmation = null;
 
   function element(tag, className, text) {
     const node = document.createElement(tag);
@@ -584,13 +587,15 @@
   }
 
   async function pollRecentOrderStatus() {
-    if (recentOrderPolling || orderDialog.open || checkoutDialog.open || document.hidden) return;
+    window.clearTimeout(recentOrderTimer);
+    recentOrderTimer = null;
+    if (recentOrderPolling || orderDialog.open || checkoutDialog.open || document.hidden || !navigator.onLine) return;
     const current = latestOrder();
     if (current?.paymentMethod !== 'paypal' || !current.paypalOrderId || current.status === 'paid') return;
     recentOrderPolling = true;
     try {
       for (let attempt = 0; attempt < 12; attempt += 1) {
-        if (orderDialog.open || document.hidden) break;
+        if (orderDialog.open || document.hidden || !navigator.onLine) break;
         const latest = latestOrder();
         if (latest?.code !== current.code || latest.paypalOrderId !== current.paypalOrderId) break;
         try {
@@ -614,6 +619,11 @@
       }
     } finally {
       recentOrderPolling = false;
+      const latest = latestOrder();
+      if (latest?.paymentMethod === 'paypal' && latest.paypalOrderId && latest.status !== 'paid' &&
+        !orderDialog.open && !checkoutDialog.open && !document.hidden && navigator.onLine) {
+        recentOrderTimer = window.setTimeout(() => { void pollRecentOrderStatus(); }, 30000);
+      }
     }
   }
 
@@ -893,6 +903,9 @@
 
   function renderOrder(order, opener) {
     statusPollEpoch += 1;
+    window.clearTimeout(orderStatusTimer);
+    orderStatusTimer = null;
+    openOrderConfirmation = null;
     orderSummary.replaceChildren();
     const isPayPal = order.paymentMethod === 'paypal';
     const paid = isPayPal && order.status === 'paid';
@@ -952,6 +965,7 @@
     const actions = contactActions(order);
     if (actions.children.length) orderSummary.append(actions);
     openDialog(orderDialog, opener || document.querySelector('[data-open-cart]'));
+    openOrderConfirmation = pendingConfirmation;
     pendingConfirmation?.();
   }
 
@@ -979,12 +993,17 @@
     }
   }
 
-  async function confirmPayPalOrder(order, statusNode, instruction, check, recover) {
+  function confirmPayPalOrder(order, statusNode, instruction, check, recover) {
     const epoch = ++statusPollEpoch;
-    check.disabled = true;
-    for (let attempt = 0; attempt < 12; attempt += 1) {
-      if (attempt) await new Promise(resolve => window.setTimeout(resolve, 2500));
+    window.clearTimeout(orderStatusTimer);
+    let checks = 0;
+    const refresh = async () => {
       if (epoch !== statusPollEpoch || !orderDialog.open) return;
+      if (document.hidden || !navigator.onLine) {
+        check.disabled = false;
+        return;
+      }
+      check.disabled = true;
       try {
         const result = await edgeFunction('paypal-order-status', { orderCode: order.code, orderId: order.paypalOrderId });
         if (epoch !== statusPollEpoch || !orderDialog.open) return;
@@ -998,6 +1017,7 @@
           instruction.textContent = `Pago confirmado: ${usd.format(Number(order.paypalUsd))} USD. Coordinaremos contigo el retiro.`;
           recover?.remove();
           check.remove();
+          openOrderConfirmation = null;
           return;
         }
         if (result.status === 'capture_pending' && order.status === 'awaiting_approval') {
@@ -1009,19 +1029,24 @@
           recover?.remove();
         }
         if (result.status === 'awaiting_approval') {
-          statusNode.textContent = 'Pago sin confirmar';
-          instruction.textContent = 'Aún no consta una captura. Si aprobaste el pago en PayPal, pulsa “Comprobar y completar” para recuperar tu compra.';
-          check.disabled = false;
-          return;
+          if (checks < 11) {
+            statusNode.textContent = 'Pago sin confirmar';
+            instruction.textContent = 'Aún no consta una captura. Si aprobaste el pago en PayPal, pulsa “Comprobar y completar” para recuperar tu compra.';
+          }
         }
       } catch (error) {
         // La captura puede seguir confirmándose aunque falle una consulta de estado.
       }
-    }
-    if (epoch !== statusPollEpoch || !orderDialog.open) return;
-    statusNode.textContent = 'Verificación aún en curso';
-    instruction.textContent = 'Todavía no recibimos la confirmación final. Puedes cerrar este resumen y consultarlo más tarde; no repitas el pago.';
-    check.disabled = false;
+      if (epoch !== statusPollEpoch || !orderDialog.open) return;
+      checks += 1;
+      if (checks === 12) {
+        statusNode.textContent = 'Verificación aún en curso';
+        instruction.textContent = 'Seguiremos comprobando este pedido mientras tengas la página abierta. No repitas el pago.';
+      }
+      check.disabled = false;
+      orderStatusTimer = window.setTimeout(refresh, checks < 12 ? 2500 : 30000);
+    };
+    void refresh();
   }
 
   function openDialog(dialog, opener) {
@@ -1061,6 +1086,9 @@
     dialog.addEventListener('close', () => {
       if (dialog === orderDialog) {
         statusPollEpoch += 1;
+        window.clearTimeout(orderStatusTimer);
+        orderStatusTimer = null;
+        openOrderConfirmation = null;
         void pollRecentOrderStatus();
       }
       if (dialog === checkoutDialog) { clearPayPalWait(); clearPayPalError(); }
@@ -1115,9 +1143,14 @@
     if (order) renderOrder(order, recentOrderShortcut);
   });
   document.addEventListener('visibilitychange', () => {
-    if (!document.hidden) void pollRecentOrderStatus();
+    if (document.hidden) return;
+    if (orderDialog.open && openOrderConfirmation) openOrderConfirmation();
+    else void pollRecentOrderStatus();
   });
-  window.addEventListener('online', () => { void pollRecentOrderStatus(); });
+  window.addEventListener('online', () => {
+    if (orderDialog.open && openOrderConfirmation) openOrderConfirmation();
+    else void pollRecentOrderStatus();
+  });
 
   renderProducts(); renderShipping(); renderCart(); renderConfigNote();
   void pollRecentOrderStatus();
