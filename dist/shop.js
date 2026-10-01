@@ -1148,7 +1148,9 @@
     else void pollRecentOrderStatus();
   });
   window.addEventListener('online', () => {
-    if (orderDialog.open && openOrderConfirmation) openOrderConfirmation();
+    if (checkoutDialog.open && checkoutDialog.classList.contains('is-paypal-error') && paypalErrorOrder) {
+      leavePayPalError();
+    } else if (orderDialog.open && openOrderConfirmation) openOrderConfirmation();
     else void pollRecentOrderStatus();
   });
 
