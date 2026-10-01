@@ -907,6 +907,7 @@
     orderStatusTimer = null;
     openOrderConfirmation = null;
     orderSummary.replaceChildren();
+    orderDialog.classList.remove('is-paid');
     const isPayPal = order.paymentMethod === 'paypal';
     const paid = isPayPal && order.status === 'paid';
     const awaiting = isPayPal && order.status === 'awaiting_approval';
@@ -917,6 +918,7 @@
     status.setAttribute('role', 'status');
     status.setAttribute('aria-live', 'polite');
     orderSummary.append(status);
+    if (paid) showPaidOrder(status);
     const code = element('div', 'order-code'); code.append(element('span', '', 'Código de pedido'), element('strong', '', cleanText(order.code, 40)), copyButton(order.code));
     orderSummary.append(code);
     const list = element('div', 'order-lines');
@@ -961,12 +963,25 @@
         pendingConfirmation = () => confirmPayPalOrder(order, status, instruction, check, recover);
       }
     }
-    orderSummary.append(element('p', 'order-local-note', order.paymentMethod === 'paypal' ? 'El pedido PayPal se guarda en Supabase. Esta copia local sirve para reabrir el resumen.' : 'Este resumen existe solo en este navegador. El pedido se confirma cuando el equipo recibe y verifica el comprobante.'));
+    if (!paid) orderSummary.append(element('p', 'order-local-note', order.paymentMethod === 'paypal' ? 'El pedido PayPal se guarda en Supabase. Esta copia local sirve para reabrir el resumen.' : 'Este resumen existe solo en este navegador. El pedido se confirma cuando el equipo recibe y verifica el comprobante.'));
     const actions = contactActions(order);
     if (actions.children.length) orderSummary.append(actions);
     openDialog(orderDialog, opener || document.querySelector('[data-open-cart]'));
     openOrderConfirmation = pendingConfirmation;
     pendingConfirmation?.();
+  }
+
+  function showPaidOrder(status) {
+    orderDialog.classList.add('is-paid');
+    const celebration = element('div', 'order-success');
+    const art = element('div', 'order-success-art');
+    art.setAttribute('aria-hidden', 'true');
+    art.append(element('span', 'order-success-check', '✓'));
+    const copy = element('div', 'order-success-copy');
+    copy.append(status, element('p', '', '¡Gracias por comprar en Gimae! Ya recibimos tu pedido. Pronto coordinaremos contigo los siguientes pasos.'));
+    celebration.append(art, copy);
+    orderSummary.prepend(celebration);
+    orderSummary.querySelector('.order-local-note')?.remove();
   }
 
   async function recoverPayPalOrder(order, instruction, button) {
@@ -1014,6 +1029,7 @@
           document.querySelector('#order-title').textContent = '¡Pago confirmado!';
           statusNode.textContent = 'Pago confirmado · pedido recibido';
           statusNode.classList.add('is-paid');
+          showPaidOrder(statusNode);
           instruction.textContent = `Pago confirmado: ${usd.format(Number(order.paypalUsd))} USD. Coordinaremos contigo el retiro.`;
           recover?.remove();
           check.remove();
