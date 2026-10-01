@@ -1,0 +1,37 @@
+.admin-tabs{grid-template-columns:repeat(5,minmax(0,1fr))}
+.admin-page .admin-tabs button:nth-child(3){background:#f6f2fb;border-color:#e3d7ed;box-shadow:0 5px 0 #ebe4f3}
+.admin-page .admin-tabs button:nth-child(4){background:#f7f3ff;border-color:#dcd0f0;box-shadow:0 5px 0 #e9e1f5}
+.admin-page .admin-tabs button:nth-child(5){background:#f1fbf6;border-color:#cce6d8;box-shadow:0 5px 0 #dff0e7}
+.admin-page .admin-tabs button[aria-current="true"]{background:linear-gradient(145deg,#ef569f,#df3f8b);border-color:#d53b86;box-shadow:0 7px 0 #c62f78,0 16px 24px #ce4b8b25}
+.paypal-attempts{grid-column:1/-1;min-width:0;display:grid;gap:22px}
+.paypal-attempts-intro{display:flex;justify-content:space-between;align-items:center;gap:20px;padding:22px 25px;border:1px solid #e9dce9;border-radius:18px;background:linear-gradient(115deg,#fffafc,#f7f5fb)}
+.paypal-attempts-eyebrow{margin:0 0 6px;color:#94647e;font-size:.68rem;font-weight:800;letter-spacing:.16em}
+.paypal-attempts-intro h3{margin:0;color:#584c65;font:600 clamp(1.35rem,2.2vw,1.85rem)/1.2 var(--display)}
+.paypal-attempts-intro p:last-child{max-width:660px;margin:8px 0 0;color:#716b78;font-size:.82rem;line-height:1.5}
+.admin-page .paypal-attempts-refresh{align-self:center;border:1px solid #d7bfd3;border-radius:999px;background:#fff;color:#71556d;padding:10px 16px;white-space:nowrap;font-weight:700}
+.admin-page .paypal-attempts-refresh:hover{background:#fff3f8;transform:none}
+.paypal-attempts-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.paypal-attempts-stat{display:grid;gap:5px;padding:17px;border:1px solid #e9dce6;border-radius:15px;background:#fff;min-width:0}
+.paypal-attempts-stat:nth-child(1){background:#fff9ee}.paypal-attempts-stat:nth-child(2){background:#f6f2fb}.paypal-attempts-stat:nth-child(3){background:#f2f3f6}.paypal-attempts-stat:nth-child(4){background:#edf7f4}
+.paypal-attempts-stat span{color:#68606c;font-size:.75rem;font-weight:750}.paypal-attempts-stat strong{font:600 2rem/1.1 var(--display);color:#544a61}.paypal-attempts-stat small{font-size:.68rem;color:#736e78;line-height:1.3}
+.paypal-attempts-controls{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.paypal-attempts-filters{display:flex;flex-wrap:wrap;gap:7px}
+.admin-page .paypal-attempts-filters button{border:1px solid #e4d6e0;border-radius:999px;background:white;color:#715a6a;padding:8px 13px;font-size:.72rem;font-weight:700;box-shadow:none}
+.admin-page .paypal-attempts-filters button[aria-pressed="true"]{background:#67576c;color:white;border-color:#67576c}
+.paypal-attempts-count{margin:0;color:#837683;font-size:.7rem}
+.paypal-attempts-list{display:grid;gap:11px}
+.paypal-attempt{padding:18px 20px;border:1px solid #e8dce6;border-radius:16px;background:#fff;min-width:0}
+.paypal-attempt-head,.paypal-attempt-detail{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.paypal-attempt-head>div{min-width:0;display:grid;gap:4px}
+.paypal-attempt-date{color:#897685;font-size:.7rem}
+.paypal-attempt-id{overflow-wrap:anywhere;color:#584c62;font-size:.82rem}
+.paypal-attempt-badge{display:inline-flex;align-items:center;border-radius:999px;padding:6px 10px;font-size:.68rem;font-weight:800;white-space:nowrap;background:#fff2d9;color:#71562c}
+.paypal-attempt-badge.is-overdue{background:#f0eaf7;color:#62516d}.paypal-attempt-badge.is-abandoned{background:#ebedf1;color:#505767}.paypal-attempt-badge.is-capture_pending{background:#e3f4eb;color:#336351}
+.paypal-attempt-detail{margin-top:12px;padding-top:12px;border-top:1px solid #f2eaf0;font-size:.78rem;color:#7d6b7d;overflow-wrap:anywhere}
+.paypal-attempt-detail strong{color:#5b5062;white-space:nowrap}
+.paypal-attempt-note{margin:10px 0 0;color:#706776;font-size:.75rem;line-height:1.5}
+.paypal-attempt-diagnostic{display:block;margin-top:9px;color:#805269;font-size:.68rem;overflow-wrap:anywhere}
+.paypal-attempts-empty{margin:0;padding:28px;border:1px dashed #e6d4e1;border-radius:14px;color:#756978;text-align:center}
+@media(max-width:1050px){.admin-tabs{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:760px){.admin-tabs{grid-template-columns:repeat(2,minmax(0,1fr))}.paypal-attempts-summary{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:680px){.admin-tabs{grid-template-columns:1fr}.paypal-attempts-intro{display:grid;padding:19px}.paypal-attempt-head{align-items:flex-start;flex-wrap:wrap}.paypal-attempt-detail{align-items:flex-start;flex-wrap:wrap}.admin-page .paypal-attempts-refresh{justify-self:start}}
