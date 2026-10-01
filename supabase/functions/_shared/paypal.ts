@@ -207,7 +207,9 @@ export async function recordCompletedCapture(
   const { error } = await db.from("merch_orders").update({
     status: "capture_pending",
     paypal_capture_id: payment.id,
-  }).eq("id", local.id).eq("status", "awaiting_approval");
+    abandoned_at: null,
+    abandon_reason: null,
+  }).eq("id", local.id).in("status", ["awaiting_approval", "abandoned"]);
   if (error) throw error;
 }
 
