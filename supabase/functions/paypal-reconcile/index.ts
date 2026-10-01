@@ -17,6 +17,7 @@ type Candidate = LocalPayPalOrder & {
   created_at: string;
   reconcile_after: string;
   reconcile_attempts: number;
+  reconcile_error: string | null;
 };
 
 function result(value: unknown, status = 200): Response {
@@ -72,14 +73,14 @@ Deno.serve(async (req) => {
     if (!await authorized(req, db)) return result({ error: "No autorizado" }, 401);
     const now = new Date().toISOString();
     const { data: due, error } = await db.from("merch_orders")
-      .select("id,paypal_order_id,paypal_capture_id,total_usd_cents,status,created_at,reconcile_after,reconcile_attempts")
+      .select("id,paypal_order_id,paypal_capture_id,total_usd_cents,status,created_at,reconcile_after,reconcile_attempts,reconcile_error")
       .in("status", ["awaiting_approval", "capture_pending"])
       .not("paypal_order_id", "is", null)
       .lte("reconcile_after", now).order("reconcile_after").limit(8);
     if (error) throw error;
-    if (!due?.length) return result({ checked: 0, paid: 0, approved: 0, captured: 0, errors: 0 });
+    if (!due?.length) return result({ checked: 0, paid: 0, approved: 0, captured: 0, abandoned: 0, errors: 0 });
     const token = await paypalToken();
-    const counts = { checked: 0, paid: 0, approved: 0, captured: 0, errors: 0 };
+    const counts = { checked: 0, paid: 0, approved: 0, captured: 0, abandoned: 0, errors: 0 };
     for (const item of due as Candidate[]) {
       // La actualización condicional deja un lease; otra ejecución no procesará esta fila.
       const { data: claim, error: claimError } = await db.from("merch_orders")
@@ -130,6 +131,25 @@ Deno.serve(async (req) => {
             }).eq("id", item.id).eq("status", "capture_pending");
           if (saveError) throw saveError;
           counts.captured++;
+        } else if (
+          item.status === "awaiting_approval" && !item.paypal_capture_id &&
+          (state.kind === "voided" ||
+            (state.kind === "missing" && item.reconcile_error === "PAYPAL_ORDER_NOT_FOUND" &&
+              Date.now() - Date.parse(item.created_at) >= 3 * 3600_000))
+        ) {
+          // Un 404 aislado no cierra un pedido. Un segundo 404 tras tres horas,
+          // o VOIDED desde PayPal, sí permite distinguir un intento abandonado.
+          const { data: abandoned, error: closeError } = await db.from("merch_orders")
+            .update({
+              status: "abandoned",
+              abandoned_at: new Date().toISOString(),
+              abandon_reason: state.kind === "voided" ? "paypal_voided" : "paypal_not_found",
+              last_reconciled_at: new Date().toISOString(),
+              reconcile_error: null,
+            }).eq("id", item.id).eq("status", "awaiting_approval")
+            .is("paypal_capture_id", null).select("id").maybeSingle();
+          if (closeError) throw closeError;
+          if (abandoned) counts.abandoned++;
         } else {
           if (state.kind === "approved") counts.approved++;
           const { error: saveError } = await db.from("merch_orders")
@@ -137,7 +157,8 @@ Deno.serve(async (req) => {
               reconcile_after: nextCheck(item),
               last_reconciled_at: new Date().toISOString(),
               reconcile_error: state.kind === "approved" ? "PAYPAL_APPROVED_CAPTURE_PENDING"
-                : state.kind === "missing" ? "PAYPAL_ORDER_NOT_FOUND" : null,
+                : state.kind === "missing" ? "PAYPAL_ORDER_NOT_FOUND"
+                : state.kind === "voided" ? "PAYPAL_VOIDED_CAPTURE_PENDING" : null,
             }).eq("id", item.id).in("status", ["awaiting_approval", "capture_pending"]);
           if (saveError) throw saveError;
         }
