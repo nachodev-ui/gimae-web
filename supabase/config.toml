@@ -1,0 +1,15 @@
+[functions.paypal-create-order]
+verify_jwt = false
+
+[functions.paypal-capture-order]
+verify_jwt = false
+
+[functions.paypal-order-status]
+verify_jwt = false
+
+[functions.paypal-webhook]
+verify_jwt = false
+
+# Invocada solo por Cron: valida un token aleatorio guardado en Vault.
+[functions.paypal-reconcile]
+verify_jwt = false

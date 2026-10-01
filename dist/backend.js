@@ -21,12 +21,24 @@ window.GIMAE_READY=(async()=>{
     const merch=products.map(p=>{
       const gallery=images.filter(im=>im.product_id===p.id).map(im=>({src:im.url,alt:im.alt}));
       const v=variants.filter(option=>option.product_id===p.id);
+      const hasVariants=v.length>0;
+      const confirmedVariants=v.filter(option=>option.stock_confirmed);
       const product={id:p.id,name:p.name,description:p.description,note:p.note,color:p.color,price:p.price_clp,
-        stock:p.stock_confirmed?p.stock:null,active:p.active,variantLabel:p.variant_label,variantSource:p.variant_source,
+        // Si existen variantes, el stock del producto es solo un resumen de base de datos.
+        // La tienda debe consultar exclusivamente stockByVariant para una opción concreta.
+        inventoryMode:hasVariants?'variants':'product',
+        stock:!hasVariants&&p.stock_confirmed?p.stock:null,
+        inventorySummary:hasVariants?{
+          confirmedUnits:Number(p.stock||0),
+          allConfirmed:Boolean(p.stock_confirmed),
+          confirmedVariants:confirmedVariants.length,
+          variantCount:v.length
+        }:null,
+        active:p.active,variantLabel:p.variant_label,variantSource:p.variant_source,
         image:gallery[0]?.src||null,imageAlt:gallery[0]?.alt||'',gallery};
       if(p.id==='04')product.prices=v.map(x=>({id:x.id,label:x.label,value:x.price_clp,image:x.image_url,imageAlt:x.image_alt,
         memberId:x.member_id||'',memberLabel:members.find(m=>m.id===x.member_id)?.name||'',typeId:x.id==='group'?'group':'individual',typeLabel:x.id==='group'?'Grupal':'Individual'}));
-      if(v.length)product.stockByVariant=Object.fromEntries(v.map(x=>[p.id==='04'?x.id:(x.member_id||x.id),x.stock_confirmed?x.stock:null]));
+      if(hasVariants)product.stockByVariant=Object.fromEntries(v.map(x=>[p.id==='04'?x.id:(x.member_id||x.id),x.stock_confirmed?x.stock:null]));
       return product;
     });
     async function blogImage(url){
