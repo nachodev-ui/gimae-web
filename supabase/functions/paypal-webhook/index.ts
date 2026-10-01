@@ -2,10 +2,12 @@ import {
   admin,
   captureApprovedOrder,
   cents,
+  CheckoutError,
   paypal,
   paypalMerchantId,
   paypalToken,
   recordCompletedCapture,
+  rateLimit,
 } from "../_shared/paypal.ts";
 
 // PayPal no envía JWT Supabase. Solo se procesa tras verify-webhook-signature.
@@ -31,6 +33,17 @@ Deno.serve(async (req) => {
       !Deno.env.get("PAYPAL_WEBHOOK_ID")
     ) {
       return new Response("Firma incompleta", { status: 400 });
+    }
+    try {
+      await rateLimit(admin(), req, "webhook");
+    } catch (error) {
+      if (error instanceof CheckoutError && error.status === 429) {
+        return new Response("Reintentar más tarde", {
+          status: 429,
+          headers: { "Retry-After": "60" },
+        });
+      }
+      throw error;
     }
     const token = await paypalToken();
     const verified = await paypal(
