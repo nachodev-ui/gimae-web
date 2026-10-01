@@ -7,6 +7,7 @@ import {
   cors,
   failure,
   json,
+  rateLimit,
 } from "../_shared/paypal.ts";
 
 Deno.serve(async (req) => {
@@ -23,6 +24,7 @@ Deno.serve(async (req) => {
       throw new CheckoutError(400, "Orden PayPal inválida.");
     }
     const db = admin();
+    await rateLimit(db, req, "capture", orderId);
     const { data: local, error } = await db.from("merch_orders").select(
       "id,status,total_usd_cents,paypal_capture_id",
     )
