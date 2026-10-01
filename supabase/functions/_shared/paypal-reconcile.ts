@@ -10,6 +10,7 @@ export type LocalPayPalOrder = {
 export type RemoteOrderState =
   | { kind: "approved" }
   | { kind: "completed"; captureId: string }
+  | { kind: "voided" }
   | { kind: "waiting" };
 
 function cents(value: unknown): number | null {
@@ -37,6 +38,7 @@ export function inspectRemoteOrder(
   ) throw new Error("PAYPAL_ORDER_MISMATCH");
 
   if (remote.status === "APPROVED") return { kind: "approved" };
+  if (remote.status === "VOIDED") return { kind: "voided" };
   if (remote.status !== "COMPLETED") return { kind: "waiting" };
 
   const payments = unit.payments as Record<string, unknown> | undefined;
