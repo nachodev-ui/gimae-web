@@ -35,6 +35,12 @@ test('aprueba solo una orden ligada al pedido y al comercio', () => {
   }
 });
 
+test('distingue una orden anulada de una orden todavía pendiente', () => {
+  assert.deepEqual(inspectRemoteOrder(remote, local, 'GIMAE_MERCHANT'), { kind: 'approved' });
+  assert.deepEqual(inspectRemoteOrder({ ...remote, status: 'CREATED' }, local, 'GIMAE_MERCHANT'), { kind: 'waiting' });
+  assert.deepEqual(inspectRemoteOrder({ ...remote, status: 'VOIDED' }, local, 'GIMAE_MERCHANT'), { kind: 'voided' });
+});
+
 test('marca pagado solo con una captura completada del monto exacto', () => {
   const completed = structuredClone(remote);
   completed.status = 'COMPLETED';
