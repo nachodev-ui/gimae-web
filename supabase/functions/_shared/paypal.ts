@@ -73,11 +73,38 @@ export function json(req: Request, value: unknown, status = 200): Response {
 export function failure(req: Request, error: unknown): Response {
   const known = error instanceof CheckoutError;
   if (!known) console.error("Error checkout:", error);
-  return json(req, {
+  const response = json(req, {
     error: known
       ? error.message
       : "No se pudo procesar el pago. Intenta más tarde.",
   }, known ? error.status : 500);
+  if (known && error.status === 429) response.headers.set("Retry-After", "60");
+  return response;
+}
+
+function clientAddress(req: Request): string {
+  // El gateway normalmente entrega cf-connecting-ip; x-forwarded-for es solo
+  // un respaldo. La cuota global impide eludir el límite cambiando cabeceras.
+  return req.headers.get("cf-connecting-ip") ||
+    req.headers.get("x-real-ip") ||
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+}
+
+export async function rateLimit(
+  db: ReturnType<typeof admin>,
+  req: Request,
+  action: "create" | "capture" | "status" | "webhook",
+  subject?: string,
+): Promise<void> {
+  const bytes = new TextEncoder().encode(subject ?? clientAddress(req));
+  const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", bytes));
+  const hash = Array.from(digest, (byte) => byte.toString(16).padStart(2, "0")).join("");
+  const { data, error } = await db.rpc("check_paypal_rate_limit", {
+    p_action: action,
+    p_subject: hash,
+  });
+  if (error) throw error;
+  if (data !== true) throw new CheckoutError(429, "Demasiadas solicitudes. Espera un momento e inténtalo de nuevo.");
 }
 
 export async function body(req: Request): Promise<Record<string, unknown>> {
