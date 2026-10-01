@@ -10,9 +10,9 @@
 
 ## Trabajo del equipo
 
-En Backstage → **Pedidos pagados** se muestran los últimos 100 pagos confirmados, nombre, contacto, monto, líneas, IDs PayPal y unidades asignadas. Los intentos sin confirmar siguen separados en **Pagos PayPal**.
+En Backstage → **Pedidos pagados** se muestran los últimos 100 pagos confirmados. La tarjeta presenta comprador, contacto, productos, unidades asignadas y siguiente paso; la nota interna y los identificadores técnicos se consultan al desplegar los detalles. Las categorías separan trabajo pendiente, pedidos que necesitan atención, entregados y ventas anteriores al control de stock. Los intentos sin confirmar siguen en **Pagos PayPal**.
 
-El recorrido es **Por preparar → En preparación → Listo para retiro → Entregado**. En las tres primeras etapas se puede poner un pedido en revisión; se reanuda desde **Por preparar** cuando el stock está asignado. La nota interna y las fechas de preparación quedan en el pedido. La API solo permite al equipo actualizar `fulfillment_status` y `fulfillment_note`; no permite modificar pago, importes, líneas ni asignaciones.
+El recorrido es **Por preparar → En preparación → Listo para retiro → Entregado**. Cada tarjeta muestra el siguiente paso y confirma visualmente el resultado. La entrega exige una confirmación adicional y no envía un aviso automático al comprador. En las tres primeras etapas se puede poner un pedido en revisión con un motivo interno; se reanuda desde **Por preparar** cuando el stock está asignado. Guarda cualquier nota antes de cambiar de etapa. La API solo permite al equipo actualizar `fulfillment_status` y `fulfillment_note`; no permite modificar pago, importes, líneas ni asignaciones.
 
 Para un pedido con faltante, confirma y repón el inventario en Merch, luego pulsa **Volver a revisar stock**. La función autenticada asigna solo la cantidad aún pendiente. No acepta solicitudes anónimas y la función SQL de reasignación solo admite `service_role`. Los pedidos `legacy_review` no se reasignan automáticamente.
 

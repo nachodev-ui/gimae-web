@@ -1,5 +1,5 @@
 import {renderPayPalAttempts} from './paypal-attempts.js?v=20261001-attempts01';
-import {renderMerchOrders} from './merch-orders.js?v=20261001-stock01';
+import {renderMerchOrders} from './merch-orders.js?v=20261001-stock02';
 const $=s=>document.querySelector(s), settings=window.GIMAE_SUPABASE||{};
 const status=$('#status'), login=$('#login-section'), workspace=$('#workspace'), editor=$('#editor'), records=$('#records');
 const ui=window.GIMAE_UI;
