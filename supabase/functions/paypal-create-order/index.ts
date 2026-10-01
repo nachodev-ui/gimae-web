@@ -139,51 +139,69 @@ Deno.serve(async (req) => {
     if (!Number.isSafeInteger(usdCents) || usdCents < 1) {
       throw new CheckoutError(503, "No se pudo calcular el total USD.");
     }
-    const { data: order, error: insertError } = await db.from("merch_orders")
-      .insert({
-        buyer_name: buyerName,
-        buyer_contact: buyerContact,
-        items: priced,
-        subtotal_clp: subtotal,
-        total_clp: subtotal,
-        clp_per_usd: fx.clp_per_usd,
-        fx_observation_date: fx.observation_date,
-        total_usd_cents: usdCents,
-      }).select("id").single();
+    // La comprobación definitiva y la reserva comparten una transacción SQL.
+    const { data: order, error: insertError } = await db.rpc("reserve_merch_order", {
+      p_buyer_name: buyerName,
+      p_buyer_contact: buyerContact,
+      p_items: priced,
+      p_fx: fx.clp_per_usd,
+      p_rate_date: fx.observation_date,
+      p_usd_cents: usdCents,
+    });
+    if (insertError?.message?.includes("No confirmed stock available") ||
+      insertError?.message?.includes("Price changed") ||
+      insertError?.message?.includes("Product unavailable") ||
+      insertError?.message?.includes("Variant unavailable")) {
+      throw new CheckoutError(409, "La disponibilidad cambió. Actualiza el carrito e intenta de nuevo.");
+    }
     if (insertError) throw insertError;
-    const token = await paypalToken();
-    const remote = await paypal("/v2/checkout/orders", token, {
-      method: "POST",
-      headers: { "PayPal-Request-Id": order.id },
-      body: JSON.stringify({
-        intent: "CAPTURE",
-        purchase_units: [{
-          reference_id: order.id,
-          custom_id: order.id,
-          description: `Merch Gimae - retiro`,
-          payee: { merchant_id: paypalMerchantId() },
-          amount: { currency_code: "USD", value: (usdCents / 100).toFixed(2) },
-        }],
-        payment_source: {
-          paypal: {
-            experience_context: {
-              brand_name: "Gimae!",
-              shipping_preference: "NO_SHIPPING",
-              user_action: "PAY_NOW",
+    let remote;
+    try {
+      const token = await paypalToken();
+      remote = await paypal("/v2/checkout/orders", token, {
+        method: "POST",
+        headers: { "PayPal-Request-Id": order.id },
+        body: JSON.stringify({
+          intent: "CAPTURE",
+          purchase_units: [{
+            reference_id: order.id,
+            custom_id: order.id,
+            description: `Merch Gimae - retiro`,
+            payee: { merchant_id: paypalMerchantId() },
+            amount: { currency_code: "USD", value: (usdCents / 100).toFixed(2) },
+          }],
+          payment_source: {
+            paypal: {
+              experience_context: {
+                brand_name: "Gimae!",
+                shipping_preference: "NO_SHIPPING",
+                user_action: "PAY_NOW",
+              },
             },
           },
-        },
-      }),
-    });
-    if (!remote.id) throw new Error("PayPal no entregó order ID");
-    const { error: updateError } = await db.from("merch_orders").update({
+        }),
+      });
+      if (!remote.id) throw new Error("PayPal no entregó order ID");
+    } catch (error) {
+      // Si PayPal no entregó la orden, el intento deja de ocupar unidades.
+      await db.from("merch_orders").update({ status: "abandoned",
+        reservation_state: "released", abandoned_at: new Date().toISOString(),
+        abandon_reason: "order_creation_failed" }).eq("id", order.id)
+        .eq("status", "creating");
+      throw error;
+    }
+    const { data: saved, error: updateError } = await db.from("merch_orders").update({
       paypal_order_id: remote.id,
       status: "awaiting_approval",
-    }).eq("id", order.id).eq("status", "creating");
+    }).eq("id", order.id).eq("status", "creating")
+      .eq("reservation_state", "held").gt("reservation_expires_at", new Date().toISOString())
+      .select("id").maybeSingle();
     if (updateError) throw updateError;
+    if (!saved) throw new CheckoutError(409, "La reserva venció antes de preparar PayPal. Actualiza el carrito e inténtalo nuevamente.");
     return json(req, {
       orderId: remote.id,
       orderCode: order.id,
+      reservationExpiresAt: order.expiresAt,
       clientId: paypalClientId(),
       totalClp: subtotal,
       totalUsd: (usdCents / 100).toFixed(2),

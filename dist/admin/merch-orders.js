@@ -27,7 +27,7 @@ const feedback = (tone, title, message, notice) => {
 
 export async function renderMerchOrders(client, records, notice, focus = null) {
   const { data, error } = await client.from('merch_orders')
-    .select('id,buyer_name,buyer_contact,items,total_clp,total_usd_cents,paypal_order_id,paypal_capture_id,paid_at,stock_state,stock_allocations,fulfillment_status,fulfillment_note,fulfillment_updated_at,ready_at,handed_over_at')
+    .select('id,buyer_name,buyer_contact,items,total_clp,total_usd_cents,paypal_order_id,paypal_capture_id,paid_at,stock_state,stock_allocations,reservation_issue,reservation_reviewed_at,fulfillment_status,fulfillment_note,fulfillment_updated_at,ready_at,handed_over_at')
     .eq('status', 'paid').order('paid_at', { ascending: false }).limit(100);
   if (error) throw error;
   const orders = data || [];
@@ -198,7 +198,9 @@ export async function renderMerchOrders(client, records, notice, focus = null) {
       const warning = node('div', 'merch-order-warning');
       const copy = node('div');
       if (isLegacy(order)) copy.append(node('strong', '', 'Venta anterior al control de stock'), node('p', '', 'No se descontaron unidades automáticamente. Una administradora debe comprobar el inventario y la entrega manualmente; esta tarjeta no permite continuar la preparación.'));
-      else if (order.stock_state === 'shortage') copy.append(node('strong', '', 'Faltan unidades para completar el pedido'), node('p', '', 'El pago está confirmado. Repón y confirma el inventario en Merch; después vuelve a revisar el stock aquí.'));
+      else if (order.stock_state === 'shortage') copy.append(node('strong', '', order.reservation_issue === 'late_capture' ? 'Pago tardío: revisar antes de preparar' : 'Faltan unidades para completar el pedido'), node('p', '', 'El pago está confirmado. Repón y confirma el inventario en Merch; después vuelve a revisar el stock aquí.'));
+      else if (order.reservation_issue === 'late_capture') copy.append(node('strong', '', 'Pago confirmado después de vencer la reserva'),
+        node('p', '', 'Comprueba la captura en PayPal y revisa las unidades asignadas. Registra una nota antes de empezar la preparación.'));
       else copy.append(node('strong', '', 'Preparación pausada'), node('p', '', `Motivo interno: ${order.fulfillment_note || 'No se registró un motivo.'} Reanuda cuando esté resuelto.`));
       warning.append(node('span', 'merch-order-warning-icon', '!'), copy);
       card.append(warning);
@@ -222,7 +224,9 @@ export async function renderMerchOrders(client, records, notice, focus = null) {
     };
     const next = isLegacy(order) ? null : order.fulfillment_status === 'on_hold'
       ? order.stock_state === 'allocated'
-        ? ['Listo para retomar', 'El stock está asignado. Reanuda el pedido para prepararlo.', 'Reanudar preparación', 'new']
+        ? order.reservation_issue === 'late_capture'
+          ? ['Pago después del vencimiento', 'Las unidades están asignadas. Comprueba el pago y el pedido antes de autorizar la preparación; deja una nota de revisión.', 'Revisar y autorizar', 'review']
+          : ['Listo para retomar', 'El stock está asignado. Reanuda el pedido para prepararlo.', 'Reanudar preparación', 'new']
         : ['Hay un faltante', 'Repón el inventario y vuelve a revisarlo para continuar.', 'Volver a revisar stock', 'recheck']
       : actions[order.fulfillment_status];
     if (next) {
@@ -236,6 +240,26 @@ export async function renderMerchOrders(client, records, notice, focus = null) {
         button.type = 'button';
         button.addEventListener('click', async () => {
           if (!noteIsSaved()) return;
+          if (next[3] === 'review') {
+            const review = await window.GIMAE_UI?.input({ tone: 'warning', title: 'Revisar captura tardía',
+              message: `Confirma en PayPal la captura ${order.paypal_capture_id} y la disponibilidad del pedido ${reference(order)}. Registra tu decisión para la cola.`,
+              label: 'Nota de revisión (mínimo 8 caracteres)', value: '', confirmText: 'Autorizar preparación' });
+            if (review === null || review === undefined) return;
+            if (review.trim().length < 8 || review.length > 300) {
+              feedback('warning', 'Nota requerida', 'Explica la revisión entre 8 y 300 caracteres.', notice); return;
+            }
+            button.disabled = true;
+            try {
+              const { data: result, error: functionError } = await client.functions.invoke('merch-reservation-review',
+                { body: { orderId: order.id, note: review.trim() } });
+              if (functionError || !result?.reviewed) throw functionError || new Error(result?.error || 'Sin confirmación');
+              await renderMerchOrders(client, records, notice, `card:${order.id}`);
+              feedback('success', 'Revisión guardada', `El pedido ${reference(order)} vuelve a «Por preparar».`, notice);
+            } catch (cause) {
+              feedback('error', 'No se pudo autorizar', cause.message, notice); button.disabled = false;
+            }
+            return;
+          }
           if (next[3] === 'recheck') {
             button.disabled = true; button.textContent = 'Revisando stock…'; card.setAttribute('aria-busy', 'true');
             try {

@@ -13,7 +13,8 @@ import {
 } from "../_shared/paypal-reconcile.ts";
 
 type Candidate = LocalPayPalOrder & {
-  status: "awaiting_approval" | "capture_pending";
+  status: "awaiting_approval" | "capture_pending" | "abandoned";
+  reservation_state: string;
   created_at: string;
   reconcile_after: string;
   reconcile_attempts: number;
@@ -73,8 +74,8 @@ Deno.serve(async (req) => {
     if (!await authorized(req, db)) return result({ error: "No autorizado" }, 401);
     const now = new Date().toISOString();
     const { data: due, error } = await db.from("merch_orders")
-      .select("id,paypal_order_id,paypal_capture_id,total_usd_cents,status,created_at,reconcile_after,reconcile_attempts,reconcile_error")
-      .in("status", ["awaiting_approval", "capture_pending"])
+      .select("id,paypal_order_id,paypal_capture_id,total_usd_cents,status,reservation_state,created_at,reconcile_after,reconcile_attempts,reconcile_error")
+      .or("status.in.(awaiting_approval,capture_pending),and(status.eq.abandoned,reservation_state.in.(expired,released))")
       .not("paypal_order_id", "is", null)
       .lte("reconcile_after", now).order("reconcile_after").limit(8);
     if (error) throw error;
@@ -114,7 +115,7 @@ Deno.serve(async (req) => {
               paid_at: new Date().toISOString(),
               last_reconciled_at: new Date().toISOString(),
               reconcile_error: null,
-            }).eq("id", item.id).in("status", ["awaiting_approval", "capture_pending"])
+            }).eq("id", item.id).in("status", ["awaiting_approval", "capture_pending", "abandoned"])
             .select("id").maybeSingle();
           if (updateError) throw updateError;
           if (paid) counts.paid++;
@@ -122,15 +123,16 @@ Deno.serve(async (req) => {
           counts.approved++;
           // La orden se verificó directamente con PayPal. El navegador, el webhook
           // y esta tarea comparten el UUID del pedido como PayPal-Request-Id.
-          await captureApprovedOrder(db, item, item.paypal_order_id, token);
+          const capture = await captureApprovedOrder(db, item, item.paypal_order_id, token);
           const { error: saveError } = await db.from("merch_orders")
             .update({
-              reconcile_after: new Date(Date.now() + 90_000).toISOString(),
+              reconcile_after: capture === "expired" ? new Date(Date.now() + 30 * 60_000).toISOString()
+                : new Date(Date.now() + 90_000).toISOString(),
               last_reconciled_at: new Date().toISOString(),
               reconcile_error: null,
-            }).eq("id", item.id).eq("status", "capture_pending");
+            }).eq("id", item.id).in("status", ["capture_pending", "abandoned"]);
           if (saveError) throw saveError;
-          counts.captured++;
+          if (capture === "captured") counts.captured++;
         } else if (
           item.status === "awaiting_approval" && !item.paypal_capture_id &&
           (state.kind === "voided" ||
@@ -142,6 +144,7 @@ Deno.serve(async (req) => {
           const { data: abandoned, error: closeError } = await db.from("merch_orders")
             .update({
               status: "abandoned",
+              reservation_state: item.reservation_state === "legacy" ? "legacy" : "released",
               abandoned_at: new Date().toISOString(),
               abandon_reason: state.kind === "voided" ? "paypal_voided" : "paypal_not_found",
               last_reconciled_at: new Date().toISOString(),
@@ -159,7 +162,7 @@ Deno.serve(async (req) => {
               reconcile_error: state.kind === "approved" ? "PAYPAL_APPROVED_CAPTURE_PENDING"
                 : state.kind === "missing" ? "PAYPAL_ORDER_NOT_FOUND"
                 : state.kind === "voided" ? "PAYPAL_VOIDED_CAPTURE_PENDING" : null,
-            }).eq("id", item.id).in("status", ["awaiting_approval", "capture_pending"]);
+            }).eq("id", item.id).in("status", ["awaiting_approval", "capture_pending", "abandoned"]);
           if (saveError) throw saveError;
         }
       } catch (cause) {
@@ -172,7 +175,7 @@ Deno.serve(async (req) => {
             reconcile_after: nextCheck(item),
             last_reconciled_at: new Date().toISOString(),
             reconcile_error: code,
-          }).eq("id", item.id).in("status", ["awaiting_approval", "capture_pending"]);
+          }).eq("id", item.id).in("status", ["awaiting_approval", "capture_pending", "abandoned"]);
         if (saveError) throw saveError;
       }
     }

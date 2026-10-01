@@ -187,8 +187,14 @@ export async function captureApprovedOrder(
   local: CaptureOrder,
   orderId: string,
   token?: string,
-): Promise<void> {
+): Promise<"captured" | "in_progress" | "expired" | "already"> {
   const accessToken = token ?? await paypalToken();
+  const { data: claim, error: claimError } = await db.rpc("claim_merch_capture", {
+    p_order_id: local.id,
+  });
+  if (claimError) throw claimError;
+  if (claim === "expired" || claim === "in_progress" || claim === "already") return claim;
+  if (claim !== "claimed") throw new Error("Unexpected capture claim");
   const capture = await paypal(
     `/v2/checkout/orders/${encodeURIComponent(orderId)}/capture`,
     accessToken,
@@ -199,6 +205,7 @@ export async function captureApprovedOrder(
     },
   );
   await recordCompletedCapture(db, local, orderId, capture);
+  return "captured";
 }
 
 export async function recordCompletedCapture(

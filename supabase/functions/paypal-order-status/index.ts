@@ -18,11 +18,13 @@ Deno.serve(async (req) => {
 
     const db = admin();
     await rateLimit(db, req, "status", orderCode);
-    const { data, error } = await db.from("merch_orders").select("status")
+    const { data, error } = await db.from("merch_orders").select("status,reservation_state,reservation_expires_at,abandon_reason")
       .eq("id", orderCode).eq("paypal_order_id", orderId).maybeSingle();
     if (error) throw error;
     if (!data) throw new CheckoutError(404, "Pedido no encontrado.");
-    return json(req, { status: data.status });
+    return json(req, { status: data.status, reservationState: data.reservation_state,
+      reservationExpiresAt: data.reservation_expires_at,
+      abandonReason: data.abandon_reason });
   } catch (error) {
     return failure(req, error);
   }

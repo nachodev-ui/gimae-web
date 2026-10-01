@@ -598,7 +598,8 @@
     recentOrderTimer = null;
     if (recentOrderPolling || orderDialog.open || checkoutDialog.open || document.hidden || !navigator.onLine) return;
     const current = latestOrder();
-    if (current?.paymentMethod !== 'paypal' || !current.paypalOrderId || ['paid', 'abandoned'].includes(current.status)) return;
+    if (current?.paymentMethod !== 'paypal' || !current.paypalOrderId || current.status === 'paid' ||
+      (current.status === 'abandoned' && Date.now() - Date.parse(current.createdAt) > 86400_000)) return;
     recentOrderPolling = true;
     try {
       for (let attempt = 0; attempt < 12; attempt += 1) {
@@ -620,6 +621,7 @@
           }
           if (result.status === 'abandoned') {
             latest.status = 'abandoned';
+            latest.abandonReason = result.abandonReason;
             saveOrder(latest);
             break;
           }
@@ -632,7 +634,8 @@
     } finally {
       recentOrderPolling = false;
       const latest = latestOrder();
-      if (latest?.paymentMethod === 'paypal' && latest.paypalOrderId && !['paid', 'abandoned'].includes(latest.status) &&
+      if (latest?.paymentMethod === 'paypal' && latest.paypalOrderId && latest.status !== 'paid' &&
+        (latest.status !== 'abandoned' || Date.now() - Date.parse(latest.createdAt) <= 86400_000) &&
         !orderDialog.open && !checkoutDialog.open && !document.hidden && navigator.onLine) {
         recentOrderTimer = window.setTimeout(() => { void pollRecentOrderStatus(); }, 30000);
       }
@@ -768,13 +771,14 @@
       });
       order.code = quote.orderCode;
       order.paypalOrderId = quote.orderId;
+      order.reservationExpiresAt = quote.reservationExpiresAt;
       order.total = quote.totalClp;
       order.paypalUsd = quote.totalUsd;
       order.items = quote.items;
       // Persistir las dos IDs antes de abrir PayPal permite consultar el pago tras recargar o perder conexión.
       order.status = 'awaiting_approval';
       saveOrder(order);
-      paypalConversion.textContent = `${money.format(quote.totalClp)} CLP → ${usd.format(Number(quote.totalUsd))} USD · Retiro sin costo.`;
+      paypalConversion.textContent = `${money.format(quote.totalClp)} CLP → ${usd.format(Number(quote.totalUsd))} USD · Retiro sin costo. Tus unidades están reservadas durante 15 minutos, hasta las ${new Intl.DateTimeFormat('es-CL', { timeStyle: 'short' }).format(new Date(quote.reservationExpiresAt))}.`;
       await loadPayPal(quote.clientId);
       paypalButtons.hidden = false;
       let capturing = false;
@@ -817,7 +821,9 @@
             checkoutDialog.close();
             renderOrder(order, preparePayment);
           } catch (error) {
-            showPayPalError(order, 'No pudimos comprobar el resultado. Revisa el estado de tu pedido antes de pagar otra vez.');
+            showPayPalError(order, error.message?.includes('reserva venció')
+              ? error.message
+              : 'No pudimos comprobar el resultado. Revisa el estado de tu pedido antes de pagar otra vez.');
           }
         },
         onCancel: () => {
@@ -958,9 +964,11 @@
       const instruction = element('p', 'order-instruction', paid
         ? (order.sandbox ? `Pago de prueba de ${usd.format(Number(order.paypalUsd))} USD confirmado en Sandbox.` : `Pago de ${usd.format(Number(order.paypalUsd))} USD confirmado. Te contactaremos para coordinar los siguientes pasos.`)
         : abandoned
-          ? 'PayPal ya no encontró esta orden o la anuló. Puedes preparar una compra nueva. Si ves un cobro en PayPal, contáctanos con el ID de orden antes de volver a pagar.'
+          ? order.abandonReason === 'reservation_expired'
+            ? 'La reserva de 15 minutos venció y se liberaron las unidades. Prepara una compra nueva. Si PayPal muestra un cobro, contáctanos con el ID de orden.'
+            : 'PayPal ya no encontró esta orden o la anuló. Puedes preparar una compra nueva. Si ves un cobro en PayPal, contáctanos con el ID de orden antes de volver a pagar.'
         : awaiting
-          ? 'Aún no consta una captura. Si aprobaste el pago en PayPal, usa el botón de abajo para comprobarlo y completarlo. Evita iniciar una compra nueva.'
+          ? `Tus unidades están reservadas${order.reservationExpiresAt ? ' hasta las ' + new Intl.DateTimeFormat('es-CL', { timeStyle: 'short' }).format(new Date(order.reservationExpiresAt)) : ' durante 15 minutos'}. Si aprobaste en PayPal, puedes comprobar y completar el pago antes de que venza la reserva.`
           : `Estamos verificando la captura de ${usd.format(Number(order.paypalUsd))} USD. No repitas el pago.`);
       orderSummary.append(instruction);
       if (!paid && order.paypalOrderId && order.code) {
@@ -1041,6 +1049,7 @@
         : current;
       if (result.status === 'abandoned') {
         order.status = 'abandoned';
+        order.abandonReason = result.abandonReason;
         saveOrder(order);
         renderOrder(order, button);
         return;
@@ -1090,14 +1099,20 @@
         }
         if (result.status === 'abandoned') {
           order.status = 'abandoned';
+          order.abandonReason = result.abandonReason;
           saveOrder(order);
           document.querySelector('#order-title').textContent = 'Intento cerrado';
           statusNode.textContent = 'Sin pago confirmado · intento cerrado';
           statusNode.classList.add('is-abandoned');
-          instruction.textContent = 'PayPal ya no encontró esta orden o la anuló. Puedes preparar una compra nueva. Si ves un cobro en PayPal, contáctanos con el ID de orden antes de volver a pagar.';
+          instruction.textContent = result.abandonReason === 'reservation_expired'
+            ? 'La reserva venció y las unidades se liberaron. Prepara una compra nueva. Si PayPal muestra un cobro, contáctanos con el ID de orden.'
+            : 'PayPal ya no encontró esta orden o la anuló. Puedes preparar una compra nueva. Si ves un cobro en PayPal, contáctanos con el ID de orden antes de volver a pagar.';
           recover?.remove();
           check.disabled = false;
-          openOrderConfirmation = null;
+          // Una captura tardía aún puede llegar: mantener la consulta ligera.
+          if (Date.now() - Date.parse(order.createdAt) <= 86400_000) {
+            orderStatusTimer = window.setTimeout(refresh, 30000);
+          } else openOrderConfirmation = null;
           return;
         }
         if (result.status === 'capture_pending' && order.status === 'awaiting_approval') {

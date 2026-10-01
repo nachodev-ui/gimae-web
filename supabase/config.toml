@@ -17,3 +17,6 @@ verify_jwt = false
 # Solo equipo autenticado; la función además comprueba la cuenta en profiles.
 [functions.merch-stock-recheck]
 verify_jwt = true
+
+[functions.merch-reservation-review]
+verify_jwt = true
