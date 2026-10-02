@@ -21,9 +21,12 @@
 .gimae-confirm-actions{position:relative;z-index:1;display:flex;justify-content:flex-end;gap:10px;margin-top:24px}
 .admin-page .gimae-confirm-actions button{min-width:118px;padding:11px 15px;border-radius:999px;box-shadow:none}
 .admin-page .gimae-confirm-cancel{background:#fff;color:#795f70;border-color:#dec5d2}
-.admin-page .gimae-confirm-accept{background:#e84694;color:#fff;border-color:#d23882}
+.admin-page .gimae-confirm-accept{background:#b42e6d;color:#fff;border-color:#982457}
+.admin-page .gimae-confirm-accept:hover{background:#982457;color:#fff;border-color:#7c1945;transform:translateY(-1px)}
 .admin-page .gimae-confirm-accept.is-danger{background:#b94554;border-color:#a83846;color:#fff}
-.admin-page .gimae-confirm-actions button:focus-visible{outline:3px solid #f5bad7;outline-offset:3px}
+.admin-page .gimae-confirm-accept.is-danger:hover{background:#933040;border-color:#7e2636;color:#fff}
+.admin-page .gimae-confirm-cancel:hover{background:#fff0f7;color:#604052;border-color:#cfacc1}
+.admin-page .gimae-confirm-actions button:focus-visible{outline:3px solid #96306c;outline-offset:3px}
 .gimae-toast-stack{position:fixed;top:92px;right:22px;z-index:2200;width:min(390px,calc(100vw - 28px));display:grid;gap:10px;pointer-events:none}
 .gimae-toast{pointer-events:auto;display:grid;grid-template-columns:42px minmax(0,1fr) 30px;gap:11px;align-items:start;padding:13px 12px 13px 13px;border:1px solid #e9c5d8;border-radius:17px;background:rgba(255,255,255,.96);box-shadow:0 12px 35px rgba(91,48,73,.17),0 4px 0 #f5e0ea;opacity:0;transform:translateX(18px) scale(.98);transition:opacity .18s ease,transform .18s ease;backdrop-filter:blur(10px)}
 .gimae-toast.is-visible{opacity:1;transform:translateX(0) scale(1)}

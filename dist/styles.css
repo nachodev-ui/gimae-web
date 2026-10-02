@@ -518,6 +518,47 @@ body.dialog-open{overflow:hidden}
 .order-dialog.is-paid .order-copy-row strong{color:#5d505a}
 .order-dialog.is-paid .order-instruction{margin:3px 0 0;color:#62756c;font-size:.78rem;font-weight:500}
 .order-status.is-abandoned,.recent-order-state.is-abandoned{background:#f1edf5;color:#594c69}
+/* Una reserva vencida debe leerse como un estado distinto del recibo pagado. */
+.order-dialog.is-expired{border-color:#ead8cf;background:#fffdfb;box-shadow:0 25px 65px #5e454035}
+.order-dialog.is-expired .eyebrow{color:#865e6b}
+.order-dialog.is-expired #order-title{margin-bottom:20px;color:#634650}
+.order-expired-hero{position:relative;display:flex;align-items:center;gap:25px;overflow:hidden;padding:27px 29px;border:1px solid #e9cfc0;border-radius:19px;background:radial-gradient(circle at 92% 13%,#f5e8ef 0 12%,transparent 38%),linear-gradient(115deg,#fff3e9,#fff9f5 70%);box-shadow:0 7px 0 #f8eee8}
+.order-expired-hero:after{content:'';position:absolute;inset:0;pointer-events:none;background-image:radial-gradient(#d9b8b7 1.4px,transparent 1.4px);background-size:28px 28px;mask-image:linear-gradient(90deg,transparent 44%,black);opacity:.35}
+.order-expired-art{position:relative;z-index:1;flex:none;display:grid;place-items:center;width:96px;height:96px;border:2px solid #dcb9ad;border-radius:25px;background:#fffdfb;box-shadow:0 0 0 7px #f8e8dd,5px 7px 0 #e7cfc6;transform:rotate(-7deg)}
+.order-expired-clock{position:relative;display:block;width:51px;height:51px;border:3px solid #a26e72;border-radius:50%;background:#fffaf6;box-shadow:inset 0 0 0 4px #f8e9e6}
+.order-expired-clock:before,.order-expired-clock:after{content:'';position:absolute;left:50%;top:50%;width:3px;border-radius:3px;background:#865766;transform-origin:center top}
+.order-expired-clock:before{height:17px;transform:rotate(180deg)}
+.order-expired-clock:after{height:14px;transform:rotate(-48deg)}
+.order-expired-message{position:relative;z-index:1;min-width:0}
+.order-expired-message .order-status{background:#f2ded9;color:#674550;padding:7px 12px;font-size:.77rem}
+.order-expired-message h3{margin:12px 0 7px;color:#654451;font:600 clamp(1.25rem,2.7vw,1.65rem)/1.18 var(--display)}
+.order-expired-message>p:last-child{max-width:440px;margin:0;color:#6c555a;font-size:.88rem;line-height:1.55}
+.order-expired-actions{display:flex;align-items:center;gap:11px;flex-wrap:wrap;margin:24px 0 18px}
+.order-expired-primary{min-height:46px;padding:11px 19px;border:1px solid #68434f;border-radius:12px;background:#68434f;color:#fff;font:700 .86rem var(--body);cursor:pointer;box-shadow:0 4px 0 #decbd0;transition:background .2s,transform .2s}
+.order-expired-primary:hover{background:#50333e;color:#fff;transform:translateY(-2px)}
+.order-expired-actions .order-expired-refresh{min-height:46px;padding:10px 16px;border-color:#dcc8cf;background:#fff;color:#674651;font-size:.82rem;cursor:pointer}
+.order-expired-actions .order-expired-refresh:hover{background:#f8ecf0;color:#533541}
+.order-expired-primary:focus-visible,.order-expired-actions .order-expired-refresh:focus-visible,.order-expired-details summary:focus-visible{outline:3px solid #784e5d;outline-offset:3px}
+.order-dialog.is-expired .order-expired-help{margin:0 0 20px;padding:13px 16px;border-left:3px solid #d6a696;border-radius:0 9px 9px 0;background:#fff8f3;color:#604d53;font-size:.82rem;line-height:1.55}
+.order-expired-details{overflow:hidden;border:1px solid #e9dfe0;border-radius:14px;background:#fff}
+.order-expired-details summary{padding:17px 18px;color:#624853;font-size:.83rem;font-weight:700;cursor:pointer;list-style:none}
+.order-expired-details summary::-webkit-details-marker{display:none}
+.order-expired-details summary:after{content:'⌄';float:right;color:#9b7280;font-size:1.1rem;line-height:.8;transition:transform .2s}
+.order-expired-details[open] summary:after{transform:rotate(180deg)}
+.order-expired-details[open] summary{border-bottom:1px solid #eee4e5;background:#fffbf9}
+.order-expired-detail-body{padding:5px 18px 19px}
+.order-dialog.is-expired .order-code{margin-top:15px;padding:14px;border:1px solid #eadbe0;background:#fffafb}
+.order-dialog.is-expired .order-code>strong{min-width:0;overflow-wrap:anywhere;color:#825f71;font-size:clamp(.95rem,2.4vw,1.25rem);letter-spacing:.015em}
+.order-dialog.is-expired .order-lines{margin-top:19px}
+.order-dialog.is-expired .order-total-box>strong{color:#755b67}
+.order-dialog.is-expired .order-copy-row{margin-top:14px}
+.order-dialog.is-expired .order-local-note{margin-top:20px}
+.recent-order.is-expired .recent-order-ticket{border-color:#e5c8bc;background:linear-gradient(115deg,#fff4ed,#fffdfa 80%);box-shadow:0 8px 0 #f7ece6}
+.recent-order.is-expired .recent-order-sticker{border-color:#e1c5ba;background:#fffaf7;color:#8b6871;font-size:2rem}
+.recent-order.is-expired .recent-order-state{background:#f4e0d9;color:#684952}
+@media(max-width:620px){.order-expired-hero{align-items:flex-start;gap:18px;padding:22px 19px}.order-expired-art{width:69px;height:69px;border-radius:19px;box-shadow:0 0 0 5px #f8e8dd,3px 5px 0 #e7cfc6}.order-expired-clock{width:39px;height:39px}.order-expired-clock:before{height:12px}.order-expired-clock:after{height:10px}.order-expired-actions>*{flex:1 1 180px;text-align:center}.order-expired-detail-body{padding-inline:14px}}
+@media(max-width:420px){.order-expired-hero{flex-direction:column;gap:17px}.order-expired-message h3{font-size:1.35rem}.order-expired-actions{display:grid}.order-expired-actions>*{width:100%}}
+@media(prefers-reduced-motion:reduce){.order-expired-primary,.order-expired-details summary:after{transition:none}}
 .order-receipt-contact{display:flex;align-items:center;justify-content:space-between;gap:15px;margin-top:21px;padding:16px 19px;border:1px solid #f1dfe6;border-radius:14px;background:#fff7f9}
 .order-receipt-contact>p{color:#785d6a;font-size:.83rem;font-weight:600}
 .order-dialog.is-paid .order-contact-actions{margin:0;flex:none}

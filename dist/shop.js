@@ -582,13 +582,17 @@
       : 'Consulta aquí los detalles de tu compra.';
     const paid = order.paymentMethod === 'paypal' && order.status === 'paid';
     const abandoned = order.paymentMethod === 'paypal' && order.status === 'abandoned';
+    const expired = abandoned && order.abandonReason === 'reservation_expired';
     if (order.sandbox) recentOrderDescription.textContent += ' Pedido de prueba Sandbox, sin preparación ni entrega.';
-    if (abandoned) recentOrderDescription.textContent += ' Este intento se cerró sin pago confirmado.';
+    if (expired) recentOrderDescription.textContent += ' La reserva venció y las unidades ya no están apartadas.';
+    else if (abandoned) recentOrderDescription.textContent += ' Este intento se cerró sin pago confirmado.';
     else if (order.paymentMethod === 'paypal' && !paid) recentOrderDescription.textContent += ' Comprueba el estado antes de intentar otro pago.';
     recentOrderState.textContent = paid ? (order.sandbox ? 'Prueba confirmada' : 'Pago confirmado') : order.paymentMethod === 'paypal'
-      ? (abandoned ? 'Intento cerrado' : order.status === 'capture_pending' ? 'Confirmación en curso' : 'Pago sin confirmar') : 'Pendiente de pago';
+      ? (expired ? 'Reserva vencida' : abandoned ? 'Intento cerrado' : order.status === 'capture_pending' ? 'Confirmación en curso' : 'Pago sin confirmar') : 'Pendiente de pago';
     recentOrderState.classList.toggle('is-paid', paid);
     recentOrderState.classList.toggle('is-abandoned', abandoned);
+    recentOrder.classList.toggle('is-expired', expired);
+    recentOrder.querySelector('.recent-order-sticker').textContent = expired ? '⌛' : '♡';
     recentOrderCode.textContent = `Pedido ${cleanText(order.code, 40)}`;
     recentOrderTotal.textContent = money.format(Number(order.total) || 0);
   }
@@ -598,7 +602,8 @@
     recentOrderTimer = null;
     if (recentOrderPolling || orderDialog.open || checkoutDialog.open || document.hidden || !navigator.onLine) return;
     const current = latestOrder();
-    if (current?.paymentMethod !== 'paypal' || !current.paypalOrderId || ['paid', 'abandoned'].includes(current.status)) return;
+    if (current?.paymentMethod !== 'paypal' || !current.paypalOrderId || current.status === 'paid' ||
+      (current.status === 'abandoned' && Date.now() - Date.parse(current.createdAt) > 86400_000)) return;
     recentOrderPolling = true;
     try {
       for (let attempt = 0; attempt < 12; attempt += 1) {
@@ -620,6 +625,7 @@
           }
           if (result.status === 'abandoned') {
             latest.status = 'abandoned';
+            latest.abandonReason = result.abandonReason;
             saveOrder(latest);
             break;
           }
@@ -632,7 +638,8 @@
     } finally {
       recentOrderPolling = false;
       const latest = latestOrder();
-      if (latest?.paymentMethod === 'paypal' && latest.paypalOrderId && !['paid', 'abandoned'].includes(latest.status) &&
+      if (latest?.paymentMethod === 'paypal' && latest.paypalOrderId && latest.status !== 'paid' &&
+        (latest.status !== 'abandoned' || Date.now() - Date.parse(latest.createdAt) <= 86400_000) &&
         !orderDialog.open && !checkoutDialog.open && !document.hidden && navigator.onLine) {
         recentOrderTimer = window.setTimeout(() => { void pollRecentOrderStatus(); }, 30000);
       }
@@ -768,13 +775,14 @@
       });
       order.code = quote.orderCode;
       order.paypalOrderId = quote.orderId;
+      order.reservationExpiresAt = quote.reservationExpiresAt;
       order.total = quote.totalClp;
       order.paypalUsd = quote.totalUsd;
       order.items = quote.items;
       // Persistir las dos IDs antes de abrir PayPal permite consultar el pago tras recargar o perder conexión.
       order.status = 'awaiting_approval';
       saveOrder(order);
-      paypalConversion.textContent = `${money.format(quote.totalClp)} CLP → ${usd.format(Number(quote.totalUsd))} USD · Retiro sin costo.`;
+      paypalConversion.textContent = `${money.format(quote.totalClp)} CLP → ${usd.format(Number(quote.totalUsd))} USD · Retiro sin costo. Tus unidades están reservadas durante 15 minutos, hasta las ${new Intl.DateTimeFormat('es-CL', { timeStyle: 'short' }).format(new Date(quote.reservationExpiresAt))}.`;
       await loadPayPal(quote.clientId);
       paypalButtons.hidden = false;
       let capturing = false;
@@ -817,7 +825,9 @@
             checkoutDialog.close();
             renderOrder(order, preparePayment);
           } catch (error) {
-            showPayPalError(order, 'No pudimos comprobar el resultado. Revisa el estado de tu pedido antes de pagar otra vez.');
+            showPayPalError(order, error.message?.includes('reserva venció')
+              ? error.message
+              : 'No pudimos comprobar el resultado. Revisa el estado de tu pedido antes de pagar otra vez.');
           }
         },
         onCancel: () => {
@@ -919,15 +929,17 @@
     orderStatusTimer = null;
     openOrderConfirmation = null;
     orderSummary.replaceChildren();
-    orderDialog.classList.remove('is-paid');
+    orderDialog.classList.remove('is-paid', 'is-expired');
     const isPayPal = order.paymentMethod === 'paypal';
     const paid = isPayPal && order.status === 'paid';
     const awaiting = isPayPal && order.status === 'awaiting_approval';
     const abandoned = isPayPal && order.status === 'abandoned';
+    const expired = abandoned && order.abandonReason === 'reservation_expired';
     let pendingConfirmation = null;
-    document.querySelector('#order-title').textContent = paid ? (order.sandbox ? '¡Prueba confirmada!' : '¡Pago confirmado!') : abandoned ? 'Intento cerrado' : awaiting ? 'Revisa tu pago' : 'Tu pedido quedó guardado';
+    orderDialog.querySelector(':scope > .eyebrow').textContent = expired ? 'TIEMPO DE RESERVA AGOTADO' : 'RESUMEN DEL PEDIDO';
+    document.querySelector('#order-title').textContent = paid ? (order.sandbox ? '¡Prueba confirmada!' : '¡Pago confirmado!') : expired ? 'Reserva vencida' : abandoned ? 'Intento cerrado' : awaiting ? 'Revisa tu pago' : 'Tu pedido quedó guardado';
     const status = element('p', `order-status${paid ? ' is-paid' : abandoned ? ' is-abandoned' : ''}`,
-      isPayPal ? (paid ? (order.sandbox ? 'Pago Sandbox confirmado · pedido de prueba' : 'Pago confirmado · pedido recibido') : abandoned ? 'Sin pago confirmado · intento cerrado' : awaiting ? 'Pago sin confirmar' : 'Captura recibida · verificando confirmación') : 'Pendiente de pago');
+      isPayPal ? (paid ? (order.sandbox ? 'Pago Sandbox confirmado · pedido de prueba' : 'Pago confirmado · pedido recibido') : expired ? 'Reserva finalizada · sin pago confirmado' : abandoned ? 'Sin pago confirmado · intento cerrado' : awaiting ? 'Pago sin confirmar' : 'Captura recibida · verificando confirmación') : 'Pendiente de pago');
     status.setAttribute('role', 'status');
     status.setAttribute('aria-live', 'polite');
     orderSummary.append(status);
@@ -956,16 +968,19 @@
     } else {
       orderSummary.append(copyRow('ID de orden PayPal', order.paypalOrderId || 'Pendiente'));
       const instruction = element('p', 'order-instruction', paid
-        ? (order.sandbox ? `Pago de prueba de ${usd.format(Number(order.paypalUsd))} USD confirmado en Sandbox.` : `Pago de ${usd.format(Number(order.paypalUsd))} USD confirmado. Coordinaremos contigo el retiro.`)
+        ? (order.sandbox ? `Pago de prueba de ${usd.format(Number(order.paypalUsd))} USD confirmado en Sandbox.` : `Pago de ${usd.format(Number(order.paypalUsd))} USD confirmado. Te contactaremos para coordinar los siguientes pasos.`)
         : abandoned
-          ? 'PayPal ya no encontró esta orden o la anuló. Puedes preparar una compra nueva. Si ves un cobro en PayPal, contáctanos con el ID de orden antes de volver a pagar.'
+          ? order.abandonReason === 'reservation_expired'
+            ? 'La reserva de 15 minutos venció y se liberaron las unidades. Prepara una compra nueva. Si PayPal muestra un cobro, contáctanos con el ID de orden.'
+            : 'PayPal ya no encontró esta orden o la anuló. Puedes preparar una compra nueva. Si ves un cobro en PayPal, contáctanos con el ID de orden antes de volver a pagar.'
         : awaiting
-          ? 'Aún no consta una captura. Si aprobaste el pago en PayPal, usa el botón de abajo para comprobarlo y completarlo. Evita iniciar una compra nueva.'
+          ? `Tus unidades están reservadas${order.reservationExpiresAt ? ' hasta las ' + new Intl.DateTimeFormat('es-CL', { timeStyle: 'short' }).format(new Date(order.reservationExpiresAt)) : ' durante 15 minutos'}. Si aprobaste en PayPal, puedes comprobar y completar el pago antes de que venza la reserva.`
           : `Estamos verificando la captura de ${usd.format(Number(order.paypalUsd))} USD. No repitas el pago.`);
       orderSummary.append(instruction);
       if (!paid && order.paypalOrderId && order.code) {
-        const check = element('button', 'copy-button', 'Consultar confirmación');
+        const check = element('button', 'copy-button', expired ? 'Comprobar si llegó un pago' : 'Consultar confirmación');
         check.type = 'button';
+        if (expired) check.classList.add('order-expired-refresh');
         let recover = null;
         if (awaiting) {
           recover = element('button', 'button primary order-recover-payment', 'Comprobar y completar si aprobaste en PayPal');
@@ -984,6 +999,7 @@
       if (actions.children.length) orderSummary.append(actions);
     }
     if (paid) showPaidOrder(status, order.sandbox);
+    else if (expired) showExpiredOrder(order, status);
     openDialog(orderDialog, opener || document.querySelector('[data-open-cart]'));
     openOrderConfirmation = pendingConfirmation;
     pendingConfirmation?.();
@@ -1030,6 +1046,54 @@
     }
   }
 
+  function showExpiredOrder(order, status) {
+    orderDialog.classList.add('is-expired');
+    const hero = element('section', 'order-expired-hero');
+    hero.setAttribute('aria-label', 'Reserva vencida');
+    const art = element('span', 'order-expired-art');
+    art.setAttribute('aria-hidden', 'true');
+    art.append(element('span', 'order-expired-clock'));
+    const message = element('div', 'order-expired-message');
+    message.append(status, element('h3', '', 'El tiempo para pagar terminó'),
+      element('p', '', 'Las unidades ya no están apartadas para este pedido. Puedes revisar tu carrito y preparar un intento nuevo.'));
+    hero.append(art, message);
+
+    const actions = element('div', 'order-expired-actions');
+    const restart = element('button', 'order-expired-primary', cart.length ? 'Volver al carrito' : 'Elegir productos');
+    restart.type = 'button';
+    restart.addEventListener('click', () => {
+      closeDialog(orderDialog);
+      if (cart.length) {
+        renderCart();
+        window.setTimeout(() => openDialog(cartDialog, recentOrderOpen), 0);
+      } else {
+        productGrid.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+        productGrid.querySelector('button')?.focus({ preventScroll: true });
+      }
+    });
+    actions.append(restart);
+    const refresh = orderSummary.querySelector('.order-expired-refresh');
+    if (refresh) actions.append(refresh);
+
+    const instruction = orderSummary.querySelector('.order-instruction');
+    instruction.textContent = '¿PayPal muestra un pago? Abre los detalles para copiar el ID y contacta a Gimae antes de intentarlo otra vez.';
+    instruction.classList.add('order-expired-help');
+    const details = element('details', 'order-expired-details');
+    const summary = element('summary', '', 'Ver productos, importe e ID de este intento');
+    details.append(summary);
+    const detailBody = element('div', 'order-expired-detail-body');
+    for (const selector of ['.order-code', '.order-lines', '.order-total-box', '.order-shipping-copy', '.order-copy-row']) {
+      const section = orderSummary.querySelector(selector);
+      if (section) detailBody.append(section);
+    }
+    details.append(detailBody);
+    const sandboxNote = order.sandbox ? orderSummary.querySelector('.order-local-note') : null;
+    const contact = orderSummary.querySelector('.order-contact-actions');
+    orderSummary.replaceChildren(hero, actions, instruction, details);
+    if (sandboxNote) orderSummary.append(sandboxNote);
+    if (contact) orderSummary.append(contact);
+  }
+
   async function recoverPayPalOrder(order, instruction, button) {
     if (button.disabled) return;
     button.disabled = true;
@@ -1041,6 +1105,7 @@
         : current;
       if (result.status === 'abandoned') {
         order.status = 'abandoned';
+        order.abandonReason = result.abandonReason;
         saveOrder(order);
         renderOrder(order, button);
         return;
@@ -1078,26 +1143,28 @@
           order.status = 'paid';
           clearCartForOrder(order);
           saveOrder(order);
-          document.querySelector('#order-title').textContent = order.sandbox ? '¡Prueba confirmada!' : '¡Pago confirmado!';
-          statusNode.textContent = order.sandbox ? 'Pago Sandbox confirmado · pedido de prueba' : 'Pago confirmado · pedido recibido';
-          statusNode.classList.add('is-paid');
-          instruction.textContent = order.sandbox ? `Pago de prueba de ${usd.format(Number(order.paypalUsd))} USD confirmado en Sandbox.` : `Pago de ${usd.format(Number(order.paypalUsd))} USD confirmado. Coordinaremos contigo el retiro.`;
-          recover?.remove();
-          check.remove();
-          showPaidOrder(statusNode, order.sandbox);
-          openOrderConfirmation = null;
+          renderOrder(order, check);
+          const title = document.querySelector('#order-title');
+          title.tabIndex = -1; title.focus({ preventScroll: true });
           return;
         }
         if (result.status === 'abandoned') {
+          const changed = order.status !== 'abandoned' || order.abandonReason !== result.abandonReason;
           order.status = 'abandoned';
+          order.abandonReason = result.abandonReason;
           saveOrder(order);
-          document.querySelector('#order-title').textContent = 'Intento cerrado';
-          statusNode.textContent = 'Sin pago confirmado · intento cerrado';
-          statusNode.classList.add('is-abandoned');
-          instruction.textContent = 'PayPal ya no encontró esta orden o la anuló. Puedes preparar una compra nueva. Si ves un cobro en PayPal, contáctanos con el ID de orden antes de volver a pagar.';
-          recover?.remove();
+          if (changed) {
+            renderOrder(order, check);
+            orderDialog.scrollTop = 0;
+            const title = document.querySelector('#order-title');
+            title.tabIndex = -1; title.focus({ preventScroll: true });
+            return;
+          }
           check.disabled = false;
-          openOrderConfirmation = null;
+          // Una captura tardía aún puede llegar: mantener la consulta ligera.
+          if (Date.now() - Date.parse(order.createdAt) <= 86400_000) {
+            orderStatusTimer = window.setTimeout(refresh, 30000);
+          } else openOrderConfirmation = null;
           return;
         }
         if (result.status === 'capture_pending' && order.status === 'awaiting_approval') {
