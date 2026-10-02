@@ -1,7 +1,7 @@
 /* =========================================================
    GIMAE SHOP — CARRITO KAWAII / MAXIMALISTA
-   Capa visual aislada: no modifica la lógica, IDs ni estados del checkout.
-   Reutiliza el lenguaje del sitio: stickers, tickets, lunares, pastel y ✦ ♡.
+   Capa visual aislada: no modifica lógica, IDs ni estados del checkout.
+   Ajuste v2: paleta rosa + crema + amarillo, sin celeste ni arcoíris.
    ========================================================= */
 
 #cart-dialog.cart-dialog{
@@ -9,13 +9,13 @@
   --cart-pink-deep:#a92f6b;
   --cart-blush:#ffe7f2;
   --cart-lilac:#f2e8ff;
-  --cart-blue:#e8f7ff;
   --cart-yellow:#fff5c9;
+  --cart-yellow-deep:#c99d2e;
   position:relative;
   width:min(780px,calc(100% - 24px));
   max-height:min(92dvh,960px);
   overflow:auto;
-  padding:68px 34px 34px;
+  padding:55px 34px 34px;
   border:2px solid #efb5d2;
   border-radius:28px;
   background:
@@ -30,35 +30,17 @@
   backdrop-filter:blur(7px) saturate(.9);
 }
 
-/* Sticker superior: mantiene despejada la zona del botón cerrar. */
-#cart-dialog.cart-dialog::before{
-  content:'GIMAE!  ♡  GOODIES';
-  position:absolute;
-  top:17px;
-  left:24px;
-  z-index:1;
-  padding:7px 13px 6px;
-  border:2px solid #fff;
-  outline:1px solid #e9b2cf;
-  border-radius:10px;
-  background:linear-gradient(135deg,#fff0f8,#fff8cf);
-  color:#9f2e68;
-  box-shadow:3px 4px 0 #f2d4e3;
-  transform:rotate(-2deg);
-  font:700 .67rem/1 var(--display);
-  letter-spacing:.13em;
-  pointer-events:none;
-}
-
+/* El badge GIMAE! GOODIES se elimina; queda solo un detalle pequeño. */
+#cart-dialog.cart-dialog::before{content:none}
 #cart-dialog.cart-dialog::after{
   content:'✦  ♡  ✦';
   position:absolute;
-  top:25px;
-  right:78px;
-  color:#d89c2c;
-  font:700 .92rem/1 var(--display);
-  letter-spacing:.18em;
-  opacity:.9;
+  top:24px;
+  left:28px;
+  color:#d59d32;
+  font:700 .88rem/1 var(--display);
+  letter-spacing:.16em;
+  opacity:.82;
   pointer-events:none;
 }
 
@@ -84,7 +66,7 @@
   display:inline-flex;
   width:max-content;
   max-width:100%;
-  margin:1px 0 0;
+  margin:18px 0 0;
   padding:6px 11px;
   border:1px solid #eec3d8;
   border-radius:999px;
@@ -105,17 +87,19 @@
   font-size:clamp(2.15rem,5vw,3.15rem);
   letter-spacing:-.045em;
 }
+/* Sustituye el arcoíris por una costura rosa con acento amarillo. */
 #cart-dialog>#cart-title::after{
   content:'';
   position:absolute;
   left:4px;
-  right:12%;
-  bottom:-9px;
-  height:5px;
-  border-radius:999px;
-  background:linear-gradient(90deg,#ee84b8,#ffd979,#8ed9ef,#c7a7ed);
-  transform:rotate(-1deg);
-  opacity:.75;
+  right:15%;
+  bottom:-10px;
+  height:8px;
+  background:
+    radial-gradient(circle,#e9b240 0 2px,transparent 2.4px) 4px 5px/20px 8px repeat-x,
+    repeating-linear-gradient(90deg,#eca5c8 0 14px,transparent 14px 21px) left 1px/100% 3px no-repeat;
+  transform:rotate(-.7deg);
+  opacity:.95;
 }
 
 #cart-dialog .cart-storage-note{
@@ -144,12 +128,7 @@
   font-weight:800;
 }
 
-#cart-dialog .cart-items{
-  position:relative;
-  z-index:1;
-  gap:14px;
-}
-
+#cart-dialog .cart-items{position:relative;z-index:1;gap:14px}
 #cart-dialog .cart-item{
   --cart-card-bg:#fff8fc;
   --cart-card-edge:#eeb8d3;
@@ -168,21 +147,21 @@
   box-shadow:0 6px 0 var(--cart-card-shadow);
 }
 #cart-dialog .cart-item:nth-child(3n+2){
-  --cart-card-bg:#f7f0ff;
-  --cart-card-edge:#cfb5e6;
-  --cart-card-shadow:#eee3fa;
+  --cart-card-bg:#fff8dd;
+  --cart-card-edge:#e2c873;
+  --cart-card-shadow:#f6edc4;
 }
 #cart-dialog .cart-item:nth-child(3n+3){
-  --cart-card-bg:#fff9df;
-  --cart-card-edge:#e6cf86;
-  --cart-card-shadow:#f5edc9;
+  --cart-card-bg:#fff0f7;
+  --cart-card-edge:#ebaac9;
+  --cart-card-shadow:#f7dbe8;
 }
 #cart-dialog .cart-item::before{
   content:'';
   position:absolute;
   inset:0 auto 0 0;
   width:7px;
-  background:linear-gradient(#ef7db3,#ffd96e,#8ddbef,#c7a6ec);
+  background:repeating-linear-gradient(-35deg,#e96ca7 0 10px,#efca63 10px 20px);
 }
 #cart-dialog .cart-item::after{
   content:'✦';
@@ -194,16 +173,8 @@
   opacity:.65;
   pointer-events:none;
 }
-
-#cart-dialog .cart-item-info h3{
-  color:#4a3148;
-  font:700 1.08rem/1.2 var(--display);
-}
-#cart-dialog .cart-item-info p{
-  margin-top:5px;
-  color:#866a7d;
-  font-size:.78rem;
-}
+#cart-dialog .cart-item-info h3{color:#4a3148;font:700 1.08rem/1.2 var(--display)}
+#cart-dialog .cart-item-info p{margin-top:5px;color:#866a7d;font-size:.78rem}
 #cart-dialog .cart-item-info>strong{
   display:inline-flex;
   margin-top:8px;
@@ -213,7 +184,6 @@
   color:#a92768;
   font-size:.79rem;
 }
-
 #cart-dialog .cart-item-actions{
   align-items:center;
   gap:9px;
@@ -269,16 +239,17 @@
   letter-spacing:.18em;
 }
 
+/* Despacho: amarillo crema, sin celeste. */
 #cart-dialog .cart-shipping{
   position:relative;
   margin-top:26px;
   padding:21px 20px 19px 70px;
-  border:1px solid #bfd8e9;
+  border:1px solid #e4ce78;
   border-radius:18px;
   background:
-    radial-gradient(circle at 90% 22%,#d7c8ef 0 2px,transparent 2.4px) 0 0/27px 27px,
-    linear-gradient(135deg,#eef9ff,#f6efff);
-  box-shadow:0 6px 0 #e5edf5;
+    radial-gradient(circle at 90% 22%,#efcf68 0 2px,transparent 2.4px) 0 0/27px 27px,
+    linear-gradient(135deg,#fffdf1,#fff5c9);
+  box-shadow:0 6px 0 #f5ebbd;
 }
 #cart-dialog .cart-shipping::before{
   content:'02';
@@ -290,31 +261,24 @@
   width:39px;
   height:39px;
   border:2px solid white;
-  outline:1px solid #b9d0e4;
+  outline:1px solid #d8bd54;
   border-radius:50%;
-  background:#dff3ff;
-  color:#537a94;
-  box-shadow:2px 3px 0 #cfe0ec;
+  background:#fff6c9;
+  color:#8a6715;
+  box-shadow:2px 3px 0 #eadb98;
   font:700 .78rem var(--display);
 }
-#cart-dialog .cart-shipping label{
-  margin-bottom:9px;
-  color:#50354c;
-  font:700 .92rem var(--display);
-}
+#cart-dialog .cart-shipping label{margin-bottom:9px;color:#5d4922;font:700 .92rem var(--display)}
 #cart-dialog .cart-shipping select{
   min-height:46px;
-  border:1px solid #c8c3dc;
+  border:1px solid #ddc66f;
   border-radius:11px;
-  background:#fff;
-  color:#4a3447;
-  box-shadow:inset 0 -2px 0 #f0e9f5;
+  background:#fffef8;
+  color:#4a3c2c;
+  box-shadow:inset 0 -2px 0 #f7edc7;
 }
-#cart-dialog .cart-shipping small{
-  margin-top:8px;
-  color:#6d5c74;
-  font-size:.76rem;
-}
+#cart-dialog .cart-shipping select:focus-visible{outline:3px solid #9d7620;outline-offset:2px;border-color:transparent}
+#cart-dialog .cart-shipping small{margin-top:8px;color:#806628;font-size:.76rem}
 
 #cart-dialog .cart-totals{
   position:relative;
@@ -335,11 +299,7 @@
   font:700 .61rem/1 var(--display);
   letter-spacing:.15em;
 }
-#cart-dialog .cart-totals>div{
-  padding-block:8px;
-  color:#7b6675;
-  font-size:.88rem;
-}
+#cart-dialog .cart-totals>div{padding-block:8px;color:#7b6675;font-size:.88rem}
 #cart-dialog .cart-totals dd{color:#4d3849}
 #cart-dialog .cart-totals .cart-total-row{
   margin-top:8px;
@@ -348,11 +308,7 @@
   color:#4b3347;
   font-size:1rem;
 }
-#cart-dialog .cart-total-row dd{
-  color:#be216a;
-  font:700 1.62rem var(--display);
-  letter-spacing:-.03em;
-}
+#cart-dialog .cart-total-row dd{color:#be216a;font:700 1.62rem var(--display);letter-spacing:-.03em}
 #cart-dialog .cart-total-note{
   margin:10px 4px 0;
   color:#806d7a;
@@ -394,7 +350,6 @@
   text-decoration:none;
 }
 #cart-dialog .pending-order .text-link:hover{background:#fff5d8;color:#6e304f}
-
 #cart-dialog .shop-error{
   border:1px solid #e1a2b0;
   border-radius:14px;
@@ -436,26 +391,19 @@
   transform:translateY(-3px);
   box-shadow:0 10px 0 #efb9d3,0 16px 30px #cf3b8438;
 }
-#cart-dialog .cart-checkout:focus-visible{
-  outline:3px solid #7d2c5a;
-  outline-offset:4px;
-}
-#cart-dialog .cart-checkout:disabled{
-  border-color:#ddb8ca;
-  background:#d6bdca;
-  color:#fff;
-}
+#cart-dialog .cart-checkout:focus-visible{outline:3px solid #7d2c5a;outline-offset:4px}
+#cart-dialog .cart-checkout:disabled{border-color:#ddb8ca;background:#d6bdca;color:#fff}
 
 @media(max-width:620px){
   #cart-dialog.cart-dialog{
     width:calc(100% - 14px);
     max-height:94dvh;
-    padding:66px 15px 23px;
+    padding:54px 15px 23px;
     border-radius:22px;
   }
-  #cart-dialog.cart-dialog::before{left:14px;top:18px;font-size:.6rem;padding:6px 10px}
-  #cart-dialog.cart-dialog::after{display:none}
+  #cart-dialog.cart-dialog::after{left:15px;top:22px;font-size:.72rem}
   #cart-dialog .dialog-close{right:10px;top:11px;width:42px;height:42px}
+  #cart-dialog>.eyebrow{margin-top:22px}
   #cart-dialog>#cart-title{font-size:clamp(2rem,10vw,2.6rem);margin-bottom:27px}
   #cart-dialog .cart-item{
     grid-template-columns:minmax(0,1fr) auto;
@@ -483,9 +431,7 @@
 }
 
 @media(prefers-reduced-motion:reduce){
-  #cart-dialog .dialog-close,
-  #cart-dialog .cart-checkout{transition:none}
-  #cart-dialog .dialog-close:hover,
-  #cart-dialog .cart-checkout:hover:not(:disabled){transform:none}
+  #cart-dialog .dialog-close,#cart-dialog .cart-checkout{transition:none}
+  #cart-dialog .dialog-close:hover,#cart-dialog .cart-checkout:hover:not(:disabled){transform:none}
   #cart-dialog .pending-order{transform:none}
 }
