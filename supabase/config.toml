@@ -20,3 +20,12 @@ verify_jwt = true
 
 [functions.merch-reservation-review]
 verify_jwt = true
+
+[functions.webpay-create-order]
+verify_jwt = false
+
+[functions.webpay-return]
+verify_jwt = false
+
+[functions.webpay-order-status]
+verify_jwt = false

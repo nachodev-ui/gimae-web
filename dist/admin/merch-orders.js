@@ -19,7 +19,7 @@ let firstOpen = true;
 const isLegacy = order => order.stock_state === 'legacy_review';
 const isAttention = order => order.fulfillment_status === 'on_hold' && !isLegacy(order);
 const isWork = order => ['new', 'preparing', 'ready'].includes(order.fulfillment_status);
-const reference = order => order.paypal_order_id || order.id.slice(0, 8).toUpperCase();
+const reference = order => order.paypal_order_id || order.webpay_buy_order || order.id.slice(0, 8).toUpperCase();
 const feedback = (tone, title, message, notice) => {
   notice(`${title}. ${message}`);
   window.GIMAE_UI?.toast({ tone, title, message, duration: tone === 'error' ? 8000 : 5500 });
@@ -27,7 +27,7 @@ const feedback = (tone, title, message, notice) => {
 
 export async function renderMerchOrders(client, records, notice, focus = null) {
   const { data, error } = await client.from('merch_orders')
-    .select('id,buyer_name,buyer_contact,items,total_clp,total_usd_cents,paypal_order_id,paypal_capture_id,paid_at,stock_state,stock_allocations,reservation_issue,reservation_reviewed_at,fulfillment_status,fulfillment_note,fulfillment_updated_at,ready_at,handed_over_at')
+    .select('id,buyer_name,buyer_contact,items,total_clp,total_usd_cents,payment_provider,paypal_order_id,paypal_capture_id,webpay_buy_order,webpay_authorization_code,paid_at,stock_state,stock_allocations,reservation_issue,reservation_reviewed_at,fulfillment_status,fulfillment_note,fulfillment_updated_at,ready_at,handed_over_at')
     .eq('status', 'paid').order('paid_at', { ascending: false }).limit(100);
   if (error) throw error;
   const orders = data || [];
@@ -177,6 +177,8 @@ export async function renderMerchOrders(client, records, notice, focus = null) {
       return false;
     }
     const body = node('div', 'merch-order-body');
+    if (order.payment_provider === 'webpay') body.append(node('p', 'merch-order-stock-note',
+      'Webpay integración · pedido de prueba. No prepares ni entregues productos reales. El pago se expresa en CLP.'));
     const allocations = Array.isArray(order.stock_allocations) ? order.stock_allocations : [];
     const productArea = node('div', 'merch-order-products');
     productArea.append(node('h5', '', 'Qué se compró'));
@@ -200,7 +202,7 @@ export async function renderMerchOrders(client, records, notice, focus = null) {
       if (isLegacy(order)) copy.append(node('strong', '', 'Venta anterior al control de stock'), node('p', '', 'No se descontaron unidades automáticamente. Una administradora debe comprobar el inventario y la entrega manualmente; esta tarjeta no permite continuar la preparación.'));
       else if (order.stock_state === 'shortage') copy.append(node('strong', '', order.reservation_issue === 'late_capture' ? 'Pago tardío: revisar antes de preparar' : 'Faltan unidades para completar el pedido'), node('p', '', 'El pago está confirmado. Repón y confirma el inventario en Merch; después vuelve a revisar el stock aquí.'));
       else if (order.reservation_issue === 'late_capture') copy.append(node('strong', '', 'Pago confirmado después de vencer la reserva'),
-        node('p', '', 'Comprueba la captura en PayPal y revisa las unidades asignadas. Registra una nota antes de empezar la preparación.'));
+        node('p', '', `Comprueba la captura en ${order.payment_provider === 'webpay' ? 'Transbank' : 'PayPal'} y revisa las unidades asignadas. Registra una nota antes de empezar la preparación.`));
       else copy.append(node('strong', '', 'Preparación pausada'), node('p', '', `Motivo interno: ${order.fulfillment_note || 'No se registró un motivo.'} Reanuda cuando esté resuelto.`));
       warning.append(node('span', 'merch-order-warning-icon', '!'), copy);
       card.append(warning);
@@ -242,7 +244,7 @@ export async function renderMerchOrders(client, records, notice, focus = null) {
           if (!noteIsSaved()) return;
           if (next[3] === 'review') {
             const review = await window.GIMAE_UI?.input({ tone: 'warning', title: 'Revisar captura tardía',
-              message: `Confirma en PayPal la captura ${order.paypal_capture_id} y la disponibilidad del pedido ${reference(order)}. Registra tu decisión para la cola.`,
+              message: `Confirma en ${order.payment_provider === 'webpay' ? 'Transbank' : 'PayPal'} el pago ${order.webpay_authorization_code || order.paypal_capture_id} y la disponibilidad del pedido ${reference(order)}. Registra tu decisión para la cola.`,
               label: 'Nota de revisión (mínimo 8 caracteres)', value: '', confirmText: 'Autorizar preparación' });
             if (review === null || review === undefined) return;
             if (review.trim().length < 8 || review.length > 300) {
@@ -311,7 +313,7 @@ export async function renderMerchOrders(client, records, notice, focus = null) {
     if (!isLegacy(order)) body.append(node('p', 'merch-order-stock-note', order.stock_state === 'allocated'
       ? 'Inventario: todas las unidades están asignadas y descontadas.' : 'Inventario: revisa las unidades faltantes en cada producto.'));
     const payment = node('dl', 'merch-order-payment');
-    for (const [label, value] of [['Orden PayPal', order.paypal_order_id], ['Captura PayPal', order.paypal_capture_id], ['ID interno', order.id]]) {
+    for (const [label, value] of [['Orden PayPal', order.paypal_order_id], ['Captura PayPal', order.paypal_capture_id], ['Orden Webpay', order.webpay_buy_order], ['Autorización Webpay', order.webpay_authorization_code], ['ID interno', order.id]].filter(([, value]) => Boolean(value))) {
       payment.append(node('dt', '', label), node('dd', '', value || '—'));
     }
     body.append(payment);

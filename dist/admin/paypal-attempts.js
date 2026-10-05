@@ -11,6 +11,7 @@ export async function renderPayPalAttempts(client, records, notice) {
   records.replaceChildren(node('h2', '', 'Intentos PayPal'));
   const { data, error } = await client.from('merch_orders')
     .select('id,paypal_order_id,status,created_at,total_clp,last_reconciled_at,reconcile_error,abandoned_at,abandon_reason')
+    .eq('payment_provider', 'paypal')
     .in('status', ['awaiting_approval', 'capture_pending', 'abandoned'])
     .order('created_at', { ascending: false }).limit(100);
   if (error) throw error;

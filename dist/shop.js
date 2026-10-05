@@ -20,6 +20,10 @@
   const localPaypalErrorTest = sandboxPreview && window.location.origin === 'http://localhost:8000' &&
     new URLSearchParams(window.location.search).get('paypal-test-error') === '1';
   const paypalEnabled = Boolean(config.PAYMENT_METHODS?.paypal?.enabled || sandboxPreview);
+  const webpayPreview = (window.location.origin === 'http://localhost:8000' ||
+    (window.location.origin === 'https://nachodev-ui.github.io' && window.location.pathname.startsWith('/gimae-web/'))) &&
+    new URLSearchParams(window.location.search).get('webpay-sandbox') === '1';
+  const webpayEnabled = Boolean(config.PAYMENT_METHODS?.webpay?.enabled || webpayPreview);
   const catalog = Array.isArray(config.merch) ? config.merch.filter(product => product?.active !== false) : [];
   const CART_KEY = 'gimae-shop-cart-v1';
   const SHIPPING_KEY = 'gimae-shop-shipping-v1';
@@ -80,6 +84,7 @@
   let selectedShippingId = readShipping();
   let paypalPromise = null;
   let paypalPreparing = false;
+  let webpayPreparing = false;
   let paypalPrepared = false;
   let paypalWaitTimer = null;
   let paypalErrorOrder = null;
@@ -451,14 +456,20 @@
     return Boolean(paypalEnabled && config.backendStatus === 'live' && window.GIMAE_SUPABASE?.url);
   }
 
+  function webpayReady() {
+    return Boolean(webpayEnabled && webpayPreview && config.backendStatus === 'live' && window.GIMAE_SUPABASE?.url);
+  }
+
   function readyMethods() {
-    return [bankReady() ? 'bankTransfer' : null, paypalReady() ? 'paypal' : null].filter(Boolean);
+    return [bankReady() ? 'bankTransfer' : null, paypalReady() ? 'paypal' : null,
+      webpayReady() ? 'webpay' : null].filter(Boolean);
   }
 
   function renderConfigNote() {
     const stockPending = catalog.some(product => optionsFor(product).some(option => stockFor(product, option.id) === null));
     const messages = [];
     if (sandboxPreview) messages.push('Modo de prueba PayPal Sandbox: los pagos no usan dinero real y los pedidos son de prueba.');
+    if (webpayPreview) messages.push('Modo de integración Webpay: utiliza solo tarjetas de prueba. Los pedidos son de prueba.');
     if (!readyMethods().length) messages.push('La compra online está en preparación: puedes armar y guardar tu carrito, pero el pago todavía no está habilitado.');
     if (stockPending) messages.push('Algunos productos muestran disponibilidad por confirmar; el equipo debe validarla antes de confirmar el pedido.');
     configNote.textContent = messages.join(' ');
@@ -469,7 +480,8 @@
     paymentMethodList.replaceChildren();
     const methods = [
       { id: 'bankTransfer', label: cleanText(config.PAYMENT_METHODS?.bankTransfer?.label || 'Transferencia bancaria', 60), enabled: Boolean(config.PAYMENT_METHODS?.bankTransfer?.enabled), ready: bankReady() },
-      { id: 'paypal', label: sandboxPreview ? 'PayPal Sandbox · prueba sin dinero real' : cleanText(config.PAYMENT_METHODS?.paypal?.label || 'PayPal', 60), enabled: paypalEnabled, ready: paypalReady() && selectedShippingId === 'pickup' }
+      { id: 'paypal', label: sandboxPreview ? 'PayPal Sandbox · prueba sin dinero real' : cleanText(config.PAYMENT_METHODS?.paypal?.label || 'PayPal', 60), enabled: paypalEnabled, ready: paypalReady() && selectedShippingId === 'pickup' },
+      { id: 'webpay', label: 'Webpay Plus · integración, sin dinero real', enabled: webpayEnabled, ready: webpayReady() && selectedShippingId === 'pickup' }
     ].filter(method => method.enabled);
     methods.forEach((method, index) => {
       const label = element('label', `payment-choice${method.ready ? '' : ' is-disabled'}`);
@@ -494,12 +506,15 @@
     paypalConversion.hidden = !isPaypal;
     checkoutPrivacy.textContent = isPaypal
       ? (sandboxPreview ? 'Pago de prueba sin dinero real. El pedido Sandbox no se preparará ni entregará.' : 'Usaremos tu nombre y contacto para coordinar el retiro. PayPal cobra en USD.')
+      : method === 'webpay' ? 'Pago de prueba en pesos chilenos. Usa solamente tarjetas de prueba de Transbank; este pedido no se preparará ni entregará.'
       : 'Tus datos quedan en el resumen del pedido de este dispositivo.';
     paypalButtons.hidden = true;
     paypalButtons.replaceChildren();
     if (isPaypal) {
       paypalConversion.textContent = 'Verás el total exacto en USD antes de pagar. Retiro en persona sin costo.';
       preparePayment.textContent = 'Preparar pago con PayPal';
+    } else if (method === 'webpay') {
+      preparePayment.textContent = 'Continuar a Webpay de prueba';
     } else {
       preparePayment.textContent = 'Generar instrucciones';
     }
@@ -532,9 +547,9 @@
     return {
       code: orderCode(),
       createdAt: new Date().toISOString(),
-      status: method === 'paypal' ? 'preparing_paypal' : 'pending_payment',
+      status: method === 'paypal' || method === 'webpay' ? 'preparing_payment' : 'pending_payment',
       paymentMethod: method,
-      sandbox: method === 'paypal' && sandboxPreview,
+      sandbox: (method === 'paypal' && sandboxPreview) || method === 'webpay',
       buyer: { name: cleanText(buyer.name, 60), contact: cleanText(buyer.contact, 80) },
       shipping: shipping ? { id: cleanText(shipping.id, 40), label: cleanText(shipping.label, 100), cost: positiveNumber(shipping.cost), eta: cleanText(shipping.eta, 100) } : null,
       items: cartDetails().map(item => ({ productId: item.productId, optionId: item.optionId, name: cleanText(item.product.name, 80), option: cleanText(item.option.label, 60), quantity: item.quantity, unitPrice: item.unitPrice })),
@@ -580,14 +595,15 @@
     recentOrderDescription.textContent = firstItem
       ? `${firstItem.quantity}× ${cleanText(firstItem.name, 80)}${more ? ` y ${more} producto${more === 1 ? '' : 's'} más` : ''}. Consulta aquí los detalles de tu compra.`
       : 'Consulta aquí los detalles de tu compra.';
-    const paid = order.paymentMethod === 'paypal' && order.status === 'paid';
-    const abandoned = order.paymentMethod === 'paypal' && order.status === 'abandoned';
+    const online = order.paymentMethod === 'paypal' || order.paymentMethod === 'webpay';
+    const paid = online && order.status === 'paid';
+    const abandoned = online && order.status === 'abandoned';
     const expired = abandoned && order.abandonReason === 'reservation_expired';
     if (order.sandbox) recentOrderDescription.textContent += ' Pedido de prueba Sandbox, sin preparación ni entrega.';
     if (expired) recentOrderDescription.textContent += ' La reserva venció y las unidades ya no están apartadas.';
     else if (abandoned) recentOrderDescription.textContent += ' Este intento se cerró sin pago confirmado.';
-    else if (order.paymentMethod === 'paypal' && !paid) recentOrderDescription.textContent += ' Comprueba el estado antes de intentar otro pago.';
-    recentOrderState.textContent = paid ? (order.sandbox ? 'Prueba confirmada' : 'Pago confirmado') : order.paymentMethod === 'paypal'
+    else if (online && !paid) recentOrderDescription.textContent += ' Comprueba el estado antes de intentar otro pago.';
+    recentOrderState.textContent = paid ? (order.sandbox ? 'Prueba confirmada' : 'Pago confirmado') : online
       ? (expired ? 'Reserva vencida' : abandoned ? 'Intento cerrado' : order.status === 'capture_pending' ? 'Confirmación en curso' : 'Pago sin confirmar') : 'Pendiente de pago';
     recentOrderState.classList.toggle('is-paid', paid);
     recentOrderState.classList.toggle('is-abandoned', abandoned);
@@ -602,16 +618,17 @@
     recentOrderTimer = null;
     if (recentOrderPolling || orderDialog.open || checkoutDialog.open || document.hidden || !navigator.onLine) return;
     const current = latestOrder();
-    if (current?.paymentMethod !== 'paypal' || !current.paypalOrderId || current.status === 'paid' ||
+    if (!['paypal', 'webpay'].includes(current?.paymentMethod) || !(current.paypalOrderId || current.webpayBuyOrder) || current.status === 'paid' ||
       (current.status === 'abandoned' && Date.now() - Date.parse(current.createdAt) > 86400_000)) return;
     recentOrderPolling = true;
     try {
       for (let attempt = 0; attempt < 12; attempt += 1) {
         if (orderDialog.open || document.hidden || !navigator.onLine) break;
         const latest = latestOrder();
-        if (latest?.code !== current.code || latest.paypalOrderId !== current.paypalOrderId) break;
+        if (latest?.code !== current.code || (latest.paypalOrderId || latest.webpayBuyOrder) !== (current.paypalOrderId || current.webpayBuyOrder)) break;
         try {
-          const result = await edgeFunction('paypal-order-status', { orderCode: current.code, orderId: current.paypalOrderId });
+          const result = await edgeFunction(current.paymentMethod === 'webpay' ? 'webpay-order-status' : 'paypal-order-status',
+            current.paymentMethod === 'webpay' ? { orderCode: current.code, buyOrder: current.webpayBuyOrder } : { orderCode: current.code, orderId: current.paypalOrderId });
           if (result.status === 'paid' && latestOrder()?.code === current.code) {
             latest.status = 'paid';
             clearCartForOrder(latest);
@@ -638,7 +655,7 @@
     } finally {
       recentOrderPolling = false;
       const latest = latestOrder();
-      if (latest?.paymentMethod === 'paypal' && latest.paypalOrderId && latest.status !== 'paid' &&
+      if (['paypal', 'webpay'].includes(latest?.paymentMethod) && (latest.paypalOrderId || latest.webpayBuyOrder) && latest.status !== 'paid' &&
         (latest.status !== 'abandoned' || Date.now() - Date.parse(latest.createdAt) <= 86400_000) &&
         !orderDialog.open && !checkoutDialog.open && !document.hidden && navigator.onLine) {
         recentOrderTimer = window.setTimeout(() => { void pollRecentOrderStatus(); }, 30000);
@@ -864,6 +881,38 @@
     }
   }
 
+  async function renderWebpay(order) {
+    if (webpayPreparing) return;
+    if (selectedShippingId !== 'pickup') return showError(checkoutError, 'Webpay de prueba solo está disponible para retiro en persona.');
+    webpayPreparing = true;
+    preparePayment.disabled = true;
+    checkoutLoading.hidden = false;
+    showError(checkoutError, '');
+    try {
+      const quote = await edgeFunction('webpay-create-order', {
+        buyerName: order.buyer.name, buyerContact: order.buyer.contact, shippingId: 'pickup',
+        items: cart.map(({ productId, optionId, quantity }) => ({ productId, optionId, quantity }))
+      });
+      order.code = quote.orderCode;
+      order.webpayBuyOrder = quote.buyOrder;
+      order.reservationExpiresAt = quote.reservationExpiresAt;
+      order.total = quote.totalClp;
+      order.items = quote.items;
+      order.status = 'awaiting_approval';
+      saveOrder(order);
+      // POST is required by Transbank. Persist the order before leaving this page.
+      const form = element('form');
+      form.method = 'POST'; form.action = quote.url;
+      const token = element('input'); token.type = 'hidden'; token.name = 'token_ws'; token.value = quote.token;
+      form.append(token); document.body.append(form); form.submit();
+    } catch (error) {
+      showError(checkoutError, error.message || 'No pudimos preparar Webpay. Revisa tu carrito.');
+      preparePayment.disabled = false;
+      checkoutLoading.hidden = true;
+      webpayPreparing = false;
+    }
+  }
+
   function copyButton(value, label = 'Copiar') {
     const button = element('button', 'copy-button', label); button.type = 'button';
     button.addEventListener('click', async () => {
@@ -931,15 +980,17 @@
     orderSummary.replaceChildren();
     orderDialog.classList.remove('is-paid', 'is-expired');
     const isPayPal = order.paymentMethod === 'paypal';
-    const paid = isPayPal && order.status === 'paid';
-    const awaiting = isPayPal && order.status === 'awaiting_approval';
-    const abandoned = isPayPal && order.status === 'abandoned';
+    const isWebpay = order.paymentMethod === 'webpay';
+    const online = isPayPal || isWebpay;
+    const paid = online && order.status === 'paid';
+    const awaiting = online && order.status === 'awaiting_approval';
+    const abandoned = online && order.status === 'abandoned';
     const expired = abandoned && order.abandonReason === 'reservation_expired';
     let pendingConfirmation = null;
     orderDialog.querySelector(':scope > .eyebrow').textContent = expired ? 'TIEMPO DE RESERVA AGOTADO' : 'RESUMEN DEL PEDIDO';
-    document.querySelector('#order-title').textContent = paid ? (order.sandbox ? '¡Prueba confirmada!' : '¡Pago confirmado!') : expired ? 'Reserva vencida' : abandoned ? 'Intento cerrado' : awaiting ? 'Revisa tu pago' : 'Tu pedido quedó guardado';
+    document.querySelector('#order-title').textContent = paid ? (order.sandbox ? '¡Prueba confirmada!' : '¡Pago confirmado!') : expired ? 'Reserva vencida' : abandoned ? 'Intento cerrado' : order.status === 'payment_denied' ? 'Pago no aprobado' : awaiting ? 'Revisa tu pago' : 'Tu pedido quedó guardado';
     const status = element('p', `order-status${paid ? ' is-paid' : abandoned ? ' is-abandoned' : ''}`,
-      isPayPal ? (paid ? (order.sandbox ? 'Pago Sandbox confirmado · pedido de prueba' : 'Pago confirmado · pedido recibido') : expired ? 'Reserva finalizada · sin pago confirmado' : abandoned ? 'Sin pago confirmado · intento cerrado' : awaiting ? 'Pago sin confirmar' : 'Captura recibida · verificando confirmación') : 'Pendiente de pago');
+      online ? (paid ? (order.sandbox ? 'Pago de prueba confirmado · pedido de prueba' : 'Pago confirmado · pedido recibido') : expired ? 'Reserva finalizada · sin pago confirmado' : abandoned ? 'Sin pago confirmado · intento cerrado' : awaiting ? 'Pago sin confirmar' : order.status === 'payment_denied' ? 'Pago rechazado · sin cobro confirmado' : 'Verificando confirmación') : 'Pendiente de pago');
     status.setAttribute('role', 'status');
     status.setAttribute('aria-live', 'polite');
     orderSummary.append(status);
@@ -965,6 +1016,24 @@
       [['Titular', bank.accountHolder], ['RUT', bank.rut], ['Banco', bank.bank], ['Tipo de cuenta', bank.accountType], ['Número de cuenta', bank.accountNumber], ['Correo de confirmación', bank.confirmationEmail]].forEach(([label, value]) => section.append(copyRow(label, value)));
       section.append(element('p', 'order-instruction', `Transfiere el monto exacto indicado y usa ${cleanText(order.code, 40)} como glosa o comentario. Si el envío tiene un costo a coordinar, confírmalo antes de transferir. Luego envía el comprobante junto con el código.`));
       orderSummary.append(section);
+    } else if (isWebpay) {
+      orderSummary.append(copyRow('Orden Webpay', order.webpayBuyOrder || 'Pendiente'));
+      const instruction = element('p', 'order-instruction', paid
+        ? `Pago de prueba por ${money.format(Number(order.total))} confirmado en Webpay. Este pedido de integración no se preparará.`
+        : expired ? 'La reserva venció y se liberaron las unidades. Si tu banco muestra un cargo, contacta a Gimae con el ID antes de repetir.'
+        : order.status === 'payment_denied' ? 'Transbank rechazó o anuló el intento. Puedes volver al carrito e iniciar otra compra de prueba.'
+        : order.webpayReturn === 'cancelled' ? 'Volviste sin completar el pago. La reserva vencerá a la hora indicada. Puedes iniciar un nuevo intento al vencer.'
+        : awaiting ? `Estamos esperando tu resultado de Webpay. La reserva vence a las ${new Intl.DateTimeFormat('es-CL', { timeStyle: 'short' }).format(new Date(order.reservationExpiresAt))}. No repitas el pago sin consultar el estado.`
+        : 'Estamos verificando el resultado con Transbank. No repitas el pago.');
+      orderSummary.append(instruction);
+    if (!paid && order.webpayBuyOrder) {
+        const check = element('button', 'copy-button', expired ? 'Comprobar si llegó un pago' : 'Consultar confirmación');
+        check.type = 'button';
+        if (expired) check.classList.add('order-expired-refresh');
+        check.addEventListener('click', () => confirmWebpayOrder(order, instruction, check));
+        orderSummary.append(check);
+        pendingConfirmation = () => confirmWebpayOrder(order, instruction, check);
+      }
     } else {
       orderSummary.append(copyRow('ID de orden PayPal', order.paypalOrderId || 'Pendiente'));
       const instruction = element('p', 'order-instruction', paid
@@ -993,19 +1062,19 @@
         pendingConfirmation = () => confirmPayPalOrder(order, status, instruction, check, recover);
       }
     }
-    if (!paid) orderSummary.append(element('p', 'order-local-note', order.paymentMethod === 'paypal' ? 'El pedido PayPal se guarda en Supabase. Esta copia local sirve para reabrir el resumen.' : 'Este resumen existe solo en este navegador. El pedido se confirma cuando el equipo recibe y verifica el comprobante.'));
+    if (!paid) orderSummary.append(element('p', 'order-local-note', online ? 'El intento se guarda en el servidor. Esta copia local sirve para reabrir el resumen.' : 'Este resumen existe solo en este navegador. El pedido se confirma cuando el equipo recibe y verifica el comprobante.'));
     if (!order.sandbox) {
       const actions = contactActions(order);
       if (actions.children.length) orderSummary.append(actions);
     }
-    if (paid) showPaidOrder(status, order.sandbox);
+    if (paid) showPaidOrder(status, order.sandbox, isWebpay ? 'Webpay Plus' : 'PayPal Sandbox');
     else if (expired) showExpiredOrder(order, status);
     openDialog(orderDialog, opener || document.querySelector('[data-open-cart]'));
     openOrderConfirmation = pendingConfirmation;
     pendingConfirmation?.();
   }
 
-  function showPaidOrder(status, sandbox = false) {
+  function showPaidOrder(status, sandbox = false, provider = 'PayPal Sandbox') {
     orderDialog.classList.add('is-paid');
     const celebration = element('div', 'order-success');
     const art = element('div', 'order-success-art');
@@ -1013,7 +1082,7 @@
     art.append(element('span', 'order-success-check', '✓'));
     const copy = element('div', 'order-success-copy');
     copy.append(status, element('p', '', sandbox
-      ? '¡La prueba de PayPal Sandbox se completó! Este pedido no se preparará ni entregará.'
+      ? `¡La prueba de ${provider} se completó! Este pedido no se preparará ni entregará.`
       : '¡Gracias por comprar en Gimae! Ya recibimos tu pedido. Pronto coordinaremos contigo los siguientes pasos.'));
     celebration.append(art, copy);
     orderSummary.prepend(celebration);
@@ -1076,7 +1145,7 @@
     if (refresh) actions.append(refresh);
 
     const instruction = orderSummary.querySelector('.order-instruction');
-    instruction.textContent = '¿PayPal muestra un pago? Abre los detalles para copiar el ID y contacta a Gimae antes de intentarlo otra vez.';
+    instruction.textContent = `¿${order.paymentMethod === 'webpay' ? 'Tu banco' : 'PayPal'} muestra un pago? Abre los detalles para copiar el ID y contacta a Gimae antes de intentarlo otra vez.`;
     instruction.classList.add('order-expired-help');
     const details = element('details', 'order-expired-details');
     const summary = element('summary', '', 'Ver productos, importe e ID de este intento');
@@ -1196,6 +1265,38 @@
     void refresh();
   }
 
+  function confirmWebpayOrder(order, instruction, button) {
+    const epoch = ++statusPollEpoch;
+    window.clearTimeout(orderStatusTimer);
+    let checks = 0;
+    const refresh = async () => {
+      if (epoch !== statusPollEpoch || !orderDialog.open) return;
+      if (document.hidden || !navigator.onLine) { button.disabled = false; return; }
+      button.disabled = true;
+      try {
+        const result = await edgeFunction('webpay-order-status', { orderCode: order.code, buyOrder: order.webpayBuyOrder });
+        if (epoch !== statusPollEpoch || !orderDialog.open) return;
+        if (result.status !== order.status || result.abandonReason !== order.abandonReason) {
+          order.status = result.status;
+          order.abandonReason = result.abandonReason;
+          if (order.status === 'paid' || order.status === 'capture_pending') clearCartForOrder(order);
+          saveOrder(order);
+          renderOrder(order, button);
+          return;
+        }
+        if (result.status === 'paid' || result.status === 'payment_denied') { button.disabled = false; return; }
+        if (checks >= 12) instruction.textContent = 'Seguimos esperando una respuesta segura de Transbank. Conserva este ID y no repitas el pago.';
+      } catch (error) {
+        instruction.textContent = 'No pudimos consultar el servidor. Conserva este ID y prueba de nuevo cuando vuelva la conexión.';
+      }
+      if (epoch !== statusPollEpoch || !orderDialog.open) return;
+      checks += 1;
+      button.disabled = false;
+      orderStatusTimer = window.setTimeout(refresh, checks < 12 ? 2500 : 30000);
+    };
+    void refresh();
+  }
+
   function openDialog(dialog, opener) {
     if (!dialog || dialog.open) return;
     dialogOpeners.set(dialog, opener instanceof HTMLElement ? opener : document.activeElement);
@@ -1263,7 +1364,7 @@
 
   document.querySelector('#checkout-form').addEventListener('submit', event => {
     event.preventDefault();
-    if (paypalPreparing || (paypalPrepared && chosenPayment() === 'paypal')) return;
+    if (paypalPreparing || webpayPreparing || (paypalPrepared && chosenPayment() === 'paypal')) return;
     showError(checkoutError, ''); checkoutStatus.textContent = '';
     const buyer = buyerData();
     if (buyer.error) return showError(checkoutError, buyer.error);
@@ -1271,6 +1372,7 @@
     if (!method) return showError(checkoutError, 'Elige una forma de pago disponible.');
     const order = createOrderSnapshot(method, buyer);
     if (method === 'paypal') return renderPayPal(order);
+    if (method === 'webpay') return renderWebpay(order);
     if (!bankReady()) return showError(checkoutError, 'La transferencia todavía no está configurada.');
     saveOrder(order); cart = []; saveCart(); checkoutDialog.close(); renderOrder(order, preparePayment);
   });
@@ -1302,5 +1404,24 @@
   });
 
   renderProducts(); renderShipping(); renderCart(); renderConfigNote();
-  void pollRecentOrderStatus();
+  const returned = new URL(window.location.href);
+  const returnedOrder = returned.searchParams.get('webpay-order');
+  const returnedRef = returned.searchParams.get('webpay-ref');
+  if (returnedOrder || returnedRef) {
+    returned.searchParams.delete('webpay-order');
+    returned.searchParams.delete('webpay-ref');
+    const result = returned.searchParams.get('webpay-result');
+    returned.searchParams.delete('webpay-result');
+    window.history.replaceState(null, '', returned.pathname + returned.search + returned.hash);
+    const order = (storageGet(ORDERS_KEY, []) || []).find(item => item?.paymentMethod === 'webpay' &&
+      item.code === returnedOrder && item.webpayBuyOrder === returnedRef);
+    if (order) {
+      order.webpayReturn = result;
+      saveOrder(order);
+      renderOrder(order, recentOrderOpen);
+    } else {
+      configNote.hidden = false;
+      configNote.textContent = `Volviste de Webpay. Busca el pedido ${cleanText(returnedOrder, 40)} en el mismo navegador o contacta a Gimae antes de pagar otra vez.`;
+    }
+  } else void pollRecentOrderStatus();
 })();
