@@ -1,6 +1,6 @@
 # Stock y preparación de pedidos
 
-Tras `20261005230116_isolate_test_orders.sql`, PayPal Sandbox y Webpay integración son pedidos `test`: registran pagos sin reservar ni descontar inventario físico y no entran en preparación. Las reglas de inventario descritas a continuación corresponden a `live`.
+Tras `20261005233152_isolate_test_orders.sql`, PayPal Sandbox y Webpay integración son pedidos `test`: registran pagos sin reservar ni descontar inventario físico y no entran en preparación. Las reglas de inventario descritas a continuación corresponden a `live`.
 
 ## Regla de inventario
 

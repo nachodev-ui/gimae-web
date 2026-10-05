@@ -54,7 +54,7 @@ Funciona en CLP y solo con retiro presencial; los costos y lugares de entrega si
 
 ## Revisión técnica
 
-- La migración `20261005230116_isolate_test_orders.sql` separa compras de prueba de reservas, descuentos y preparación. Conserva la historia de descuentos previos para auditoría. Consulta `scripts/audit-test-inventory.sql` y cuenta el inventario físico antes de restaurar unidades: el sistema no puede saber qué ajustes manuales se hicieron después.
+- La migración `20261005233152_isolate_test_orders.sql` separa compras de prueba de reservas, descuentos y preparación. Conserva la historia de descuentos previos para auditoría. Consulta `scripts/audit-test-inventory.sql` y cuenta el inventario físico antes de restaurar unidades: el sistema no puede saber qué ajustes manuales se hicieron después.
 - `webpay-return` confirma con Transbank y contrasta importe, orden, sesión y resultado. La actualización a `paid` de integración registra el pago sin tocar stock. PayPal Sandbox también queda aislado; PayPal Live futuro requiere `PAYPAL_ENV=live` y activa de nuevo la reserva transaccional.
 - Las pruebas reales de aprobación y cancelación en el navegador ya se realizaron antes del aislamiento. Este cambio requiere repetir una aprobación Sandbox y confirmar que el stock de `products`/`product_variants` permanezca igual. No habilita Webpay Live: siguen pendientes las credenciales propias, el contrato, la certificación y la conciliación automática de retornos sin navegador.
 
