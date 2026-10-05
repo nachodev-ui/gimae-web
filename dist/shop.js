@@ -1180,7 +1180,7 @@
     const message = element('div', 'order-denied-message');
     message.append(status, element('h3', '', 'Esta compra no se completó'),
       element('p', '', order.paymentMethod === 'webpay'
-        ? 'Transbank informó que la operación fue rechazada. Este pedido no figura como pagado.'
+        ? 'Transbank no aprobó la operación. Este pedido no figura como pagado.'
         : 'El proveedor de pago rechazó la operación. Este pedido no figura como pagado.'));
     hero.append(art, message);
 
