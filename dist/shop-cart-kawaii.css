@@ -1,0 +1,461 @@
+/* =========================================================
+   GIMAE SHOP — CARRITO KAWAII / MAXIMALISTA
+   Capa visual aislada: no modifica lógica, IDs ni estados del checkout.
+   Ajuste v3: paleta rosa + crema + amarillo, sin celeste ni arcoíris.
+   Mejora contraste y legibilidad en textos secundarios del carrito.
+   ========================================================= */
+
+#cart-dialog.cart-dialog{
+  --cart-pink:#e84694;
+  --cart-pink-deep:#a92f6b;
+  --cart-blush:#ffe7f2;
+  --cart-lilac:#f2e8ff;
+  --cart-yellow:#fff5c9;
+  --cart-yellow-deep:#c99d2e;
+  position:relative;
+  width:min(780px,calc(100% - 24px));
+  max-height:min(92dvh,960px);
+  overflow:auto;
+  padding:55px 34px 34px;
+  border:2px solid #efb5d2;
+  border-radius:28px;
+  background:
+    radial-gradient(circle at 18px 18px,#efbfd6 0 1.7px,transparent 2px) 0 0/29px 29px,
+    linear-gradient(145deg,#fffefd 0%,#fff8fc 58%,#fffdf1 100%);
+  color:var(--ink);
+  box-shadow:0 9px 0 #f6d7e6,0 30px 85px #54274345;
+}
+
+#cart-dialog.cart-dialog::backdrop{
+  background:linear-gradient(145deg,#32152f9e,#5f31528f);
+  backdrop-filter:blur(7px) saturate(.9);
+}
+
+/* El badge GIMAE! GOODIES se elimina; queda solo un detalle pequeño. */
+#cart-dialog.cart-dialog::before{content:none}
+#cart-dialog.cart-dialog::after{
+  content:'✦  ♡  ✦';
+  position:absolute;
+  top:24px;
+  left:28px;
+  color:#d59d32;
+  font:700 .88rem/1 var(--display);
+  letter-spacing:.16em;
+  opacity:.82;
+  pointer-events:none;
+}
+
+#cart-dialog .dialog-close{
+  right:15px;
+  top:13px;
+  z-index:3;
+  width:44px;
+  height:44px;
+  border:2px solid #efbfd6;
+  background:#fffdfd;
+  color:#7b345c;
+  box-shadow:3px 4px 0 #f5dce8;
+  transition:transform .18s ease,box-shadow .18s ease,background .18s ease;
+}
+#cart-dialog .dialog-close:hover{
+  transform:rotate(7deg) translateY(-2px);
+  background:#fff0f7;
+  box-shadow:4px 6px 0 #f1cfdf;
+}
+
+#cart-dialog>.eyebrow{
+  display:inline-flex;
+  width:max-content;
+  max-width:100%;
+  margin:18px 0 0;
+  padding:6px 11px;
+  border:1px solid #eec3d8;
+  border-radius:999px;
+  background:#fff0f7;
+  color:#a32f6b;
+  font-size:.69rem;
+  letter-spacing:.16em;
+  box-shadow:0 3px 0 #f8deea;
+}
+#cart-dialog>.eyebrow::before{content:'♡';font-size:.9rem;letter-spacing:0}
+
+#cart-dialog>#cart-title{
+  position:relative;
+  width:max-content;
+  max-width:100%;
+  margin:12px 0 29px;
+  color:#452d47;
+  font-size:clamp(2.15rem,5vw,3.15rem);
+  letter-spacing:-.045em;
+}
+/* Sustituye el arcoíris por una costura rosa con acento amarillo. */
+#cart-dialog>#cart-title::after{
+  content:'';
+  position:absolute;
+  left:4px;
+  right:15%;
+  bottom:-10px;
+  height:8px;
+  background:
+    radial-gradient(circle,#e9b240 0 2px,transparent 2.4px) 4px 5px/20px 8px repeat-x,
+    repeating-linear-gradient(90deg,#eca5c8 0 14px,transparent 14px 21px) left 1px/100% 3px no-repeat;
+  transform:rotate(-.7deg);
+  opacity:.95;
+}
+
+#cart-dialog .cart-storage-note{
+  position:relative;
+  margin:0 0 21px;
+  padding:15px 17px 15px 45px;
+  border:1px solid #e7c883;
+  border-radius:14px;
+  background:linear-gradient(135deg,#fff8df,#fffdf3);
+  color:#5d451b;
+  box-shadow:0 4px 0 #f6e8bb;
+  font-size:.9rem;
+  line-height:1.55;
+}
+#cart-dialog .cart-storage-note::before{
+  content:'!';
+  position:absolute;
+  left:14px;
+  top:50%;
+  display:grid;
+  place-items:center;
+  width:22px;
+  height:22px;
+  border-radius:50%;
+  background:#e2b84f;
+  color:white;
+  transform:translateY(-50%);
+  font-weight:800;
+}
+
+#cart-dialog .cart-items{position:relative;z-index:1;gap:14px}
+#cart-dialog .cart-item{
+  --cart-card-bg:#fff8fc;
+  --cart-card-edge:#eeb8d3;
+  --cart-card-shadow:#f8dce9;
+  position:relative;
+  overflow:hidden;
+  grid-template-columns:minmax(0,1fr) auto auto;
+  gap:18px;
+  min-height:102px;
+  padding:18px 17px 18px 22px;
+  border:1px solid var(--cart-card-edge);
+  border-radius:17px;
+  background:
+    radial-gradient(circle at 92% 18%,#fff 0 2px,transparent 2.4px) 0 0/24px 24px,
+    linear-gradient(140deg,#fff,var(--cart-card-bg));
+  box-shadow:0 6px 0 var(--cart-card-shadow);
+}
+#cart-dialog .cart-item:nth-child(3n+2){
+  --cart-card-bg:#fff8dd;
+  --cart-card-edge:#e2c873;
+  --cart-card-shadow:#f6edc4;
+}
+#cart-dialog .cart-item:nth-child(3n+3){
+  --cart-card-bg:#fff0f7;
+  --cart-card-edge:#ebaac9;
+  --cart-card-shadow:#f7dbe8;
+}
+#cart-dialog .cart-item::before{
+  content:'';
+  position:absolute;
+  inset:0 auto 0 0;
+  width:7px;
+  background:repeating-linear-gradient(-35deg,#e96ca7 0 10px,#efca63 10px 20px);
+}
+#cart-dialog .cart-item::after{
+  content:'✦';
+  position:absolute;
+  top:9px;
+  right:12px;
+  color:#d19b2e;
+  font-size:.74rem;
+  opacity:.65;
+  pointer-events:none;
+}
+#cart-dialog .cart-item-info h3{color:#4a3148;font:700 1.08rem/1.2 var(--display)}
+#cart-dialog .cart-item-info p{margin-top:5px;color:#6d5365;font-size:.84rem;line-height:1.45}
+#cart-dialog .cart-item-info>strong{
+  display:inline-flex;
+  margin-top:8px;
+  padding:3px 9px;
+  border-radius:999px;
+  background:#ffe8f3;
+  color:#a92768;
+  font-size:.82rem;
+}
+#cart-dialog .cart-item-actions{
+  align-items:center;
+  gap:9px;
+  padding:7px 8px;
+  border:1px dashed #e7c9d9;
+  border-radius:13px;
+  background:#ffffffb8;
+}
+#cart-dialog .cart-item-actions .shop-quantity{
+  width:66px;
+  min-height:42px;
+  border:1px solid #ddb9cd;
+  border-radius:10px;
+  background:#fffdfd;
+  color:#51364b;
+  font-weight:800;
+}
+#cart-dialog .cart-remove{
+  min-height:38px;
+  padding:6px 5px;
+  color:#8a315f;
+  font-size:.82rem;
+  font-weight:700;
+  text-decoration-style:dotted;
+  text-underline-offset:4px;
+}
+#cart-dialog .cart-remove:hover{color:#741f4d}
+#cart-dialog .cart-line-total{
+  min-width:82px;
+  padding-right:3px;
+  color:#b02569;
+  font:700 1.04rem var(--display);
+  text-align:right;
+}
+
+#cart-dialog .cart-empty{
+  margin:2px 0 0;
+  padding:34px 20px 30px;
+  border:2px dashed #e7b8d0;
+  border-radius:19px;
+  background:
+    radial-gradient(circle,#f4d9e7 0 1.8px,transparent 2.2px) 0 0/25px 25px,
+    linear-gradient(145deg,#fffafd,#fff8dc);
+  color:#5f4858;
+  box-shadow:0 6px 0 #f8e4ee;
+  font-size:.92rem;
+  line-height:1.55;
+}
+#cart-dialog .cart-empty::before{
+  content:'♡  ✦  ♡';
+  display:block;
+  margin-bottom:8px;
+  color:#d0528d;
+  font:700 1.25rem var(--display);
+  letter-spacing:.18em;
+}
+
+/* Despacho: amarillo crema, sin celeste. */
+#cart-dialog .cart-shipping{
+  position:relative;
+  margin-top:26px;
+  padding:21px 20px 19px 70px;
+  border:1px solid #e4ce78;
+  border-radius:18px;
+  background:
+    radial-gradient(circle at 90% 22%,#efcf68 0 2px,transparent 2.4px) 0 0/27px 27px,
+    linear-gradient(135deg,#fffdf1,#fff5c9);
+  box-shadow:0 6px 0 #f5ebbd;
+}
+#cart-dialog .cart-shipping::before{
+  content:'02';
+  position:absolute;
+  left:17px;
+  top:20px;
+  display:grid;
+  place-items:center;
+  width:39px;
+  height:39px;
+  border:2px solid white;
+  outline:1px solid #d8bd54;
+  border-radius:50%;
+  background:#fff6c9;
+  color:#71520d;
+  box-shadow:2px 3px 0 #eadb98;
+  font:700 .82rem var(--display);
+}
+#cart-dialog .cart-shipping label{margin-bottom:9px;color:#493714;font:700 1rem var(--display)}
+#cart-dialog .cart-shipping select{
+  min-height:48px;
+  border:1px solid #cdb04f;
+  border-radius:11px;
+  background:#fffef8;
+  color:#382b1d;
+  box-shadow:inset 0 -2px 0 #f7edc7;
+  font-size:.94rem;
+}
+#cart-dialog .cart-shipping select:focus-visible{outline:3px solid #785918;outline-offset:2px;border-color:transparent}
+#cart-dialog .cart-shipping small{
+  display:block;
+  margin-top:10px;
+  color:#5b4512;
+  font-size:.88rem;
+  font-weight:600;
+  line-height:1.55;
+}
+
+#cart-dialog .cart-totals{
+  position:relative;
+  margin:24px 0 0;
+  padding:19px 21px 18px;
+  border:1px solid #e7c8d7;
+  border-radius:18px;
+  background:
+    linear-gradient(90deg,transparent 0 49%,#f6e9f0 49% 51%,transparent 51%) 0 0/12px 1px repeat-x,
+    linear-gradient(145deg,#fff,#fff9fc);
+  box-shadow:0 6px 0 #f6e5ed;
+}
+#cart-dialog .cart-totals::before{
+  content:'MINI RECEIPT  ✦  GIMAE!';
+  display:block;
+  margin-bottom:8px;
+  color:#8f365f;
+  font:700 .7rem/1.2 var(--display);
+  letter-spacing:.13em;
+}
+#cart-dialog .cart-totals>div{padding-block:8px;color:#654e60;font-size:.94rem}
+#cart-dialog .cart-totals dd{color:#3f2d3b}
+#cart-dialog .cart-totals .cart-total-row{
+  margin-top:8px;
+  padding-top:16px;
+  border-top:2px dashed #e7c8d7;
+  color:#3f2c3b;
+  font-size:1rem;
+}
+#cart-dialog .cart-total-row dd{color:#a9155a;font:700 1.62rem var(--display);letter-spacing:-.03em}
+#cart-dialog .cart-total-note{
+  margin:12px 4px 0;
+  color:#5f4858;
+  font-size:.86rem;
+  font-weight:500;
+  line-height:1.55;
+  text-align:center;
+}
+
+#cart-dialog .pending-order{
+  position:relative;
+  overflow:hidden;
+  margin-top:20px;
+  padding:16px 16px 16px 49px;
+  border:1px solid #d5ae43;
+  border-radius:15px;
+  background:
+    radial-gradient(circle,#f2d985 0 1.7px,transparent 2px) 0 0/22px 22px,
+    linear-gradient(135deg,#fff5bf,#fffbea);
+  color:#493716;
+  box-shadow:0 5px 0 #f3e5b6;
+  transform:rotate(-.25deg);
+  font-size:.92rem;
+  font-weight:600;
+  line-height:1.55;
+}
+#cart-dialog .pending-order p{color:#493716}
+#cart-dialog .pending-order::before{
+  content:'♡';
+  position:absolute;
+  left:14px;
+  top:50%;
+  color:#a33f6b;
+  transform:translateY(-50%) rotate(-8deg);
+  font:700 1.45rem var(--display);
+}
+#cart-dialog .pending-order .text-link{
+  min-height:42px;
+  padding:8px 13px;
+  border:1px solid #c9a33c;
+  border-radius:999px;
+  background:#fffef8;
+  color:#6f2b50;
+  font-size:.88rem;
+  font-weight:750;
+  text-decoration:none;
+}
+#cart-dialog .pending-order .text-link:hover{background:#fff1bf;color:#56203d}
+#cart-dialog .pending-order .text-link:focus-visible{outline:3px solid #6f2b50;outline-offset:3px}
+#cart-dialog .shop-error{
+  border:1px solid #d98c9d;
+  border-radius:14px;
+  background:#fff0f3;
+  color:#742333;
+  box-shadow:0 4px 0 #f4d9df;
+  font-size:.9rem;
+  line-height:1.5;
+}
+
+#cart-dialog .cart-checkout{
+  position:relative;
+  overflow:hidden;
+  min-height:55px;
+  margin-top:24px;
+  border:2px solid #d83280;
+  border-radius:999px;
+  background:linear-gradient(100deg,#e84694,#ee5aa2 55%,#df3d8b);
+  color:white;
+  box-shadow:0 7px 0 #efb9d3,0 12px 26px #cf3b8440;
+  font-size:.96rem;
+  letter-spacing:.01em;
+}
+#cart-dialog .cart-checkout::before{
+  content:'♡';
+  position:absolute;
+  left:22px;
+  top:50%;
+  transform:translateY(-50%) rotate(-9deg);
+  font:700 1.15rem var(--display);
+  opacity:.9;
+}
+#cart-dialog .cart-checkout::after{
+  content:'✦';
+  position:absolute;
+  right:49px;
+  top:11px;
+  font-size:.67rem;
+  opacity:.72;
+}
+#cart-dialog .cart-checkout:hover:not(:disabled){
+  transform:translateY(-3px);
+  box-shadow:0 10px 0 #efb9d3,0 16px 30px #cf3b8438;
+}
+#cart-dialog .cart-checkout:focus-visible{outline:3px solid #7d2c5a;outline-offset:4px}
+#cart-dialog .cart-checkout:disabled{border-color:#ddb8ca;background:#d6bdca;color:#fff}
+
+@media(max-width:620px){
+  #cart-dialog.cart-dialog{
+    width:calc(100% - 14px);
+    max-height:94dvh;
+    padding:54px 15px 23px;
+    border-radius:22px;
+  }
+  #cart-dialog.cart-dialog::after{left:15px;top:22px;font-size:.72rem}
+  #cart-dialog .dialog-close{right:10px;top:11px;width:42px;height:42px}
+  #cart-dialog>.eyebrow{margin-top:22px}
+  #cart-dialog>#cart-title{font-size:clamp(2rem,10vw,2.6rem);margin-bottom:27px}
+  #cart-dialog .cart-item{
+    grid-template-columns:minmax(0,1fr) auto;
+    gap:12px;
+    min-height:0;
+    padding:17px 14px 16px 19px;
+  }
+  #cart-dialog .cart-item-actions{grid-column:1;padding:6px 7px;width:max-content;max-width:100%}
+  #cart-dialog .cart-line-total{grid-column:2;grid-row:1;min-width:70px;font-size:.98rem}
+  #cart-dialog .cart-shipping{padding:63px 15px 17px}
+  #cart-dialog .cart-shipping::before{left:15px;top:15px}
+  #cart-dialog .cart-totals{padding-inline:16px}
+  #cart-dialog .pending-order{align-items:flex-start;flex-direction:column;padding:16px 14px 16px 45px}
+  #cart-dialog .pending-order .text-link{white-space:normal}
+  #cart-dialog .cart-checkout::before{left:17px}
+  #cart-dialog .cart-checkout::after{right:33px}
+}
+
+@media(max-width:390px){
+  #cart-dialog.cart-dialog{padding-inline:11px}
+  #cart-dialog .cart-item{grid-template-columns:1fr}
+  #cart-dialog .cart-line-total{grid-column:1;grid-row:auto;text-align:left;padding-left:1px}
+  #cart-dialog .cart-item-actions{grid-column:1}
+  #cart-dialog .cart-checkout::before,#cart-dialog .cart-checkout::after{display:none}
+}
+
+@media(prefers-reduced-motion:reduce){
+  #cart-dialog .dialog-close,#cart-dialog .cart-checkout{transition:none}
+  #cart-dialog .dialog-close:hover,#cart-dialog .cart-checkout:hover:not(:disabled){transform:none}
+  #cart-dialog .pending-order{transform:none}
+}
