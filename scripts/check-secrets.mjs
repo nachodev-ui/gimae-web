@@ -13,7 +13,7 @@ const rules = [
   ["Private key", /-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/g],
   [
     "Hardcoded protected credential",
-    /\b(?:PAYPAL_CLIENT_SECRET|BCCH_API_TOKEN|SUPABASE_SERVICE_ROLE_KEY|WEBPAY_(?:INTEGRATION_|LIVE_)?API_KEY)\b\s*[:=]\s*["'`][^"'\`\n]{8,}["'`]/g,
+    /\b(?:PAYPAL_CLIENT_SECRET|BCCH_API_TOKEN|SUPABASE_SERVICE_ROLE_KEY|WEBPAY_(?:INTEGRATION_|LIVE_)?API_KEY)\b\s*[:=]\s*["'`](?!<)[^"'\`\n]{8,}["'`]/g,
   ],
   [
     "Hardcoded Transbank secret header",
