@@ -28,7 +28,7 @@ Las variables se llaman deliberadamente `WEBPAY_INTEGRATION_*`: este módulo per
 Funciona en CLP y solo con retiro presencial; los costos y lugares de entrega siguen pendientes de Gimae.
 ## Probar desde la tienda
 
-1. Actualiza la rama `feature/webpay-sandbox`. Para una prueba local, ejecuta `python3 -m http.server 8000 --directory dist` desde la raíz del proyecto.
+1. Actualiza tu rama con el `main` más reciente. Para una prueba local, ejecuta `python3 -m http.server 8000 --directory dist` desde la raíz del proyecto.
 2. Abre `http://localhost:8000/shop.html?webpay-sandbox=1`. Si pruebas el sitio publicado después de integrar esta rama, usa `https://nachodev-ui.github.io/gimae-web/shop.html?webpay-sandbox=1`.
 3. Añade un producto con stock confirmado, selecciona **Retiro en persona**, escribe nombre y contacto y elige **Webpay Plus · integración**.
 4. Pulsa **Continuar a Webpay de prueba**. El importe debe mostrarse en pesos chilenos. Usa únicamente los datos de prueba de la [documentación oficial de Webpay Plus](https://www.transbankdevelopers.cl/documentacion/webpay-plus); por ejemplo, la tarjeta VISA `4051885600446623` y CVV `123` para probar una aprobación. Sigue las instrucciones de la página de integración para fecha, RUT y clave de prueba.
