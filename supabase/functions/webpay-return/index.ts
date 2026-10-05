@@ -14,9 +14,11 @@ function redirect(order: WebpayOrder, outcome: string): Response {
 }
 
 Deno.serve(async (req) => {
-  if (req.method !== "POST") return new Response("Método no permitido", { status: 405 });
+  if (req.method !== "POST" && req.method !== "GET") return new Response("Método no permitido", { status: 405 });
   try {
-    const raw = await req.text();
+    // Transbank can return to the merchant via GET ?token_ws=... as well as
+    // POST form data. Neither format proves payment: only commit/status does.
+    const raw = req.method === "POST" ? await req.text() : new URL(req.url).search.slice(1);
     if (raw.length > 2048) return new Response("Solicitud inválida", { status: 400 });
     const form = new URLSearchParams(raw);
     const token = form.get("token_ws");
