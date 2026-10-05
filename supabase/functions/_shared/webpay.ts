@@ -15,6 +15,12 @@ export function webpayOrigin(req: Request): string {
   return origin;
 }
 
+export class WebpayHttpError extends Error {
+  constructor(public status: number, public code: string) {
+    super(`WEBPAY_HTTP_${status}_${code}`);
+  }
+}
+
 export async function webpay(path: string, method: "POST" | "PUT" | "GET", payload?: unknown): Promise<Record<string, unknown>> {
   const response = await fetch(`${base}/rswebpaytransaction/api/webpay/v1.2/transactions${path}`, {
     method,
@@ -23,7 +29,14 @@ export async function webpay(path: string, method: "POST" | "PUT" | "GET", paylo
     ...(payload ? { body: JSON.stringify(payload) } : {}),
     signal: AbortSignal.timeout(20000),
   });
-  if (!response.ok) throw new Error(`WEBPAY_HTTP_${response.status}`);
+  if (!response.ok) {
+    const detail = await response.json().catch(() => ({}));
+    // Keep diagnostics in server logs; never send tokens or card details to the browser.
+    const code = String(detail.error_code || detail.error || "UNSPECIFIED").replace(/[^A-Za-z0-9_]/g, "_").slice(0, 50);
+    console.error("Webpay API rejected request", response.status, code,
+      String(detail.error_message || detail.message || "").slice(0, 180));
+    throw new WebpayHttpError(response.status, code);
+  }
   return await response.json();
 }
 

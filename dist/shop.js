@@ -598,15 +598,16 @@
     const online = order.paymentMethod === 'paypal' || order.paymentMethod === 'webpay';
     const paid = online && order.status === 'paid';
     const abandoned = online && order.status === 'abandoned';
+    const denied = online && order.status === 'payment_denied';
     const expired = abandoned && order.abandonReason === 'reservation_expired';
     if (order.sandbox) recentOrderDescription.textContent += ' Pedido de prueba Sandbox, sin preparación ni entrega.';
     if (expired) recentOrderDescription.textContent += ' La reserva venció y las unidades ya no están apartadas.';
-    else if (abandoned) recentOrderDescription.textContent += ' Este intento se cerró sin pago confirmado.';
+    else if (abandoned || denied) recentOrderDescription.textContent += ' Este intento se cerró sin pago confirmado.';
     else if (online && !paid) recentOrderDescription.textContent += ' Comprueba el estado antes de intentar otro pago.';
     recentOrderState.textContent = paid ? (order.sandbox ? 'Prueba confirmada' : 'Pago confirmado') : online
-      ? (expired ? 'Reserva vencida' : abandoned ? 'Intento cerrado' : order.status === 'capture_pending' ? 'Confirmación en curso' : 'Pago sin confirmar') : 'Pendiente de pago';
+      ? (expired ? 'Reserva vencida' : denied ? 'Pago no aprobado' : abandoned ? 'Intento cerrado' : order.status === 'capture_pending' ? 'Confirmación en curso' : 'Pago sin confirmar') : 'Pendiente de pago';
     recentOrderState.classList.toggle('is-paid', paid);
-    recentOrderState.classList.toggle('is-abandoned', abandoned);
+    recentOrderState.classList.toggle('is-abandoned', abandoned || denied);
     recentOrder.classList.toggle('is-expired', expired);
     recentOrder.querySelector('.recent-order-sticker').textContent = expired ? '⌛' : '♡';
     recentOrderCode.textContent = `Pedido ${cleanText(order.code, 40)}`;
@@ -618,7 +619,7 @@
     recentOrderTimer = null;
     if (recentOrderPolling || orderDialog.open || checkoutDialog.open || document.hidden || !navigator.onLine) return;
     const current = latestOrder();
-    if (!['paypal', 'webpay'].includes(current?.paymentMethod) || !(current.paypalOrderId || current.webpayBuyOrder) || current.status === 'paid' ||
+    if (!['paypal', 'webpay'].includes(current?.paymentMethod) || !(current.paypalOrderId || current.webpayBuyOrder) || ['paid', 'payment_denied'].includes(current.status) ||
       (current.status === 'abandoned' && Date.now() - Date.parse(current.createdAt) > 86400_000)) return;
     recentOrderPolling = true;
     try {
@@ -655,7 +656,7 @@
     } finally {
       recentOrderPolling = false;
       const latest = latestOrder();
-      if (['paypal', 'webpay'].includes(latest?.paymentMethod) && (latest.paypalOrderId || latest.webpayBuyOrder) && latest.status !== 'paid' &&
+      if (['paypal', 'webpay'].includes(latest?.paymentMethod) && (latest.paypalOrderId || latest.webpayBuyOrder) && !['paid', 'payment_denied'].includes(latest.status) &&
         (latest.status !== 'abandoned' || Date.now() - Date.parse(latest.createdAt) <= 86400_000) &&
         !orderDialog.open && !checkoutDialog.open && !document.hidden && navigator.onLine) {
         recentOrderTimer = window.setTimeout(() => { void pollRecentOrderStatus(); }, 30000);
@@ -1021,7 +1022,7 @@
       const instruction = element('p', 'order-instruction', paid
         ? `Pago de prueba por ${money.format(Number(order.total))} confirmado en Webpay. Este pedido de integración no se preparará.`
         : expired ? 'La reserva venció y se liberaron las unidades. Si tu banco muestra un cargo, contacta a Gimae con el ID antes de repetir.'
-        : order.status === 'payment_denied' ? 'Transbank rechazó o anuló el intento. Puedes volver al carrito e iniciar otra compra de prueba.'
+        : order.status === 'payment_denied' ? 'Transbank no confirmó el cobro. Conserva esta orden y revisa tu actividad de prueba antes de iniciar otro intento desde el carrito.'
         : order.webpayReturn === 'cancelled' ? 'Volviste sin completar el pago. La reserva vencerá a la hora indicada. Puedes iniciar un nuevo intento al vencer.'
         : awaiting ? `Estamos esperando tu resultado de Webpay. La reserva vence a las ${new Intl.DateTimeFormat('es-CL', { timeStyle: 'short' }).format(new Date(order.reservationExpiresAt))}. No repitas el pago sin consultar el estado.`
         : 'Estamos verificando el resultado con Transbank. No repitas el pago.');

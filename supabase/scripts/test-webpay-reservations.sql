@@ -10,6 +10,11 @@ BEGIN
   IF n<>1 THEN RAISE EXCEPTION 'La prueba requiere una unidad disponible, hay %',n; END IF;
   a := public.reserve_webpay_order('Prueba Webpay','test@example.org',item,
     'http://localhost:8000',gen_random_uuid()::text);
+  IF (a->>'expiresAt')::timestamptz NOT BETWEEN
+    clock_timestamp() + interval '8 minutes 50 seconds' AND
+    clock_timestamp() + interval '9 minutes 10 seconds' THEN
+    RAISE EXCEPTION 'Webpay debe reservar aproximadamente nueve minutos';
+  END IF;
   BEGIN
     PERFORM public.reserve_merch_order('Prueba PayPal','test@example.org',item,950,current_date,526);
     RAISE EXCEPTION 'Ambos proveedores reservaron la última unidad';

@@ -1,5 +1,5 @@
 import { admin, rateLimit } from "../_shared/paypal.ts";
-import { webpay } from "../_shared/webpay.ts";
+import { webpay, WebpayHttpError } from "../_shared/webpay.ts";
 import { settle, type WebpayOrder } from "../_shared/webpay-order.ts";
 
 const fields = "id,status,reservation_state,reservation_expires_at,abandon_reason,webpay_buy_order,webpay_session_id,webpay_token,webpay_return_origin,webpay_authorization_code,total_clp,webpay_commit_claimed_at";
@@ -53,6 +53,27 @@ Deno.serve(async (req) => {
         await settle(db, order as WebpayOrder, result);
       } catch (cause) {
         console.error("Webpay return pending verification", order.id, cause);
+        try {
+          const remote = await webpay(`/${encodeURIComponent(token)}`, "GET");
+          if (remote.status === "AUTHORIZED" || remote.status === "FAILED") {
+            await settle(db, order as WebpayOrder, remote);
+            return redirect(order as WebpayOrder, "verified");
+          }
+          if (cause instanceof WebpayHttpError && cause.status === 422 &&
+            remote.status === "INITIALIZED" && remote.buy_order === order.webpay_buy_order &&
+            remote.session_id === order.webpay_session_id && remote.amount === order.total_clp) {
+            // Webpay cannot commit this transaction and does not report a charge.
+            // Release stock instead of retaining a capturing reservation forever.
+            const { error: releaseError } = await db.from("merch_orders")
+              .update({ status: "payment_denied", reservation_state: "released" })
+              .eq("id", order.id).eq("status", "capture_pending")
+              .eq("webpay_token", token);
+            if (releaseError) throw releaseError;
+            return redirect(order as WebpayOrder, "not_confirmed");
+          }
+        } catch (inspectionError) {
+          console.error("Webpay verification needs review", order.id, inspectionError);
+        }
         return redirect(order as WebpayOrder, "pending");
       }
       return redirect(order as WebpayOrder, "verified");

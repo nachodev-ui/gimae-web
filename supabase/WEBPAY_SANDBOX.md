@@ -23,7 +23,8 @@ Esta ruta solo usa el ambiente de integración y las credenciales públicas de p
 
 ## Cancelación y vencimiento
 
-- Haz una segunda prueba y vuelve desde Transbank sin autorizar. Consulta el pedido. No debe marcarse pagado. Al cabo de 15 minutos, Cron libera la reserva y lo deja `abandoned`, motivo `reservation_expired`; esta operación puede tardar aproximadamente un minuto adicional.
+- Haz una segunda prueba y vuelve desde Transbank sin autorizar. Consulta el pedido. No debe marcarse pagado. La reserva de integración dura 9 minutos para terminar antes del límite aproximado de 10 minutos del formulario de Transbank. Cron la libera y lo deja `abandoned`, motivo `reservation_expired`; esta operación puede tardar aproximadamente un minuto adicional.
+- La función de retorno acepta `GET ?token_ws=...` y `POST` de Transbank. Una respuesta HTTP 422 del commit exige consultar el estado remoto: si Webpay sigue en `INITIALIZED`, el pedido se cierra sin marcarse pagado y libera stock. Ante incertidumbre permanece pendiente para revisión.
 - Si Transbank rechaza la transacción tras la confirmación del servidor, se verá `payment_denied` y se liberará la reserva.
 - Si una autorización llega después de vencer, la venta se registra como `paid` y `reservation_issue = late_capture`; el pedido queda `on_hold` para revisión antes de prepararlo.
 

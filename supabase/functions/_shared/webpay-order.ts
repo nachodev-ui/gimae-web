@@ -31,5 +31,18 @@ export async function settle(db: ReturnType<typeof admin>, order: WebpayOrder, r
 export async function reconcileCommitted(db: ReturnType<typeof admin>, order: WebpayOrder): Promise<void> {
   if (order.status !== "capture_pending") return;
   const result = await webpay(`/${encodeURIComponent(order.webpay_token)}`, "GET");
-  if (result.status === "AUTHORIZED" || result.status === "FAILED") await settle(db, order, result);
+  if (result.status === "AUTHORIZED" || result.status === "FAILED") {
+    await settle(db, order, result);
+  } else if (result.status === "INITIALIZED" &&
+    result.buy_order === order.webpay_buy_order && result.session_id === order.webpay_session_id &&
+    result.amount === order.total_clp && order.webpay_commit_claimed_at &&
+    Date.now() > Date.parse(order.reservation_expires_at) + 5 * 60_000 &&
+    Date.now() > Date.parse(order.webpay_commit_claimed_at) + 2 * 60_000) {
+    // A commit that never reached Webpay must not hold stock indefinitely.
+    const { error } = await db.from("merch_orders")
+      .update({ status: "payment_denied", reservation_state: "released" })
+      .eq("id", order.id).eq("status", "capture_pending")
+      .eq("webpay_token", order.webpay_token);
+    if (error) throw error;
+  }
 }
