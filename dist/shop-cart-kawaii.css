@@ -1,7 +1,8 @@
 /* =========================================================
    GIMAE SHOP — CARRITO KAWAII / MAXIMALISTA
    Capa visual aislada: no modifica lógica, IDs ni estados del checkout.
-   Ajuste v2: paleta rosa + crema + amarillo, sin celeste ni arcoíris.
+   Ajuste v3: paleta rosa + crema + amarillo, sin celeste ni arcoíris.
+   Mejora contraste y legibilidad en textos secundarios del carrito.
    ========================================================= */
 
 #cart-dialog.cart-dialog{
@@ -109,8 +110,10 @@
   border:1px solid #e7c883;
   border-radius:14px;
   background:linear-gradient(135deg,#fff8df,#fffdf3);
-  color:#6f5524;
+  color:#5d451b;
   box-shadow:0 4px 0 #f6e8bb;
+  font-size:.9rem;
+  line-height:1.55;
 }
 #cart-dialog .cart-storage-note::before{
   content:'!';
@@ -174,7 +177,7 @@
   pointer-events:none;
 }
 #cart-dialog .cart-item-info h3{color:#4a3148;font:700 1.08rem/1.2 var(--display)}
-#cart-dialog .cart-item-info p{margin-top:5px;color:#866a7d;font-size:.78rem}
+#cart-dialog .cart-item-info p{margin-top:5px;color:#6d5365;font-size:.84rem;line-height:1.45}
 #cart-dialog .cart-item-info>strong{
   display:inline-flex;
   margin-top:8px;
@@ -182,7 +185,7 @@
   border-radius:999px;
   background:#ffe8f3;
   color:#a92768;
-  font-size:.79rem;
+  font-size:.82rem;
 }
 #cart-dialog .cart-item-actions{
   align-items:center;
@@ -204,8 +207,8 @@
 #cart-dialog .cart-remove{
   min-height:38px;
   padding:6px 5px;
-  color:#9b426f;
-  font-size:.75rem;
+  color:#8a315f;
+  font-size:.82rem;
   font-weight:700;
   text-decoration-style:dotted;
   text-underline-offset:4px;
@@ -227,8 +230,10 @@
   background:
     radial-gradient(circle,#f4d9e7 0 1.8px,transparent 2.2px) 0 0/25px 25px,
     linear-gradient(145deg,#fffafd,#fff8dc);
-  color:#7d6576;
+  color:#5f4858;
   box-shadow:0 6px 0 #f8e4ee;
+  font-size:.92rem;
+  line-height:1.55;
 }
 #cart-dialog .cart-empty::before{
   content:'♡  ✦  ♡';
@@ -264,21 +269,29 @@
   outline:1px solid #d8bd54;
   border-radius:50%;
   background:#fff6c9;
-  color:#8a6715;
+  color:#71520d;
   box-shadow:2px 3px 0 #eadb98;
-  font:700 .78rem var(--display);
+  font:700 .82rem var(--display);
 }
-#cart-dialog .cart-shipping label{margin-bottom:9px;color:#5d4922;font:700 .92rem var(--display)}
+#cart-dialog .cart-shipping label{margin-bottom:9px;color:#493714;font:700 1rem var(--display)}
 #cart-dialog .cart-shipping select{
-  min-height:46px;
-  border:1px solid #ddc66f;
+  min-height:48px;
+  border:1px solid #cdb04f;
   border-radius:11px;
   background:#fffef8;
-  color:#4a3c2c;
+  color:#382b1d;
   box-shadow:inset 0 -2px 0 #f7edc7;
+  font-size:.94rem;
 }
-#cart-dialog .cart-shipping select:focus-visible{outline:3px solid #9d7620;outline-offset:2px;border-color:transparent}
-#cart-dialog .cart-shipping small{margin-top:8px;color:#806628;font-size:.76rem}
+#cart-dialog .cart-shipping select:focus-visible{outline:3px solid #785918;outline-offset:2px;border-color:transparent}
+#cart-dialog .cart-shipping small{
+  display:block;
+  margin-top:10px;
+  color:#5b4512;
+  font-size:.88rem;
+  font-weight:600;
+  line-height:1.55;
+}
 
 #cart-dialog .cart-totals{
   position:relative;
@@ -295,25 +308,26 @@
   content:'MINI RECEIPT  ✦  GIMAE!';
   display:block;
   margin-bottom:8px;
-  color:#aa4d7a;
-  font:700 .61rem/1 var(--display);
-  letter-spacing:.15em;
+  color:#8f365f;
+  font:700 .7rem/1.2 var(--display);
+  letter-spacing:.13em;
 }
-#cart-dialog .cart-totals>div{padding-block:8px;color:#7b6675;font-size:.88rem}
-#cart-dialog .cart-totals dd{color:#4d3849}
+#cart-dialog .cart-totals>div{padding-block:8px;color:#654e60;font-size:.94rem}
+#cart-dialog .cart-totals dd{color:#3f2d3b}
 #cart-dialog .cart-totals .cart-total-row{
   margin-top:8px;
   padding-top:16px;
   border-top:2px dashed #e7c8d7;
-  color:#4b3347;
+  color:#3f2c3b;
   font-size:1rem;
 }
-#cart-dialog .cart-total-row dd{color:#be216a;font:700 1.62rem var(--display);letter-spacing:-.03em}
+#cart-dialog .cart-total-row dd{color:#a9155a;font:700 1.62rem var(--display);letter-spacing:-.03em}
 #cart-dialog .cart-total-note{
-  margin:10px 4px 0;
-  color:#806d7a;
-  font-size:.74rem;
-  line-height:1.5;
+  margin:12px 4px 0;
+  color:#5f4858;
+  font-size:.86rem;
+  font-weight:500;
+  line-height:1.55;
   text-align:center;
 }
 
@@ -321,40 +335,50 @@
   position:relative;
   overflow:hidden;
   margin-top:20px;
-  padding:14px 16px 14px 49px;
-  border:1px solid #e3c26e;
+  padding:16px 16px 16px 49px;
+  border:1px solid #d5ae43;
   border-radius:15px;
   background:
     radial-gradient(circle,#f2d985 0 1.7px,transparent 2px) 0 0/22px 22px,
-    linear-gradient(135deg,#fff7ce,#fffdf0);
-  color:#654e2d;
+    linear-gradient(135deg,#fff5bf,#fffbea);
+  color:#493716;
   box-shadow:0 5px 0 #f3e5b6;
   transform:rotate(-.25deg);
+  font-size:.92rem;
+  font-weight:600;
+  line-height:1.55;
 }
+#cart-dialog .pending-order p{color:#493716}
 #cart-dialog .pending-order::before{
   content:'♡';
   position:absolute;
   left:14px;
   top:50%;
-  color:#bd5a83;
+  color:#a33f6b;
   transform:translateY(-50%) rotate(-8deg);
   font:700 1.45rem var(--display);
 }
 #cart-dialog .pending-order .text-link{
-  min-height:38px;
-  padding:7px 10px;
-  border:1px solid #dcc27d;
+  min-height:42px;
+  padding:8px 13px;
+  border:1px solid #c9a33c;
   border-radius:999px;
-  background:#fffdf5;
-  color:#8b4969;
+  background:#fffef8;
+  color:#6f2b50;
+  font-size:.88rem;
+  font-weight:750;
   text-decoration:none;
 }
-#cart-dialog .pending-order .text-link:hover{background:#fff5d8;color:#6e304f}
+#cart-dialog .pending-order .text-link:hover{background:#fff1bf;color:#56203d}
+#cart-dialog .pending-order .text-link:focus-visible{outline:3px solid #6f2b50;outline-offset:3px}
 #cart-dialog .shop-error{
-  border:1px solid #e1a2b0;
+  border:1px solid #d98c9d;
   border-radius:14px;
   background:#fff0f3;
+  color:#742333;
   box-shadow:0 4px 0 #f4d9df;
+  font-size:.9rem;
+  line-height:1.5;
 }
 
 #cart-dialog .cart-checkout{
@@ -367,7 +391,7 @@
   background:linear-gradient(100deg,#e84694,#ee5aa2 55%,#df3d8b);
   color:white;
   box-shadow:0 7px 0 #efb9d3,0 12px 26px #cf3b8440;
-  font-size:.93rem;
+  font-size:.96rem;
   letter-spacing:.01em;
 }
 #cart-dialog .cart-checkout::before{
@@ -416,7 +440,7 @@
   #cart-dialog .cart-shipping{padding:63px 15px 17px}
   #cart-dialog .cart-shipping::before{left:15px;top:15px}
   #cart-dialog .cart-totals{padding-inline:16px}
-  #cart-dialog .pending-order{align-items:flex-start;flex-direction:column;padding:15px 14px 15px 45px}
+  #cart-dialog .pending-order{align-items:flex-start;flex-direction:column;padding:16px 14px 16px 45px}
   #cart-dialog .pending-order .text-link{white-space:normal}
   #cart-dialog .cart-checkout::before{left:17px}
   #cart-dialog .cart-checkout::after{right:33px}
