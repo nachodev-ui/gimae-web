@@ -602,14 +602,16 @@
     const expired = abandoned && order.abandonReason === 'reservation_expired';
     if (order.sandbox) recentOrderDescription.textContent += ' Pedido de prueba Sandbox, sin preparación ni entrega.';
     if (expired) recentOrderDescription.textContent += ' La reserva venció y las unidades ya no están apartadas.';
-    else if (abandoned || denied) recentOrderDescription.textContent += ' Este intento se cerró sin pago confirmado.';
+    else if (denied) recentOrderDescription.textContent += ' El pago fue rechazado. Revisa los detalles antes de intentar de nuevo.';
+    else if (abandoned) recentOrderDescription.textContent += ' Este intento se cerró sin pago confirmado.';
     else if (online && !paid) recentOrderDescription.textContent += ' Comprueba el estado antes de intentar otro pago.';
     recentOrderState.textContent = paid ? (order.sandbox ? 'Prueba confirmada' : 'Pago confirmado') : online
-      ? (expired ? 'Reserva vencida' : denied ? 'Pago no aprobado' : abandoned ? 'Intento cerrado' : order.status === 'capture_pending' ? 'Confirmación en curso' : 'Pago sin confirmar') : 'Pendiente de pago';
+      ? (expired ? 'Reserva vencida' : denied ? 'Pago rechazado' : abandoned ? 'Intento cerrado' : order.status === 'capture_pending' ? 'Confirmación en curso' : 'Pago sin confirmar') : 'Pendiente de pago';
     recentOrderState.classList.toggle('is-paid', paid);
     recentOrderState.classList.toggle('is-abandoned', abandoned || denied);
     recentOrder.classList.toggle('is-expired', expired);
-    recentOrder.querySelector('.recent-order-sticker').textContent = expired ? '⌛' : '♡';
+    recentOrder.classList.toggle('is-denied', denied);
+    recentOrder.querySelector('.recent-order-sticker').textContent = expired ? '⌛' : denied ? '!' : '♡';
     recentOrderCode.textContent = `Pedido ${cleanText(order.code, 40)}`;
     recentOrderTotal.textContent = money.format(Number(order.total) || 0);
   }
@@ -979,21 +981,22 @@
     orderStatusTimer = null;
     openOrderConfirmation = null;
     orderSummary.replaceChildren();
-    orderDialog.classList.remove('is-paid', 'is-expired');
+    orderDialog.classList.remove('is-paid', 'is-expired', 'is-denied');
     const isPayPal = order.paymentMethod === 'paypal';
     const isWebpay = order.paymentMethod === 'webpay';
     const online = isPayPal || isWebpay;
     const paid = online && order.status === 'paid';
     const awaiting = online && order.status === 'awaiting_approval';
     const abandoned = online && order.status === 'abandoned';
+    const denied = online && order.status === 'payment_denied';
     const expired = abandoned && order.abandonReason === 'reservation_expired';
     let pendingConfirmation = null;
-    orderDialog.querySelector(':scope > .eyebrow').textContent = expired ? 'TIEMPO DE RESERVA AGOTADO' : 'RESUMEN DEL PEDIDO';
-    document.querySelector('#order-title').textContent = paid ? (order.sandbox ? '¡Prueba confirmada!' : '¡Pago confirmado!') : expired ? 'Reserva vencida' : abandoned ? 'Intento cerrado' : order.status === 'payment_denied' ? 'Pago no aprobado' : awaiting ? 'Revisa tu pago' : 'Tu pedido quedó guardado';
-    const status = element('p', `order-status${paid ? ' is-paid' : abandoned ? ' is-abandoned' : ''}`,
+    orderDialog.querySelector(':scope > .eyebrow').textContent = denied ? 'NO SE COMPLETÓ EL PAGO' : expired ? 'TIEMPO DE RESERVA AGOTADO' : 'RESUMEN DEL PEDIDO';
+    document.querySelector('#order-title').textContent = paid ? (order.sandbox ? '¡Prueba confirmada!' : '¡Pago confirmado!') : denied ? 'Pago rechazado' : expired ? 'Reserva vencida' : abandoned ? 'Intento cerrado' : awaiting ? 'Revisa tu pago' : 'Tu pedido quedó guardado';
+    const status = element('p', `order-status${paid ? ' is-paid' : denied ? ' is-denied' : abandoned ? ' is-abandoned' : ''}`,
       online ? (paid ? (order.sandbox ? 'Pago de prueba confirmado · pedido de prueba' : 'Pago confirmado · pedido recibido') : expired ? 'Reserva finalizada · sin pago confirmado' : abandoned ? 'Sin pago confirmado · intento cerrado' : awaiting ? 'Pago sin confirmar' : order.status === 'payment_denied' ? 'Pago rechazado · sin cobro confirmado' : 'Verificando confirmación') : 'Pendiente de pago');
-    status.setAttribute('role', 'status');
-    status.setAttribute('aria-live', 'polite');
+    status.setAttribute('role', denied ? 'alert' : 'status');
+    status.setAttribute('aria-live', denied ? 'assertive' : 'polite');
     orderSummary.append(status);
     if (order.sandbox) orderSummary.append(element('p', 'order-local-note', 'Pedido de prueba Sandbox · sin dinero real, preparación ni entrega.'));
     const code = element('div', 'order-code'); code.append(element('span', '', 'Código de pedido'), element('strong', '', cleanText(order.code, 40)), copyButton(order.code));
@@ -1069,6 +1072,7 @@
       if (actions.children.length) orderSummary.append(actions);
     }
     if (paid) showPaidOrder(status, order.sandbox, isWebpay ? 'Webpay Plus' : 'PayPal Sandbox');
+    else if (denied) showDeniedOrder(order, status);
     else if (expired) showExpiredOrder(order, status);
     openDialog(orderDialog, opener || document.querySelector('[data-open-cart]'));
     openOrderConfirmation = pendingConfirmation;
@@ -1131,16 +1135,7 @@
     const actions = element('div', 'order-expired-actions');
     const restart = element('button', 'order-expired-primary', cart.length ? 'Volver al carrito' : 'Elegir productos');
     restart.type = 'button';
-    restart.addEventListener('click', () => {
-      closeDialog(orderDialog);
-      if (cart.length) {
-        renderCart();
-        window.setTimeout(() => openDialog(cartDialog, recentOrderOpen), 0);
-      } else {
-        productGrid.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
-        productGrid.querySelector('button')?.focus({ preventScroll: true });
-      }
-    });
+    restart.addEventListener('click', startNewOrder);
     actions.append(restart);
     const refresh = orderSummary.querySelector('.order-expired-refresh');
     if (refresh) actions.append(refresh);
@@ -1161,6 +1156,53 @@
     const contact = orderSummary.querySelector('.order-contact-actions');
     orderSummary.replaceChildren(hero, actions, instruction, details);
     if (sandboxNote) orderSummary.append(sandboxNote);
+    if (contact) orderSummary.append(contact);
+  }
+
+  function startNewOrder() {
+    closeDialog(orderDialog);
+    if (cart.length) {
+      renderCart();
+      window.setTimeout(() => openDialog(cartDialog, recentOrderOpen), 0);
+    } else {
+      productGrid.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+      productGrid.querySelector('button')?.focus({ preventScroll: true });
+    }
+  }
+
+  function showDeniedOrder(order, status) {
+    orderDialog.classList.add('is-denied');
+    const hero = element('section', 'order-denied-hero');
+    hero.setAttribute('aria-label', 'Pago rechazado');
+    const art = element('span', 'order-denied-art');
+    art.setAttribute('aria-hidden', 'true');
+    art.textContent = '!';
+    const message = element('div', 'order-denied-message');
+    message.append(status, element('h3', '', 'Esta compra no se completó'),
+      element('p', '', order.paymentMethod === 'webpay'
+        ? 'Transbank informó que la operación fue rechazada. Este pedido no figura como pagado.'
+        : 'El proveedor de pago rechazó la operación. Este pedido no figura como pagado.'));
+    hero.append(art, message);
+
+    const actions = element('div', 'order-denied-actions');
+    const restart = element('button', 'order-denied-primary', cart.length ? 'Volver al carrito' : 'Elegir productos');
+    restart.type = 'button';
+    restart.addEventListener('click', startNewOrder);
+    actions.append(restart);
+
+    const help = element('p', 'order-denied-help', order.sandbox
+      ? 'Es una prueba de integración: no hay dinero real. Si ves un resultado distinto en Transbank, conserva el ID de este intento para revisarlo.'
+      : '¿Tu banco muestra un cargo? No repitas el pago. Copia el ID del intento y contacta a Gimae para revisarlo.');
+    const details = element('details', 'order-denied-details');
+    details.append(element('summary', '', 'Ver productos, importe e ID de este intento'));
+    const detailBody = element('div', 'order-denied-detail-body');
+    for (const selector of ['.order-code', '.order-lines', '.order-total-box', '.order-shipping-copy', '.order-copy-row', '.order-instruction', ':scope > .copy-button']) {
+      const section = orderSummary.querySelector(selector);
+      if (section) detailBody.append(section);
+    }
+    details.append(detailBody);
+    const contact = orderSummary.querySelector('.order-contact-actions');
+    orderSummary.replaceChildren(hero, actions, help, details);
     if (contact) orderSummary.append(contact);
   }
 
