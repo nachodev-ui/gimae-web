@@ -11,6 +11,7 @@ export async function renderPayPalAttempts(client, records, notice) {
   records.replaceChildren(node('h2', '', 'Intentos PayPal'));
   const { data, error } = await client.from('merch_orders')
     .select('id,paypal_order_id,status,created_at,total_clp,last_reconciled_at,reconcile_error,abandoned_at,abandon_reason')
+    .eq('payment_provider', 'paypal')
     .in('status', ['awaiting_approval', 'capture_pending', 'abandoned'])
     .order('created_at', { ascending: false }).limit(100);
   if (error) throw error;
@@ -22,7 +23,7 @@ export async function renderPayPalAttempts(client, records, notice) {
   const copy = node('div');
   copy.append(node('p', 'paypal-attempts-eyebrow', 'GIMAE! · SEGUIMIENTO DE PAGOS'),
     node('h3', '', 'Cada intento en su lugar'),
-    node('p', '', 'Un intento sin confirmar no es una venta. Los pagos registrados se gestionarán en la etapa de preparación de pedidos.'));
+    node('p', '', 'Un intento sin confirmar no es una venta. Las ventas confirmadas aparecen en Pedidos pagados.'));
   const refresh = node('button', 'paypal-attempts-refresh', 'Actualizar');
   refresh.type = 'button';
   refresh.addEventListener('click', async () => {

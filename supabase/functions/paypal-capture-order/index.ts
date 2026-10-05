@@ -40,7 +40,10 @@ Deno.serve(async (req) => {
         : "El pedido no admite captura.");
     }
     // La misma ID evita capturas duplicadas tras reintentos o respuestas perdidas.
-    await captureApprovedOrder(db, local, orderId);
+    const capture = await captureApprovedOrder(db, local, orderId);
+    if (capture === "expired") {
+      throw new CheckoutError(409, "La reserva venció antes de capturar. Prepara un pedido nuevo; si PayPal muestra un cobro, contacta a Gimae con el ID del intento.");
+    }
     return json(req, { orderCode: local.id, status: "capture_pending" });
   } catch (error) {
     return failure(req, error);

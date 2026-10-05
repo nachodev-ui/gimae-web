@@ -13,3 +13,19 @@ verify_jwt = false
 # Invocada solo por Cron: valida un token aleatorio guardado en Vault.
 [functions.paypal-reconcile]
 verify_jwt = false
+
+# Solo equipo autenticado; la función además comprueba la cuenta en profiles.
+[functions.merch-stock-recheck]
+verify_jwt = true
+
+[functions.merch-reservation-review]
+verify_jwt = true
+
+[functions.webpay-create-order]
+verify_jwt = false
+
+[functions.webpay-return]
+verify_jwt = false
+
+[functions.webpay-order-status]
+verify_jwt = false

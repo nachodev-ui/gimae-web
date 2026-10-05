@@ -37,7 +37,8 @@ window.GIMAE = {
   // CHECKOUT: cambia enabled a true o false sin modificar dist/shop.js.
   "PAYMENT_METHODS": {
     "bankTransfer": { "enabled": true, "label": "Transferencia bancaria" },
-    "paypal": { "enabled": false, "label": "PayPal" }
+    "paypal": { "enabled": false, "label": "PayPal" },
+    "webpay": { "enabled": false, "label": "Webpay Plus" }
   },
   // TRANSFERENCIA: reemplaza únicamente los textos "COMPLETAR" con datos que decidas publicar.
   // Nunca agregues claves, contraseñas, tokens ni información que no deba quedar en el repositorio público.

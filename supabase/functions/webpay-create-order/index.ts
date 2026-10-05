@@ -1,30 +1,13 @@
-import {
-  admin,
-  body,
-  checkOrigin,
-  CheckoutError,
-  cors,
-  currentRate,
-  failure,
-  json,
-  paypal,
-  paypalClientId,
-  paypalMerchantId,
-  paypalToken,
-  rateLimit,
-} from "../_shared/paypal.ts";
+import { admin, body, CheckoutError, cors, failure, json, rateLimit } from "../_shared/paypal.ts";
+import { webpay, webpayOrigin } from "../_shared/webpay.ts";
 
 type CartLine = { productId: string; optionId: string; quantity: number };
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: cors(req) });
-  }
+  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: cors(req) });
   try {
-    if (req.method !== "POST") {
-      throw new CheckoutError(405, "Método no permitido.");
-    }
-    checkOrigin(req);
+    if (req.method !== "POST") throw new CheckoutError(405, "Método no permitido.");
+    const origin = webpayOrigin(req);
     const input = await body(req);
     const buyerName = String(input.buyerName || "").trim().replace(/\s+/g, " ");
     const buyerContact = String(input.buyerContact || "").trim().replace(
@@ -40,7 +23,7 @@ Deno.serve(async (req) => {
     if (input.shippingId !== "pickup") {
       throw new CheckoutError(
         400,
-        "PayPal está disponible solo para retiro en persona.",
+        "Webpay de prueba está disponible solo para retiro en persona.",
       );
     }
     if (
@@ -134,90 +117,46 @@ Deno.serve(async (req) => {
     ) {
       throw new CheckoutError(400, "El total está fuera del rango admitido.");
     }
-    const fx = await currentRate(db);
-    const usdCents = Math.round(subtotal / Number(fx.clp_per_usd) * 100);
-    if (!Number.isSafeInteger(usdCents) || usdCents < 1) {
-      throw new CheckoutError(503, "No se pudo calcular el total USD.");
-    }
-    // La comprobación definitiva y la reserva comparten una transacción SQL.
-    const { data: order, error: insertError } = await db.rpc("reserve_merch_order", {
-      p_buyer_name: buyerName,
-      p_buyer_contact: buyerContact,
-      p_items: priced,
-      p_fx: fx.clp_per_usd,
-      p_rate_date: fx.observation_date,
-      p_usd_cents: usdCents,
+    const sessionId = crypto.randomUUID();
+    const { data: order, error: insertError } = await db.rpc("reserve_webpay_order", {
+      p_buyer_name: buyerName, p_buyer_contact: buyerContact, p_items: priced,
+      p_origin: origin, p_session_id: sessionId,
     });
-    if (insertError?.message?.includes("No confirmed stock available") ||
-      insertError?.message?.includes("Price changed") ||
-      insertError?.message?.includes("Product unavailable") ||
-      insertError?.message?.includes("Variant unavailable")) {
+    if (insertError?.message?.match(/stock available|Price changed|Product unavailable|Variant unavailable/)) {
       throw new CheckoutError(409, "La disponibilidad cambió. Actualiza el carrito e intenta de nuevo.");
     }
     if (insertError) throw insertError;
+    const { data: local, error: localError } = await db.from("merch_orders")
+      .select("webpay_buy_order").eq("id", order.id).single();
+    if (localError) throw localError;
     let remote;
     try {
-      const token = await paypalToken();
-      remote = await paypal("/v2/checkout/orders", token, {
-        method: "POST",
-        headers: { "PayPal-Request-Id": order.id },
-        body: JSON.stringify({
-          intent: "CAPTURE",
-          purchase_units: [{
-            reference_id: order.id,
-            custom_id: order.id,
-            description: `Merch Gimae - retiro`,
-            payee: { merchant_id: paypalMerchantId() },
-            amount: { currency_code: "USD", value: (usdCents / 100).toFixed(2) },
-          }],
-          payment_source: {
-            paypal: {
-              experience_context: {
-                brand_name: "Gimae!",
-                shipping_preference: "NO_SHIPPING",
-                user_action: "PAY_NOW",
-              },
-            },
-          },
-        }),
+      remote = await webpay("", "POST", {
+        buy_order: local.webpay_buy_order, session_id: sessionId, amount: subtotal,
+        return_url: `${Deno.env.get("SUPABASE_URL")}/functions/v1/webpay-return`,
       });
-      if (!remote.id) throw new Error("PayPal no entregó order ID");
+      if (typeof remote.token !== "string" || !/^[a-zA-Z0-9]{64}$/.test(remote.token) ||
+        typeof remote.url !== "string" || !remote.url.startsWith("https://webpay3gint.transbank.cl/")) {
+        throw new Error("WEBPAY_CREATE_INVALID");
+      }
     } catch (error) {
-      // Si PayPal no entregó la orden, el intento deja de ocupar unidades.
-      await db.from("merch_orders").update({ status: "abandoned",
-        reservation_state: "released", abandoned_at: new Date().toISOString(),
-        abandon_reason: "order_creation_failed" }).eq("id", order.id)
-        .eq("status", "creating");
+      await db.from("merch_orders").update({ status: "abandoned", reservation_state: "released",
+        abandoned_at: new Date().toISOString(), abandon_reason: "order_creation_failed" })
+        .eq("id", order.id).eq("status", "creating");
       throw error;
     }
-    const { data: saved, error: updateError } = await db.from("merch_orders").update({
-      paypal_order_id: remote.id,
-      status: "awaiting_approval",
-    }).eq("id", order.id).eq("status", "creating")
-      .eq("reservation_state", "held").gt("reservation_expires_at", new Date().toISOString())
-      .select("id").maybeSingle();
+    const { data: saved, error: updateError } = await db.from("merch_orders")
+      .update({ webpay_token: remote.token, status: "awaiting_approval" })
+      .eq("id", order.id).eq("status", "creating").eq("reservation_state", "held")
+      .gt("reservation_expires_at", new Date().toISOString()).select("id").maybeSingle();
     if (updateError) throw updateError;
-    if (!saved) throw new CheckoutError(409, "La reserva venció antes de preparar PayPal. Actualiza el carrito e inténtalo nuevamente.");
+    if (!saved) throw new CheckoutError(409, "La reserva venció. Vuelve al carrito para empezar otra compra.");
     return json(req, {
-      orderId: remote.id,
-      orderCode: order.id,
+      orderCode: order.id, buyOrder: local.webpay_buy_order,
+      url: remote.url, token: remote.token, totalClp: subtotal,
       reservationExpiresAt: order.expiresAt,
-      clientId: paypalClientId(),
-      totalClp: subtotal,
-      totalUsd: (usdCents / 100).toFixed(2),
-      clpPerUsd: fx.clp_per_usd,
-      rateDate: fx.observation_date,
-      shippingClp: 0,
-      items: priced.map((x) => ({
-        productId: x.productId,
-        optionId: x.optionId,
-        name: x.name,
-        option: x.option,
-        quantity: x.quantity,
-        unitPrice: x.unitPriceClp,
-      })),
+      items: priced.map((x) => ({ productId: x.productId, optionId: x.optionId,
+        name: x.name, option: x.option, quantity: x.quantity, unitPrice: x.unitPriceClp })),
     }, 201);
-  } catch (error) {
-    return failure(req, error);
-  }
+  } catch (error) { return failure(req, error); }
 });

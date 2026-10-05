@@ -35,7 +35,7 @@ Los retratos se limpiaron con edición de imágenes para eliminar las superposic
 
 Los eventos y el blog continúan mostrando estados de próxima publicación. Las consultas sobre stock, tallas y pedidos enlazan al Instagram oficial. No se afirman disponibilidad ni opciones de entrega no confirmadas.
 
-La tienda incluye carrito local y checkout configurable. El panel en `dist/admin/` usa Supabase Auth y RLS para editar blog, productos, integrantes y eventos. No hay cuentas públicas, reservas de inventario ni confirmación de pagos en el backend. Google Fonts es opcional: la página usa fuentes de sistema si no está disponible.
+La tienda incluye carrito local, reservas de inventario y checkout configurable. PayPal Sandbox y Webpay Plus en integración confirman pagos en Supabase antes de descontar stock; consulta `supabase/WEBPAY_SANDBOX.md` para probar Webpay. El panel en `dist/admin/` usa Supabase Auth y RLS para gestionar contenido y pedidos. Google Fonts es opcional: la página usa fuentes de sistema si no está disponible.
 
 ## Generador de chekis
 
