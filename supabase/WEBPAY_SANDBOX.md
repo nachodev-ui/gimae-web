@@ -1,10 +1,34 @@
 # Webpay Plus: integración de prueba
 
-Esta ruta solo usa el ambiente de integración y las credenciales públicas de prueba de Transbank. No tiene código para cobrar en producción. Funciona en CLP y solo con retiro presencial; los costos y lugares de entrega siguen pendientes de Gimae.
+Esta ruta solo usa el ambiente de integración de Transbank. Aunque las credenciales de integración son compartidas y están publicadas por Transbank, **no se guardan valores literales en el repositorio**: se inyectan mediante Supabase Secrets. Esto evita alertas de secretos de alta entropía y, sobre todo, evita que una futura credencial Live termine copiada al código por costumbre.
 
+## Configurar credenciales de integración
+
+Antes de desplegar o volver a desplegar las funciones Webpay:
+
+1. Copia desde la documentación oficial de Transbank el código de comercio y la API Key del ambiente de integración.
+2. Guárdalos en un archivo local ignorado por Git, por ejemplo `.env.webpay.local`:
+
+   ```dotenv
+   WEBPAY_INTEGRATION_COMMERCE_CODE=<codigo_de_integracion>
+   WEBPAY_INTEGRATION_API_KEY=<api_key_de_integracion>
+   ```
+
+3. Desde la raíz del proyecto, carga esas variables en Supabase sin pegarlas en comandos, commits, issues o chats:
+
+   ```powershell
+   npx supabase secrets set --env-file .env.webpay.local
+   ```
+
+4. Verifica que el archivo siga sin trackearse con `git status --short`. El patrón `.env.*` ya está cubierto por `.gitignore`.
+5. Recién entonces despliega `webpay-create-order`, `webpay-return` y `webpay-order-status`.
+
+Las variables se llaman deliberadamente `WEBPAY_INTEGRATION_*`: este módulo permanece fijado al host de integración. **No reutilices estas variables para credenciales Live.** El paso a producción debe implementar configuración separada y revisión explícita.
+
+Funciona en CLP y solo con retiro presencial; los costos y lugares de entrega siguen pendientes de Gimae.
 ## Probar desde la tienda
 
-1. Actualiza la rama `feature/webpay-sandbox`. Para una prueba local, ejecuta `python3 -m http.server 8000 --directory dist` desde la raíz del proyecto.
+1. Actualiza tu rama con el `main` más reciente. Para una prueba local, ejecuta `python3 -m http.server 8000 --directory dist` desde la raíz del proyecto.
 2. Abre `http://localhost:8000/shop.html?webpay-sandbox=1`. Si pruebas el sitio publicado después de integrar esta rama, usa `https://nachodev-ui.github.io/gimae-web/shop.html?webpay-sandbox=1`.
 3. Añade un producto con stock confirmado, selecciona **Retiro en persona**, escribe nombre y contacto y elige **Webpay Plus · integración**.
 4. Pulsa **Continuar a Webpay de prueba**. El importe debe mostrarse en pesos chilenos. Usa únicamente los datos de prueba de la [documentación oficial de Webpay Plus](https://www.transbankdevelopers.cl/documentacion/webpay-plus); por ejemplo, la tarjeta VISA `4051885600446623` y CVV `123` para probar una aprobación. Sigue las instrucciones de la página de integración para fecha, RUT y clave de prueba.
