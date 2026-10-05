@@ -19,10 +19,10 @@
   // Prueba solo local: recorre el callback de error del SDK sin abrir PayPal ni cobrar.
   const localPaypalErrorTest = sandboxPreview && window.location.origin === 'http://localhost:8000' &&
     new URLSearchParams(window.location.search).get('paypal-test-error') === '1';
-  const paypalEnabled = Boolean(config.PAYMENT_METHODS?.paypal?.enabled || sandboxPreview);
   const webpayPreview = (window.location.origin === 'http://localhost:8000' ||
     (window.location.origin === 'https://nachodev-ui.github.io' && window.location.pathname.startsWith('/gimae-web/'))) &&
     new URLSearchParams(window.location.search).get('webpay-sandbox') === '1';
+  const paypalEnabled = Boolean(config.PAYMENT_METHODS?.paypal?.enabled || sandboxPreview) && !webpayPreview;
   const webpayEnabled = Boolean(config.PAYMENT_METHODS?.webpay?.enabled || webpayPreview);
   const catalog = Array.isArray(config.merch) ? config.merch.filter(product => product?.active !== false) : [];
   const CART_KEY = 'gimae-shop-cart-v1';
@@ -160,12 +160,14 @@
   }
 
   function stockFor(product, optionId) {
+    if (sandboxPreview || webpayPreview) return null;
     const variantStock = product.stockByVariant?.[optionId];
     if (Number.isInteger(variantStock) && variantStock >= 0) return variantStock;
     return Number.isInteger(product.stock) && product.stock >= 0 ? product.stock : null;
   }
 
   function stockLabel(product, optionId) {
+    if (sandboxPreview || webpayPreview) return 'Prueba · sin inventario real';
     const stock = stockFor(product, optionId);
     if (stock === null) return 'Disponibilidad por confirmar';
     if (stock === 0) return 'Agotado';
@@ -471,7 +473,7 @@
     if (sandboxPreview) messages.push('Modo de prueba PayPal Sandbox: los pagos no usan dinero real y los pedidos son de prueba.');
     if (webpayPreview) messages.push('Modo de integración Webpay: utiliza solo tarjetas de prueba. Los pedidos son de prueba.');
     if (!readyMethods().length) messages.push('La compra online está en preparación: puedes armar y guardar tu carrito, pero el pago todavía no está habilitado.');
-    if (stockPending) messages.push('Algunos productos muestran disponibilidad por confirmar; el equipo debe validarla antes de confirmar el pedido.');
+    if (stockPending && !sandboxPreview && !webpayPreview) messages.push('Algunos productos muestran disponibilidad por confirmar; el equipo debe validarla antes de confirmar el pedido.');
     configNote.textContent = messages.join(' ');
     configNote.hidden = !messages.length;
   }
@@ -601,12 +603,14 @@
     const denied = online && order.status === 'payment_denied';
     const expired = abandoned && order.abandonReason === 'reservation_expired';
     if (order.sandbox) recentOrderDescription.textContent += ' Pedido de prueba Sandbox, sin preparación ni entrega.';
-    if (expired) recentOrderDescription.textContent += ' La reserva venció y las unidades ya no están apartadas.';
+    if (expired) recentOrderDescription.textContent += order.sandbox
+      ? ' Terminó el tiempo del intento de prueba; el inventario real no se modificó.'
+      : ' La reserva venció y las unidades ya no están apartadas.';
     else if (denied) recentOrderDescription.textContent += ' El pago fue rechazado. Revisa los detalles antes de intentar de nuevo.';
     else if (abandoned) recentOrderDescription.textContent += ' Este intento se cerró sin pago confirmado.';
     else if (online && !paid) recentOrderDescription.textContent += ' Comprueba el estado antes de intentar otro pago.';
     recentOrderState.textContent = paid ? (order.sandbox ? 'Prueba confirmada' : 'Pago confirmado') : online
-      ? (expired ? 'Reserva vencida' : denied ? 'Pago rechazado' : abandoned ? 'Intento cerrado' : order.status === 'capture_pending' ? 'Confirmación en curso' : 'Pago sin confirmar') : 'Pendiente de pago';
+      ? (expired ? (order.sandbox ? 'Prueba vencida' : 'Reserva vencida') : denied ? 'Pago rechazado' : abandoned ? 'Intento cerrado' : order.status === 'capture_pending' ? 'Confirmación en curso' : 'Pago sin confirmar') : 'Pendiente de pago';
     recentOrderState.classList.toggle('is-paid', paid);
     recentOrderState.classList.toggle('is-abandoned', abandoned || denied);
     recentOrder.classList.toggle('is-expired', expired);
@@ -794,6 +798,7 @@
         items: cart.map(({ productId, optionId, quantity }) => ({ productId, optionId, quantity }))
       });
       order.code = quote.orderCode;
+      order.sandbox = quote.orderEnvironment === 'test';
       order.paypalOrderId = quote.orderId;
       order.reservationExpiresAt = quote.reservationExpiresAt;
       order.total = quote.totalClp;
@@ -802,7 +807,7 @@
       // Persistir las dos IDs antes de abrir PayPal permite consultar el pago tras recargar o perder conexión.
       order.status = 'awaiting_approval';
       saveOrder(order);
-      paypalConversion.textContent = `${money.format(quote.totalClp)} CLP → ${usd.format(Number(quote.totalUsd))} USD · Retiro sin costo. Tus unidades están reservadas durante 15 minutos, hasta las ${new Intl.DateTimeFormat('es-CL', { timeStyle: 'short' }).format(new Date(quote.reservationExpiresAt))}.`;
+      paypalConversion.textContent = `${money.format(quote.totalClp)} CLP → ${usd.format(Number(quote.totalUsd))} USD · Retiro sin costo. ${order.sandbox ? 'Prueba sin reserva de inventario. El intento termina' : 'Tus unidades están reservadas hasta'} las ${new Intl.DateTimeFormat('es-CL', { timeStyle: 'short' }).format(new Date(quote.reservationExpiresAt))}.`;
       await loadPayPal(quote.clientId);
       paypalButtons.hidden = false;
       let capturing = false;
@@ -991,10 +996,10 @@
     const denied = online && order.status === 'payment_denied';
     const expired = abandoned && order.abandonReason === 'reservation_expired';
     let pendingConfirmation = null;
-    orderDialog.querySelector(':scope > .eyebrow').textContent = denied ? 'NO SE COMPLETÓ EL PAGO' : expired ? 'TIEMPO DE RESERVA AGOTADO' : 'RESUMEN DEL PEDIDO';
-    document.querySelector('#order-title').textContent = paid ? (order.sandbox ? '¡Prueba confirmada!' : '¡Pago confirmado!') : denied ? 'Pago rechazado' : expired ? 'Reserva vencida' : abandoned ? 'Intento cerrado' : awaiting ? 'Revisa tu pago' : 'Tu pedido quedó guardado';
+    orderDialog.querySelector(':scope > .eyebrow').textContent = denied ? 'NO SE COMPLETÓ EL PAGO' : expired ? (order.sandbox ? 'TIEMPO DE PRUEBA AGOTADO' : 'TIEMPO DE RESERVA AGOTADO') : 'RESUMEN DEL PEDIDO';
+    document.querySelector('#order-title').textContent = paid ? (order.sandbox ? '¡Prueba confirmada!' : '¡Pago confirmado!') : denied ? 'Pago rechazado' : expired ? (order.sandbox ? 'Prueba vencida' : 'Reserva vencida') : abandoned ? 'Intento cerrado' : awaiting ? 'Revisa tu pago' : 'Tu pedido quedó guardado';
     const status = element('p', `order-status${paid ? ' is-paid' : denied ? ' is-denied' : abandoned ? ' is-abandoned' : ''}`,
-      online ? (paid ? (order.sandbox ? 'Pago de prueba confirmado · pedido de prueba' : 'Pago confirmado · pedido recibido') : expired ? 'Reserva finalizada · sin pago confirmado' : abandoned ? 'Sin pago confirmado · intento cerrado' : awaiting ? 'Pago sin confirmar' : order.status === 'payment_denied' ? 'Pago rechazado · sin cobro confirmado' : 'Verificando confirmación') : 'Pendiente de pago');
+      online ? (paid ? (order.sandbox ? 'Pago de prueba confirmado · pedido de prueba' : 'Pago confirmado · pedido recibido') : expired ? (order.sandbox ? 'Prueba finalizada · sin pago confirmado' : 'Reserva finalizada · sin pago confirmado') : abandoned ? 'Sin pago confirmado · intento cerrado' : awaiting ? 'Pago sin confirmar' : order.status === 'payment_denied' ? 'Pago rechazado · sin cobro confirmado' : 'Verificando confirmación') : 'Pendiente de pago');
     status.setAttribute('role', denied ? 'alert' : 'status');
     status.setAttribute('aria-live', denied ? 'assertive' : 'polite');
     orderSummary.append(status);
@@ -1024,10 +1029,10 @@
       orderSummary.append(copyRow('Orden Webpay', order.webpayBuyOrder || 'Pendiente'));
       const instruction = element('p', 'order-instruction', paid
         ? `Pago de prueba por ${money.format(Number(order.total))} confirmado en Webpay. Este pedido de integración no se preparará.`
-        : expired ? 'La reserva venció y se liberaron las unidades. Si tu banco muestra un cargo, contacta a Gimae con el ID antes de repetir.'
+        : expired ? 'El intento de prueba terminó sin pago confirmado. No afectó el inventario. Si tu banco muestra un cargo, contacta a Gimae con el ID antes de repetir.'
         : order.status === 'payment_denied' ? 'Transbank no confirmó el cobro. Conserva esta orden y revisa tu actividad de prueba antes de iniciar otro intento desde el carrito.'
-        : order.webpayReturn === 'cancelled' ? 'Volviste sin completar el pago. La reserva vencerá a la hora indicada. Puedes iniciar un nuevo intento al vencer.'
-        : awaiting ? `Estamos esperando tu resultado de Webpay. La reserva vence a las ${new Intl.DateTimeFormat('es-CL', { timeStyle: 'short' }).format(new Date(order.reservationExpiresAt))}. No repitas el pago sin consultar el estado.`
+        : order.webpayReturn === 'cancelled' ? 'Volviste sin completar el pago. Este intento de prueba vencerá a la hora indicada. Puedes iniciar otro después.'
+        : awaiting ? `Estamos esperando tu resultado de Webpay. El intento vence a las ${new Intl.DateTimeFormat('es-CL', { timeStyle: 'short' }).format(new Date(order.reservationExpiresAt))}. No repitas el pago sin consultar el estado.`
         : 'Estamos verificando el resultado con Transbank. No repitas el pago.');
       orderSummary.append(instruction);
     if (!paid && order.webpayBuyOrder) {
@@ -1044,10 +1049,10 @@
         ? (order.sandbox ? `Pago de prueba de ${usd.format(Number(order.paypalUsd))} USD confirmado en Sandbox.` : `Pago de ${usd.format(Number(order.paypalUsd))} USD confirmado. Te contactaremos para coordinar los siguientes pasos.`)
         : abandoned
           ? order.abandonReason === 'reservation_expired'
-            ? 'La reserva de 15 minutos venció y se liberaron las unidades. Prepara una compra nueva. Si PayPal muestra un cobro, contáctanos con el ID de orden.'
+            ? (order.sandbox ? 'Terminó el tiempo del intento de prueba; el inventario real no se modificó. Si PayPal muestra un cobro, contáctanos con el ID de orden.' : 'La reserva de 15 minutos venció y se liberaron las unidades. Prepara una compra nueva. Si PayPal muestra un cobro, contáctanos con el ID de orden.')
             : 'PayPal ya no encontró esta orden o la anuló. Puedes preparar una compra nueva. Si ves un cobro en PayPal, contáctanos con el ID de orden antes de volver a pagar.'
         : awaiting
-          ? `Tus unidades están reservadas${order.reservationExpiresAt ? ' hasta las ' + new Intl.DateTimeFormat('es-CL', { timeStyle: 'short' }).format(new Date(order.reservationExpiresAt)) : ' durante 15 minutos'}. Si aprobaste en PayPal, puedes comprobar y completar el pago antes de que venza la reserva.`
+          ? `${order.sandbox ? 'Este intento de prueba termina' : 'Tus unidades están reservadas'}${order.reservationExpiresAt ? (order.sandbox ? ' a las ' : ' hasta las ') + new Intl.DateTimeFormat('es-CL', { timeStyle: 'short' }).format(new Date(order.reservationExpiresAt)) : (order.sandbox ? ' en 15 minutos' : ' durante 15 minutos')}. Si aprobaste en PayPal, puedes comprobar el pago antes de que termine el plazo.`
           : `Estamos verificando la captura de ${usd.format(Number(order.paypalUsd))} USD. No repitas el pago.`);
       orderSummary.append(instruction);
       if (!paid && order.paypalOrderId && order.code) {
@@ -1123,13 +1128,15 @@
   function showExpiredOrder(order, status) {
     orderDialog.classList.add('is-expired');
     const hero = element('section', 'order-expired-hero');
-    hero.setAttribute('aria-label', 'Reserva vencida');
+    hero.setAttribute('aria-label', order.sandbox ? 'Intento de prueba vencido' : 'Reserva vencida');
     const art = element('span', 'order-expired-art');
     art.setAttribute('aria-hidden', 'true');
     art.append(element('span', 'order-expired-clock'));
     const message = element('div', 'order-expired-message');
     message.append(status, element('h3', '', 'El tiempo para pagar terminó'),
-      element('p', '', 'Las unidades ya no están apartadas para este pedido. Puedes revisar tu carrito y preparar un intento nuevo.'));
+      element('p', '', order.sandbox
+        ? 'La prueba terminó sin apartar inventario real. Puedes revisar tu carrito y comenzar otro intento.'
+        : 'Las unidades ya no están apartadas para este pedido. Puedes revisar tu carrito y preparar un intento nuevo.'));
     hero.append(art, message);
 
     const actions = element('div', 'order-expired-actions');

@@ -1,4 +1,4 @@
--- Ejecutar solo en Sandbox. Cambia la variante si ya no tiene una unidad libre.
+-- Simula la ruta Live dentro de una transacción que termina en ROLLBACK.
 -- Todos los cambios, incluso los de stock y vencimiento, se deshacen.
 BEGIN;
 DO $test$
@@ -6,12 +6,12 @@ DECLARE
   a jsonb; b jsonb; n integer; claim text; state record;
   item jsonb := '[{"productId":"04","optionId":"group","variantId":"group","name":"Chekis","option":"Grupo","quantity":1,"unitPriceClp":5000,"lineTotalClp":5000}]'::jsonb;
 BEGIN
-  SELECT stock INTO n FROM public.product_variants WHERE id='group' AND product_id='04';
-  IF n<>1 THEN RAISE EXCEPTION 'La prueba requiere una unidad de Chekis Grupo; hay %',n; END IF;
+  UPDATE public.product_variants SET stock=1 WHERE id='group' AND product_id='04';
+  IF NOT FOUND THEN RAISE EXCEPTION 'La prueba requiere Chekis Grupo'; END IF;
 
-  a := public.reserve_merch_order('Prueba reserva','test@example.org',item,950,current_date,526);
+  a := public.reserve_merch_order('Prueba reserva','test@example.org',item,950,current_date,526,'live');
   BEGIN
-    PERFORM public.reserve_merch_order('Prueba duplicada','test@example.org',item,950,current_date,526);
+    PERFORM public.reserve_merch_order('Prueba duplicada','test@example.org',item,950,current_date,526,'live');
     RAISE EXCEPTION 'La última unidad se reservó dos veces';
   EXCEPTION WHEN OTHERS THEN
     IF SQLERRM <> 'No confirmed stock available for reservation' THEN RAISE; END IF;
@@ -28,7 +28,7 @@ BEGIN
   END IF;
   claim := public.claim_merch_capture((a->>'id')::uuid);
   IF claim<>'expired' THEN RAISE EXCEPTION 'La captura vencida no fue rechazada'; END IF;
-  b := public.reserve_merch_order('Prueba libre','test@example.org',item,950,current_date,526);
+  b := public.reserve_merch_order('Prueba libre','test@example.org',item,950,current_date,526,'live');
 
   UPDATE public.merch_orders SET status='paid',
     paypal_capture_id='TEST-LATE-'||(a->>'id'),paid_at=clock_timestamp()

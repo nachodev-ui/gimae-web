@@ -30,32 +30,32 @@ Funciona en CLP y solo con retiro presencial; los costos y lugares de entrega si
 
 1. Actualiza tu rama con el `main` más reciente. Para una prueba local, ejecuta `python3 -m http.server 8000 --directory dist` desde la raíz del proyecto.
 2. Abre `http://localhost:8000/shop.html?webpay-sandbox=1`. Si pruebas el sitio publicado después de integrar esta rama, usa `https://nachodev-ui.github.io/gimae-web/shop.html?webpay-sandbox=1`.
-3. Añade un producto con stock confirmado, selecciona **Retiro en persona**, escribe nombre y contacto y elige **Webpay Plus · integración**.
+3. Añade un producto activo con precio publicado, selecciona **Retiro en persona**, escribe nombre y contacto y elige **Webpay Plus · integración**. El inventario físico no limita los intentos de prueba.
 4. Pulsa **Continuar a Webpay de prueba**. El importe debe mostrarse en pesos chilenos. Usa únicamente los datos de prueba de la [documentación oficial de Webpay Plus](https://www.transbankdevelopers.cl/documentacion/webpay-plus); por ejemplo, la tarjeta VISA `4051885600446623` y CVV `123` para probar una aprobación. Sigue las instrucciones de la página de integración para fecha, RUT y clave de prueba.
 5. Al regresar, comprueba el resumen: **Prueba confirmada**, el mismo ID Webpay y el total CLP. Si la confirmación tarda, pulsa **Consultar confirmación**. Nunca repitas el pago mientras el estado esté verificándose.
 6. En el SQL Editor de Supabase busca la orden que mostró la tienda:
 
    ```sql
-   select id, payment_provider, webpay_buy_order, status,
+   select id, payment_provider, order_environment, webpay_buy_order, status,
           webpay_authorization_code, reservation_state, stock_state,
-          fulfillment_status, paid_at
+          stock_allocations, fulfillment_status, paid_at
    from public.merch_orders
    where webpay_buy_order = 'REEMPLAZAR_POR_ID_DE_LA_TIENDA';
    ```
 
-   Esperado: `payment_provider = webpay`, `status = paid`, código de autorización no vacío y stock descontado una sola vez. El pedido de prueba aparecerá identificado como tal en el Backstage; no se prepara ni entrega físicamente.
+   Esperado para una compra nueva: `payment_provider = webpay`, `order_environment = test`, `status = paid`, código de autorización no vacío, `stock_state = not_applicable`, `stock_allocations = []` y `fulfillment_status = test`. No se descuenta ni aparta inventario físico. El pedido de prueba no aparece en «Pedidos pagados».
 
 ## Cancelación y vencimiento
 
-- Haz una segunda prueba y vuelve desde Transbank sin autorizar. Consulta el pedido. No debe marcarse pagado. La reserva de integración dura 9 minutos para terminar antes del límite aproximado de 10 minutos del formulario de Transbank. Cron la libera y lo deja `abandoned`, motivo `reservation_expired`; esta operación puede tardar aproximadamente un minuto adicional.
-- La función de retorno acepta `GET ?token_ws=...` y `POST` de Transbank. Una respuesta HTTP 422 del commit exige consultar el estado remoto: si Webpay sigue en `INITIALIZED`, el pedido se cierra sin marcarse pagado y libera stock. Ante incertidumbre permanece pendiente para revisión.
-- Si Transbank rechaza la transacción tras la confirmación del servidor, se verá `payment_denied` y se liberará la reserva.
-- Si una autorización llega después de vencer, la venta se registra como `paid` y `reservation_issue = late_capture`; el pedido queda `on_hold` para revisión antes de prepararlo.
+- Haz una segunda prueba y vuelve desde Transbank sin autorizar. Consulta el pedido. No debe marcarse pagado. El intento de integración dura 9 minutos para terminar antes del límite aproximado de 10 minutos del formulario de Transbank. Cron lo deja `abandoned`, motivo `reservation_expired`; esta operación puede tardar aproximadamente un minuto adicional. Ninguna unidad queda apartada.
+- La función de retorno acepta `GET ?token_ws=...` y `POST` de Transbank. Una respuesta HTTP 422 del commit exige consultar el estado remoto: si Webpay sigue en `INITIALIZED`, el intento se cierra sin marcarse pagado. Ante incertidumbre permanece pendiente para revisión.
+- Si Transbank rechaza la transacción tras la confirmación del servidor, se verá `payment_denied`.
+- Si una autorización llega después de vencer, se registra como `paid` de prueba y permanece fuera de preparación.
 
 ## Revisión técnica
 
-- La migración `20261005000100_webpay_sandbox.sql` ya está aplicada en el proyecto Sandbox. El mismo bloqueo transaccional de inventario cubre pedidos PayPal y Webpay. La prueba de base de datos `scripts/test-webpay-reservations.sql` se ejecutó en una transacción con `ROLLBACK` y dejó stock intacto.
-- Las Edge Functions `webpay-create-order`, `webpay-return` y `webpay-order-status` ya están desplegadas. `webpay-return` confirma con Transbank, contrasta importe, orden, sesión y resultado, y la actualización a `paid` dispara la asignación única de inventario.
-- Todavía falta la prueba completa en navegador con aprobación y cancelación reales de integración. Este trabajo no habilita Webpay Live. Antes de Live hay que configurar credenciales propias, revisar el contrato comercial, certificar el flujo, automatizar la conciliación de retornos que nunca llegan y separar los pedidos de prueba de la operación real.
+- La migración `20261005230116_isolate_test_orders.sql` separa compras de prueba de reservas, descuentos y preparación. Conserva la historia de descuentos previos para auditoría. Consulta `scripts/audit-test-inventory.sql` y cuenta el inventario físico antes de restaurar unidades: el sistema no puede saber qué ajustes manuales se hicieron después.
+- `webpay-return` confirma con Transbank y contrasta importe, orden, sesión y resultado. La actualización a `paid` de integración registra el pago sin tocar stock. PayPal Sandbox también queda aislado; PayPal Live futuro requiere `PAYPAL_ENV=live` y activa de nuevo la reserva transaccional.
+- Las pruebas reales de aprobación y cancelación en el navegador ya se realizaron antes del aislamiento. Este cambio requiere repetir una aprobación Sandbox y confirmar que el stock de `products`/`product_variants` permanezca igual. No habilita Webpay Live: siguen pendientes las credenciales propias, el contrato, la certificación y la conciliación automática de retornos sin navegador.
 
 Referencias: [API de Webpay Plus, Transbank Developers](https://github.com/TransbankDevelopers/transbank-developers-docs/blob/master/referencia/webpay/README.md), [documentación de integración y tarjetas de prueba](https://www.transbankdevelopers.cl/documentacion/webpay-plus).

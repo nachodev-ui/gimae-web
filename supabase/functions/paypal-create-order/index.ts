@@ -8,6 +8,7 @@ import {
   failure,
   json,
   paypal,
+  paypalEnvironment,
   paypalClientId,
   paypalMerchantId,
   paypalToken,
@@ -70,6 +71,7 @@ Deno.serve(async (req) => {
       throw new CheckoutError(400, "El carrito contiene productos repetidos.");
     }
     const db = admin();
+    const orderEnvironment = paypalEnvironment();
     await rateLimit(db, req, "create");
     const { data: products, error: productError } = await db.from("products")
       .select("id,name,price_clp,active,stock,stock_confirmed,variant_source")
@@ -107,7 +109,8 @@ Deno.serve(async (req) => {
         );
       }
       const available = variant || product;
-      if (!available.stock_confirmed || available.stock < line.quantity) {
+      if (orderEnvironment === "live" &&
+        (!available.stock_confirmed || available.stock < line.quantity)) {
         throw new CheckoutError(
           409,
           "No hay stock confirmado para uno de los productos. Consulta a Gimae antes de pagar.",
@@ -147,6 +150,7 @@ Deno.serve(async (req) => {
       p_fx: fx.clp_per_usd,
       p_rate_date: fx.observation_date,
       p_usd_cents: usdCents,
+      p_environment: orderEnvironment,
     });
     if (insertError?.message?.includes("No confirmed stock available") ||
       insertError?.message?.includes("Price changed") ||
@@ -201,6 +205,7 @@ Deno.serve(async (req) => {
     return json(req, {
       orderId: remote.id,
       orderCode: order.id,
+      orderEnvironment,
       reservationExpiresAt: order.expiresAt,
       clientId: paypalClientId(),
       totalClp: subtotal,

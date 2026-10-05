@@ -89,13 +89,6 @@ Deno.serve(async (req) => {
           "Una variante cambió. Actualiza el carrito.",
         );
       }
-      const available = variant || product;
-      if (!available.stock_confirmed || available.stock < line.quantity) {
-        throw new CheckoutError(
-          409,
-          "No hay stock confirmado para uno de los productos. Consulta a Gimae antes de pagar.",
-        );
-      }
       const unitPriceClp = variant ? variant.price_clp : product.price_clp;
       if (!Number.isSafeInteger(unitPriceClp) || unitPriceClp < 1) {
         throw new CheckoutError(409, "Hay un precio pendiente de confirmar.");
