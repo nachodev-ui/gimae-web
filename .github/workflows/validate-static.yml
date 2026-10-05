@@ -18,6 +18,10 @@ jobs:
       - name: Descargar repositorio
         uses: actions/checkout@v6
 
+      - name: Detectar secretos evidentes
+        shell: bash
+        run: node scripts/check-secrets.mjs
+
       - name: Validar sintaxis JavaScript
         shell: bash
         run: |
