@@ -604,18 +604,18 @@
     const expired = abandoned && order.abandonReason === 'reservation_expired';
     const review = order.paymentMethod === 'webpay' && order.reviewRequired && !paid;
     if (order.sandbox) recentOrderDescription.textContent += ' Pedido de prueba Sandbox, sin preparación ni entrega.';
-    if (expired) recentOrderDescription.textContent += order.sandbox
+    if (review) recentOrderDescription.textContent += ' El resultado requiere revisión; conserva el ID y evita repetir el pago.';
+    else if (expired) recentOrderDescription.textContent += order.sandbox
       ? ' Terminó el tiempo del intento de prueba; el inventario real no se modificó.'
       : ' La reserva venció y las unidades ya no están apartadas.';
     else if (denied) recentOrderDescription.textContent += ' El pago fue rechazado. Revisa los detalles antes de intentar de nuevo.';
     else if (abandoned) recentOrderDescription.textContent += ' Este intento se cerró sin pago confirmado.';
-    else if (review) recentOrderDescription.textContent += ' El resultado requiere revisión; conserva el ID y evita repetir el pago.';
     else if (online && !paid) recentOrderDescription.textContent += ' Comprueba el estado antes de intentar otro pago.';
     recentOrderState.textContent = paid ? (order.sandbox ? 'Prueba confirmada' : 'Pago confirmado') : online
       ? (review ? 'Revisión necesaria' : expired ? (order.sandbox ? 'Prueba vencida' : 'Reserva vencida') : denied ? 'Pago rechazado' : abandoned ? 'Intento cerrado' : order.status === 'capture_pending' ? 'Confirmación en curso' : 'Pago sin confirmar') : 'Pendiente de pago';
     recentOrderState.classList.toggle('is-paid', paid);
     recentOrderState.classList.toggle('is-abandoned', abandoned || denied || review);
-    recentOrder.classList.toggle('is-expired', expired);
+    recentOrder.classList.toggle('is-expired', expired && !review);
     recentOrder.classList.toggle('is-denied', denied);
     recentOrder.querySelector('.recent-order-sticker').textContent = expired ? '⌛' : denied ? '!' : '♡';
     recentOrderCode.textContent = `Pedido ${cleanText(order.code, 40)}`;
@@ -1049,9 +1049,9 @@
         : 'Estamos verificando el resultado con Transbank. No repitas el pago.');
       orderSummary.append(instruction);
     if (!paid && order.webpayBuyOrder) {
-        const check = element('button', 'copy-button', expired ? 'Comprobar si llegó un pago' : 'Consultar confirmación');
+        const check = element('button', 'copy-button', expired && !review ? 'Comprobar si llegó un pago' : 'Consultar confirmación');
         check.type = 'button';
-        if (expired) check.classList.add('order-expired-refresh');
+        if (expired && !review) check.classList.add('order-expired-refresh');
         check.addEventListener('click', () => confirmWebpayOrder(order, instruction, check));
         orderSummary.append(check);
         pendingConfirmation = () => confirmWebpayOrder(order, instruction, check);
@@ -1091,7 +1091,7 @@
     }
     if (paid) showPaidOrder(status, order.sandbox, isWebpay ? 'Webpay Plus' : 'PayPal Sandbox');
     else if (denied) showDeniedOrder(order, status);
-    else if (expired) showExpiredOrder(order, status);
+    else if (expired && !review) showExpiredOrder(order, status);
     openDialog(orderDialog, opener || document.querySelector('[data-open-cart]'));
     openOrderConfirmation = pendingConfirmation;
     pendingConfirmation?.();
