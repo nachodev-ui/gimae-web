@@ -1,4 +1,5 @@
 const date = new Intl.DateTimeFormat('es-CL', { dateStyle: 'medium', timeStyle: 'short' });
+const money = new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 });
 const node = (tag, className, value) => {
   const item = document.createElement(tag);
   if (className) item.className = className;
@@ -6,10 +7,23 @@ const node = (tag, className, value) => {
   return item;
 };
 
+function replyFor(order) {
+  const sandbox = order.order_environment === 'test';
+  const identity = `pedido ${order.id} · orden Webpay ${order.webpay_buy_order || 'por confirmar'}`;
+  return [
+    'Hola, estamos revisando tu ' + identity + '.',
+    'Nuestra tienda todavía no tiene un resultado concluyente de Transbank. Por seguridad, no lo consideramos pagado ni prepararemos el pedido. Te pedimos que no inicies otro pago hasta que comprobemos este intento.',
+    sandbox
+      ? 'Este intento corresponde al ambiente de integración: no se utilizó dinero real. Si ves un resultado distinto en la pantalla de prueba, envíanos los datos para contrastarlos.'
+      : 'Si tu banco muestra un cargo, conserva el comprobante y envíanos la fecha y el importe. No compartas claves ni el número completo de tu tarjeta. Transbank indica que las transacciones sin confirmación se reversan; primero debemos verificar si eso ocurrió en este caso y no podemos asegurar cuándo lo reflejará tu banco.',
+    'Te informaremos cuando tengamos un resultado verificado. Gracias por conservar estos códigos.'
+  ].join('\n\n');
+}
+
 export async function renderWebpayAlerts(client, records, notice) {
   records.replaceChildren(node('h2', '', 'Seguimiento Webpay'));
   const { data, error } = await client.from('merch_orders')
-    .select('id,webpay_buy_order,status,created_at,order_environment,webpay_reconcile_attempts,webpay_commit_attempts,webpay_last_reconciled_at,webpay_reconcile_error,webpay_reconcile_alert_at,webpay_reconcile_alert_reason')
+    .select('id,buyer_name,buyer_contact,total_clp,webpay_buy_order,status,created_at,order_environment,webpay_reconcile_attempts,webpay_commit_attempts,webpay_last_reconciled_at,webpay_reconcile_error,webpay_reconcile_alert_at,webpay_reconcile_alert_reason')
     .eq('payment_provider', 'webpay')
     .in('status', ['awaiting_approval', 'capture_pending', 'abandoned'])
     .order('created_at', { ascending: false }).limit(100);
@@ -48,6 +62,12 @@ export async function renderWebpayAlerts(client, records, notice) {
     banner.setAttribute('role', 'alert');
     shell.append(banner);
   }
+  if (alerts.length) {
+    const guide = node('section', 'webpay-alert-guide');
+    guide.append(node('h3', '', 'Cómo atender una alerta'),
+      node('p', '', '1. Busca la orden Webpay en Transbank y compara importe, estado y referencia con el pedido. 2. Si sigue sin resultado concluyente, mantén el pedido en revisión y no lo prepares. 3. Comunica la incertidumbre con el texto sugerido; no prometas una reversa ni un plazo. 4. Si Transbank muestra un resultado definitivo que la tienda no refleja, deriva el caso al responsable técnico para conciliarlo. No cambies el estado a mano ni vuelvas a cobrar.'));
+    shell.append(guide);
+  }
   const list = node('div', 'paypal-attempts-list');
   if (!orders.length) list.append(node('p', 'paypal-attempts-empty', 'No hay intentos Webpay recientes por revisar.'));
   for (const order of orders) {
@@ -68,9 +88,32 @@ export async function renderWebpayAlerts(client, records, notice) {
           : order.status === 'abandoned' ? 'El tiempo de prueba terminó sin pago confirmado.'
             : 'Esperando autorización del comprador de prueba.';
     const detail = node('p', 'paypal-attempt-note', reason);
+    const buyer = node('p', 'webpay-alert-buyer', `${order.buyer_name || 'Comprador sin nombre'} · ${order.buyer_contact || 'Sin contacto'} · ${money.format(order.total_clp || 0)}`);
     const meta = node('small', 'paypal-attempt-diagnostic',
       `${order.order_environment === 'test' ? 'Prueba · ' : ''}${order.webpay_reconcile_attempts} consultas · ${order.webpay_commit_attempts} intentos de confirmación${order.webpay_last_reconciled_at ? ` · última revisión ${date.format(new Date(order.webpay_last_reconciled_at))}` : ''}${order.webpay_reconcile_error ? ` · ${order.webpay_reconcile_error}` : ''}`);
-    card.append(head, detail, meta);
+    card.append(head, detail, buyer, meta);
+    if (order.webpay_reconcile_alert_at) {
+      const reply = node('button', 'webpay-alert-reply', 'Copiar respuesta para el comprador');
+      reply.type = 'button';
+      reply.addEventListener('click', async () => {
+        const message = replyFor(order);
+        try {
+          await navigator.clipboard.writeText(message);
+          reply.textContent = 'Respuesta copiada ✓';
+        } catch {
+          const draft = node('textarea', 'webpay-alert-draft');
+          draft.readOnly = true;
+          draft.value = message;
+          draft.setAttribute('aria-label', 'Respuesta sugerida para el comprador');
+          card.append(draft);
+          draft.focus();
+          draft.select();
+          reply.textContent = 'Selecciona y copia el texto';
+        }
+        window.setTimeout(() => { reply.textContent = 'Copiar respuesta para el comprador'; }, 3000);
+      });
+      card.append(reply);
+    }
     list.append(card);
   }
   shell.append(list);
