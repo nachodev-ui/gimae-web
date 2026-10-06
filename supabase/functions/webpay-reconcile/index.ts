@@ -1,7 +1,7 @@
 import { admin } from "../_shared/paypal.ts";
 import { webpay, WebpayHttpError } from "../_shared/webpay.ts";
 import { settle, type WebpayOrder } from "../_shared/webpay-order.ts";
-import { matchesTransaction, MAX_CHECKS, nextCheck, type ReconcileOrder } from "../_shared/webpay-reconcile.ts";
+import { reconciliationAction, MAX_CHECKS, nextCheck, type ReconcileOrder } from "../_shared/webpay-reconcile.ts";
 
 type Candidate = WebpayOrder & ReconcileOrder & {
   payment_provider: "webpay";
@@ -68,12 +68,13 @@ Deno.serve(async (req) => {
         if (!/^[A-Za-z0-9]{64}$/.test(item.webpay_token)) throw new Error("Invalid token");
         const path = `/${encodeURIComponent(item.webpay_token)}`;
         const remote = await webpay(path, "GET");
-        if (!matchesTransaction(remote, item)) {
+        const action = reconciliationAction(remote, item);
+        if (action === "mismatch") {
           alertReason = "mismatch";
           errorCode = "WEBPAY_IDENTITY_MISMATCH";
         }
 
-        if (!alertReason && (remote.status === "AUTHORIZED" || remote.status === "FAILED")) {
+        if (action === "settle") {
           // A status lookup can recover a transaction resolved by the return path.
           // INITIALIZED is not proof that the buyer approved. Commit is only
           // allowed in webpay-return after Transbank sends the browser back.
@@ -103,12 +104,11 @@ Deno.serve(async (req) => {
           }
           errorCode = "WEBPAY_COMMIT_IN_PROGRESS";
         }
-        if (!alertReason && remote.status !== "INITIALIZED" &&
-          remote.status !== "AUTHORIZED" && remote.status !== "FAILED") {
+        if (action === "review") {
           alertReason = "unresolved";
           errorCode = "WEBPAY_STATUS_REVIEW";
         }
-        if (!errorCode && remote.status === "INITIALIZED") errorCode = "WEBPAY_STILL_INITIALIZED";
+        if (action === "wait") errorCode = "WEBPAY_STILL_INITIALIZED";
       } catch (cause) {
         counts.errors++;
         errorCode = code(cause);
