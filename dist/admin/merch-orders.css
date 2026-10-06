@@ -115,3 +115,13 @@
 @media(max-width:720px){.merch-orders-intro{display:grid;padding:22px}.merch-orders-intro::after{display:none}.admin-page .merch-orders-refresh{justify-self:start}.merch-orders-alert{align-items:flex-start;flex-wrap:wrap}.admin-page .merch-orders-alert button{margin-left:45px}.merch-order-next{display:grid}.admin-page .merch-order-primary{justify-self:start}.merch-order-lines li{grid-template-columns:38px minmax(0,1fr)}.merch-order-lines .merch-order-stock{grid-column:2;white-space:normal}.merch-order-head{padding:16px 18px}.merch-order-buyer{margin:0 18px}.merch-order-products{padding:17px 18px 6px}.merch-order-warning,.merch-order-next{margin-left:18px;margin-right:18px}.merch-order-progress{margin-left:18px;margin-right:18px}.merch-order-details{margin-left:18px;margin-right:18px}.admin-page .merch-order-hold{margin-left:18px}.merch-order-feedback{margin-left:18px;margin-right:18px}}
 @media(max-width:430px){.merch-order-head{display:grid}.merch-order-badge{justify-self:start}.merch-order-buyer{align-items:flex-start}.merch-order-buyer .merch-order-total{font-size:1rem}.merch-order-progress li{font-size:.58rem}.merch-order-progress-dot{width:25px;height:25px}.merch-orders-filters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.admin-page .merch-orders-filters button{justify-content:space-between;min-width:0}.merch-order-payment{grid-template-columns:1fr;gap:4px}.merch-order-payment dd{margin-bottom:6px}}
 @media(prefers-reduced-motion:reduce){.admin-page .merch-orders-filters button,.admin-page .merch-order-primary{transition:none}}
+
+.merch-orders-environment{display:flex;flex-wrap:wrap;gap:7px;padding:6px;border:1px solid #e8ddea;border-radius:15px;background:#faf5fb;justify-self:start}
+.admin-page .merch-orders-environment button{min-height:40px;padding:9px 15px;border:1px solid transparent;border-radius:10px;background:transparent;color:#725b70;font-size:.78rem;font-weight:800;box-shadow:none}
+.admin-page .merch-orders-environment button:hover{background:#f1e7f2;color:#533b57}
+.admin-page .merch-orders-environment button[aria-pressed="true"]{border-color:#bba2c0;background:#fff;color:#614568;box-shadow:0 2px 6px #66436a1e}
+.admin-page .merch-orders-environment button:focus-visible{outline:3px solid #84588b;outline-offset:3px}
+.merch-orders-practice-banner{margin:0;padding:16px 19px;border:2px solid #b9a2c6;border-radius:16px;background:#f7f1fb;color:#5c4866;font-size:.83rem;font-weight:750;line-height:1.6}
+.merch-order.is-practice::before{background:#cbb3d8}
+.merch-order.is-practice .merch-order-badge{background:#f4ebf9;color:#694b76}
+.merch-order-stock-note.is-practice{border:1px solid #decde7;background:#fbf7fd;color:#644f6e}
