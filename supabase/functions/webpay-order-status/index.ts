@@ -1,6 +1,7 @@
 import { admin, body, CheckoutError, cors, failure, json, rateLimit } from "../_shared/paypal.ts";
-import { webpayOrigin } from "../_shared/webpay.ts";
-import { reconcileCommitted, type WebpayOrder } from "../_shared/webpay-order.ts";
+import { webpay, webpayOrigin } from "../_shared/webpay.ts";
+import { reconcileCommitted, settle, type WebpayOrder } from "../_shared/webpay-order.ts";
+import { reconciliationAction } from "../_shared/webpay-reconcile.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: cors(req) });
@@ -14,7 +15,7 @@ Deno.serve(async (req) => {
     const db = admin();
     await rateLimit(db, req, "status", orderCode);
     const { data: local, error } = await db.from("merch_orders")
-      .select("id,status,reservation_state,reservation_expires_at,abandon_reason,webpay_buy_order,webpay_session_id,webpay_token,webpay_return_origin,webpay_authorization_code,total_clp,webpay_commit_claimed_at")
+      .select("id,status,reservation_state,reservation_expires_at,abandon_reason,webpay_buy_order,webpay_session_id,webpay_token,webpay_return_origin,webpay_authorization_code,total_clp,webpay_commit_claimed_at,webpay_reconcile_alert_at")
       .eq("id", orderCode).eq("payment_provider", "webpay")
       .eq("webpay_buy_order", buyOrder).maybeSingle();
     if (error) throw error;
@@ -22,6 +23,17 @@ Deno.serve(async (req) => {
     if (local.status === "capture_pending") {
       try { await reconcileCommitted(db, local as WebpayOrder); }
       catch (cause) { console.error("Webpay status still pending", local.id, cause); }
+    } else if (local.webpay_reconcile_alert_at && ["awaiting_approval", "abandoned"].includes(local.status)) {
+      // After scheduled checks stop, a deliberate buyer lookup can still
+      // recover a conclusive status. Never PUT an INITIALIZED transaction.
+      try {
+        const remote = await webpay(`/${encodeURIComponent(local.webpay_token)}`, "GET");
+        if (reconciliationAction(remote, local as WebpayOrder) === "settle") {
+          const { data: claim, error: claimError } = await db.rpc("claim_webpay_commit", { p_token: local.webpay_token });
+          if (claimError) throw claimError;
+          if (claim === "claimed") await settle(db, local as WebpayOrder, remote);
+        }
+      } catch (cause) { console.error("Webpay review lookup pending", local.id, cause); }
     }
     const { data: current, error: refreshError } = await db.from("merch_orders")
       .select("status,reservation_state,reservation_expires_at,abandon_reason,webpay_reconcile_alert_at")
