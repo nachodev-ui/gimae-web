@@ -24,10 +24,12 @@ Deno.serve(async (req) => {
       catch (cause) { console.error("Webpay status still pending", local.id, cause); }
     }
     const { data: current, error: refreshError } = await db.from("merch_orders")
-      .select("status,reservation_state,reservation_expires_at,abandon_reason")
+      .select("status,reservation_state,reservation_expires_at,abandon_reason,webpay_reconcile_alert_at")
       .eq("id", orderCode).single();
     if (refreshError) throw refreshError;
     return json(req, { status: current.status, reservationState: current.reservation_state,
-      reservationExpiresAt: current.reservation_expires_at, abandonReason: current.abandon_reason });
+      reservationExpiresAt: current.reservation_expires_at, abandonReason: current.abandon_reason,
+      reviewRequired: Boolean(current.webpay_reconcile_alert_at) &&
+        !["paid", "payment_denied"].includes(current.status) });
   } catch (error) { return failure(req, error); }
 });
