@@ -19,6 +19,13 @@ export function paypalBase(): string {
   throw new Error("PAYPAL_ENV debe ser sandbox o live");
 }
 
+export function paypalEnvironment(): "test" | "live" {
+  const mode = env("PAYPAL_ENV");
+  if (mode === "sandbox") return "test";
+  if (mode === "live") return "live";
+  throw new Error("PAYPAL_ENV debe ser sandbox o live");
+}
+
 export function paypalClientId(): string {
   return env("PAYPAL_CLIENT_ID");
 }

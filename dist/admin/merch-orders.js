@@ -28,7 +28,8 @@ const feedback = (tone, title, message, notice) => {
 export async function renderMerchOrders(client, records, notice, focus = null) {
   const { data, error } = await client.from('merch_orders')
     .select('id,buyer_name,buyer_contact,items,total_clp,total_usd_cents,payment_provider,paypal_order_id,paypal_capture_id,webpay_buy_order,webpay_authorization_code,paid_at,stock_state,stock_allocations,reservation_issue,reservation_reviewed_at,fulfillment_status,fulfillment_note,fulfillment_updated_at,ready_at,handed_over_at')
-    .eq('status', 'paid').order('paid_at', { ascending: false }).limit(100);
+    .eq('status', 'paid').eq('order_environment', 'live')
+    .order('paid_at', { ascending: false }).limit(100);
   if (error) throw error;
   const orders = data || [];
   const totals = {
