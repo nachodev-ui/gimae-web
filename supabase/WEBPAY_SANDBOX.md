@@ -56,6 +56,25 @@ Funciona en CLP y solo con retiro presencial; los costos y lugares de entrega si
 
 - La migración `20261005233152_isolate_test_orders.sql` separa compras de prueba de reservas, descuentos y preparación. Conserva la historia de descuentos previos para auditoría. Consulta `scripts/audit-test-inventory.sql` y cuenta el inventario físico antes de restaurar unidades: el sistema no puede saber qué ajustes manuales se hicieron después.
 - `webpay-return` confirma con Transbank y contrasta importe, orden, sesión y resultado. La actualización a `paid` de integración registra el pago sin tocar stock. PayPal Sandbox también queda aislado; PayPal Live futuro requiere `PAYPAL_ENV=live` y activa de nuevo la reserva transaccional.
-- Las pruebas reales de aprobación y cancelación en el navegador ya se realizaron antes del aislamiento. Este cambio requiere repetir una aprobación Sandbox y confirmar que el stock de `products`/`product_variants` permanezca igual. No habilita Webpay Live: siguen pendientes las credenciales propias, el contrato, la certificación y la conciliación automática de retornos sin navegador.
+- La conciliación sin retorno usa `webpay-reconcile`: Cron la invoca cada minuto con un token aleatorio de Vault; consulta la transacción por token, contrasta orden, sesión e importe, y solo intenta `commit` dentro de la ventana corta de integración. Hasta cinco intentos de confirmación y doce consultas (con pausas crecientes) dejan el pedido pendiente y generan una alerta en Backstage si el resultado sigue sin ser concluyente. `INITIALIZED` o un HTTP 422 por sí solos **no prueban un rechazo**. La alerta «Pagos Webpay» es solo de lectura; el equipo debe verificar el ID de orden en Transbank antes de decidir. No reintentar el cobro desde el panel.
+- Orden de despliegue: migración `20261006001837_webpay_reconciliation.sql`, Edge Functions `webpay-return`, `webpay-order-status`, `webpay-reconcile`, y después `scripts/schedule-webpay-reconcile-sandbox.sql` en el proyecto **Sandbox**. Consulta `cron.job`, `cron.job_run_details` y `webpay_reconcile_*` para confirmar la actividad. El token no se pega en el repositorio ni en comandos.
+- Las pruebas de aprobación y cancelación de integración y las compras aisladas de PayPal/Webpay ya se realizaron. La ruta sin retorno requiere la aceptación específica descrita abajo. No habilita Webpay Live: siguen pendientes las credenciales propias, el contrato, la certificación y una prueba equivalente en ese ambiente.
+
+## Aceptación de la conciliación sin retorno
+
+1. Una compra normal de integración aprobada debe seguir volviendo a «Prueba confirmada». `webpay_commit_attempts` puede ser cero porque el navegador completó el flujo; no se reserva inventario real.
+2. Para probar el retorno perdido en Firefox, bloquea **solo** la petición a `https://hvaonobbpzbupanuymkh.supabase.co/functions/v1/webpay-return` en Herramientas de desarrollo → Red → Bloqueo de solicitudes, antes de iniciar una orden nueva. Mantén `http://localhost:8000/shop.html?webpay-sandbox=1` como origen. Aprueba con tarjeta de integración, deja bloqueada la navegación a la función de retorno y anota `webpay_buy_order` desde Supabase. No hagas un segundo intento de pago con el mismo pedido.
+3. Espera y consulta `merch_orders` por ese ID: `status=paid`, `order_environment=test`, `stock_state=not_applicable`, `webpay_reconcile_attempts>0`, `webpay_commit_attempts>=1`, `webpay_reconcile_error IS NULL` y `webpay_reconcile_alert_at IS NULL`. La ventana de Webpay es corta: si no se confirma a tiempo, **no infieras rechazo**; revisa la alerta y la respuesta remota.
+4. Desactiva el bloqueo en Firefox al terminar. Comprueba stock sin cambios y que el pedido pagado de prueba no figure en «Pedidos pagados».
+
+Diagnóstico SQL (no incluye token ni datos de tarjeta):
+
+```sql
+select webpay_buy_order,status,order_environment,stock_state,
+       webpay_reconcile_attempts,webpay_commit_attempts,webpay_last_reconciled_at,
+       webpay_reconcile_error,webpay_reconcile_alert_at,webpay_reconcile_alert_reason
+from public.merch_orders
+where webpay_buy_order='REEMPLAZAR_POR_LA_ORDEN_WEBPAY';
+```
 
 Referencias: [API de Webpay Plus, Transbank Developers](https://github.com/TransbankDevelopers/transbank-developers-docs/blob/master/referencia/webpay/README.md), [documentación de integración y tarjetas de prueba](https://www.transbankdevelopers.cl/documentacion/webpay-plus).

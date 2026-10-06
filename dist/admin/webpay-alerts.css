@@ -1,0 +1,14 @@
+.webpay-alert-banner {
+  padding: 1rem 1.2rem;
+  border: 2px solid #b35f75;
+  border-radius: 1.25rem;
+  background: #fff0f2;
+  color: #783044;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.webpay-needs-review {
+  border: 2px solid #bd7584;
+  background: #fff7f7;
+}
