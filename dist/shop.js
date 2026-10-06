@@ -1126,7 +1126,7 @@
     ].forEach(value => steps.append(element('li', '', value)));
     guide.append(steps);
     if (!order.sandbox) guide.append(element('p', 'order-review-reversal',
-      'Transbank indica que una transacción sin confirmación se reversa. Debemos verificar el estado de este intento antes de afirmar que se reversó o indicar cuándo aparecerá en tu banco.'));
+      'Si aparece una retención o un cargo, su eventual reversa o liberación debe comprobarse en este caso. No podemos afirmar que ya ocurrió ni indicar cuándo lo reflejará tu banco.'));
 
     const actions = element('div', 'order-review-actions');
     const check = orderSummary.querySelector(':scope > .copy-button');
