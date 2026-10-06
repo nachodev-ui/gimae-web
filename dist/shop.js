@@ -960,10 +960,14 @@
   }
 
   function orderMessage(order) {
-    const lines = [`Hola Gimae ♡ Quiero confirmar mi pedido ${cleanText(order.code, 40)}:`, ''];
+    const lines = [order.paymentMethod === 'webpay' && order.reviewRequired
+      ? `Hola Gimae ♡ Necesito ayuda con el resultado de mi pedido ${cleanText(order.code, 40)}:`
+      : `Hola Gimae ♡ Quiero confirmar mi pedido ${cleanText(order.code, 40)}:`, ''];
     order.items.forEach(item => lines.push(`• ${item.quantity}× ${cleanText(item.name, 80)}${item.option ? ` (${cleanText(item.option, 60)})` : ''} — ${money.format(item.unitPrice * item.quantity)}`));
     lines.push('', `Entrega: ${cleanText(order.shipping?.label || 'A coordinar', 100)}`, `Total productos: ${money.format(Number(order.total) || 0)}`);
     if (order.paymentMethod === 'paypal' && order.paypalOrderId) lines.push(`Pago PayPal: ${cleanText(order.paypalOrderId, 80)}`);
+    if (order.paymentMethod === 'webpay' && order.webpayBuyOrder) lines.push(`Orden Webpay: ${cleanText(order.webpayBuyOrder, 80)}`);
+    if (order.paymentMethod === 'webpay' && order.reviewRequired) lines.push('Necesito revisar el resultado de este intento antes de volver a pagar.');
     lines.push(`Nombre: ${cleanText(order.buyer?.name, 60)}`, `Contacto: ${cleanText(order.buyer?.contact, 80)}`);
     return lines.join('\n').slice(0, 3000);
   }
@@ -1085,16 +1089,54 @@
       }
     }
     if (!paid) orderSummary.append(element('p', 'order-local-note', online ? 'El intento se guarda en el servidor. Esta copia local sirve para reabrir el resumen.' : 'Este resumen existe solo en este navegador. El pedido se confirma cuando el equipo recibe y verifica el comprobante.'));
-    if (!order.sandbox) {
+    if (!order.sandbox || review) {
       const actions = contactActions(order);
       if (actions.children.length) orderSummary.append(actions);
     }
     if (paid) showPaidOrder(status, order.sandbox, isWebpay ? 'Webpay Plus' : 'PayPal Sandbox');
     else if (denied) showDeniedOrder(order, status);
     else if (expired && !review) showExpiredOrder(order, status);
+    else if (review) showWebpayReview(order, status);
     openDialog(orderDialog, opener || document.querySelector('[data-open-cart]'));
     openOrderConfirmation = pendingConfirmation;
     pendingConfirmation?.();
+  }
+
+  function showWebpayReview(order, status) {
+    const hero = element('section', 'order-review-hero');
+    hero.setAttribute('aria-label', 'Resultado Webpay pendiente de revisión');
+    const art = element('span', 'order-review-art', '?');
+    art.setAttribute('aria-hidden', 'true');
+    const message = element('div', 'order-review-message');
+    message.append(status, element('h3', '', 'Tu pedido está en pausa'),
+      element('p', '', 'Webpay todavía no nos entrega un resultado concluyente. No consideramos este pedido pagado ni lo prepararemos hasta comprobarlo. Evita iniciar otro pago por ahora.'));
+    const webpayId = orderSummary.querySelector('.order-copy-row');
+    if (webpayId) message.append(webpayId);
+    hero.append(art, message);
+
+    const guide = element('section', 'order-review-guide');
+    guide.append(element('h3', '', 'Qué hacer ahora'));
+    const steps = element('ol', 'order-review-steps');
+    [
+      'Guarda el código del pedido y la orden Webpay que aparecen arriba. Puedes volver a consultar este mismo intento sin iniciar otro pago.',
+      order.sandbox
+        ? 'Es una prueba de integración sin dinero real. Si la pantalla de Transbank muestra otro resultado, conserva sus datos para que podamos compararlos.'
+        : 'Revisa los movimientos de tu banco. Si aparece un cargo, conserva el comprobante; verlo en el banco todavía no confirma que la tienda haya recibido el pago.',
+      'Escríbenos con ambos códigos y, si corresponde, la fecha, el importe y el comprobante. Nunca envíes tu clave ni el número completo de la tarjeta.',
+    ].forEach(value => steps.append(element('li', '', value)));
+    guide.append(steps);
+    if (!order.sandbox) guide.append(element('p', 'order-review-reversal',
+      'Transbank indica que una transacción sin confirmación se reversa. Debemos verificar el estado de este intento antes de afirmar que se reversó o indicar cuándo aparecerá en tu banco.'));
+
+    const actions = element('div', 'order-review-actions');
+    const check = orderSummary.querySelector(':scope > .copy-button');
+    if (check) { check.textContent = 'Consultar de nuevo'; actions.append(check); }
+    actions.append(copyButton(orderMessage(order), 'Copiar mensaje para Gimae'));
+    guide.append(actions);
+    const contacts = orderSummary.querySelector('.order-contact-actions');
+    if (contacts) guide.append(contacts);
+
+    orderSummary.prepend(hero, guide);
   }
 
   function showPaidOrder(status, sandbox = false, provider = 'PayPal Sandbox') {
