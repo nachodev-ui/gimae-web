@@ -1,7 +1,7 @@
 import { admin } from "../_shared/paypal.ts";
 import { webpay, WebpayHttpError } from "../_shared/webpay.ts";
 import { settle, type WebpayOrder } from "../_shared/webpay-order.ts";
-import { canCommit, matchesTransaction, MAX_CHECKS, MAX_COMMITS, nextCheck, type ReconcileOrder } from "../_shared/webpay-reconcile.ts";
+import { matchesTransaction, MAX_CHECKS, nextCheck, type ReconcileOrder } from "../_shared/webpay-reconcile.ts";
 
 type Candidate = WebpayOrder & ReconcileOrder & {
   payment_provider: "webpay";
@@ -64,41 +64,19 @@ Deno.serve(async (req) => {
       const attempt = item.webpay_reconcile_attempts + 1;
       let errorCode: string | null = null;
       let alertReason: string | null = null;
-      let commitAttempts = item.webpay_commit_attempts;
       try {
         if (!/^[A-Za-z0-9]{64}$/.test(item.webpay_token)) throw new Error("Invalid token");
         const path = `/${encodeURIComponent(item.webpay_token)}`;
-        let remote = await webpay(path, "GET");
+        const remote = await webpay(path, "GET");
         if (!matchesTransaction(remote, item)) {
           alertReason = "mismatch";
           errorCode = "WEBPAY_IDENTITY_MISMATCH";
-        } else if (remote.status === "INITIALIZED" && canCommit(item, Date.now())) {
-          // claim_webpay_commit serializes the browser return and this worker.
-          const { data: taken, error: takeError } = await db.rpc("claim_webpay_commit", { p_token: item.webpay_token });
-          if (takeError) throw takeError;
-          if (taken === "claimed") {
-            const { data: marked, error: markError } = await db.from("merch_orders")
-              .update({ webpay_commit_attempts: commitAttempts + 1 })
-              .eq("id", item.id).eq("status", "capture_pending")
-              .eq("webpay_commit_attempts", commitAttempts).select("id").maybeSingle();
-            if (markError) throw markError;
-            if (!marked) throw new Error("Commit counter unavailable");
-            commitAttempts++;
-            try { remote = await webpay(path, "PUT"); }
-            catch (cause) {
-              // PUT can time out after Webpay committed: always inspect the remote result.
-              errorCode = code(cause);
-              remote = await webpay(path, "GET");
-            }
-            if (!matchesTransaction(remote, item)) {
-              alertReason = "mismatch";
-              errorCode = "WEBPAY_IDENTITY_MISMATCH";
-            }
-          }
         }
 
         if (!alertReason && (remote.status === "AUTHORIZED" || remote.status === "FAILED")) {
-          // A status lookup can recover a transaction committed by the return path.
+          // A status lookup can recover a transaction resolved by the return path.
+          // INITIALIZED is not proof that the buyer approved. Commit is only
+          // allowed in webpay-return after Transbank sends the browser back.
           const { data: current, error: currentError } = await db.from("merch_orders")
             .select("status").eq("id", item.id).single();
           if (currentError) throw currentError;
@@ -138,8 +116,7 @@ Deno.serve(async (req) => {
       }
       const terminal = alertReason !== null || attempt >= MAX_CHECKS;
       if (!alertReason && terminal) alertReason = "unresolved";
-      if (!alertReason && commitAttempts >= MAX_COMMITS &&
-        Date.now() > Date.parse(item.reservation_expires_at) + 5 * 60_000) {
+      if (!alertReason && Date.now() > Date.parse(item.reservation_expires_at) + 5 * 60_000) {
         alertReason = "unresolved";
       }
       const { error: saveError } = await db.from("merch_orders").update({
