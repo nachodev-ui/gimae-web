@@ -602,18 +602,20 @@
     const abandoned = online && order.status === 'abandoned';
     const denied = online && order.status === 'payment_denied';
     const expired = abandoned && order.abandonReason === 'reservation_expired';
+    const review = order.paymentMethod === 'webpay' && order.reviewRequired && !paid;
     if (order.sandbox) recentOrderDescription.textContent += ' Pedido de prueba Sandbox, sin preparación ni entrega.';
-    if (expired) recentOrderDescription.textContent += order.sandbox
+    if (review) recentOrderDescription.textContent += ' El resultado requiere revisión; conserva el ID y evita repetir el pago.';
+    else if (expired) recentOrderDescription.textContent += order.sandbox
       ? ' Terminó el tiempo del intento de prueba; el inventario real no se modificó.'
       : ' La reserva venció y las unidades ya no están apartadas.';
     else if (denied) recentOrderDescription.textContent += ' El pago fue rechazado. Revisa los detalles antes de intentar de nuevo.';
     else if (abandoned) recentOrderDescription.textContent += ' Este intento se cerró sin pago confirmado.';
     else if (online && !paid) recentOrderDescription.textContent += ' Comprueba el estado antes de intentar otro pago.';
     recentOrderState.textContent = paid ? (order.sandbox ? 'Prueba confirmada' : 'Pago confirmado') : online
-      ? (expired ? (order.sandbox ? 'Prueba vencida' : 'Reserva vencida') : denied ? 'Pago rechazado' : abandoned ? 'Intento cerrado' : order.status === 'capture_pending' ? 'Confirmación en curso' : 'Pago sin confirmar') : 'Pendiente de pago';
+      ? (review ? 'Revisión necesaria' : expired ? (order.sandbox ? 'Prueba vencida' : 'Reserva vencida') : denied ? 'Pago rechazado' : abandoned ? 'Intento cerrado' : order.status === 'capture_pending' ? 'Confirmación en curso' : 'Pago sin confirmar') : 'Pendiente de pago';
     recentOrderState.classList.toggle('is-paid', paid);
-    recentOrderState.classList.toggle('is-abandoned', abandoned || denied);
-    recentOrder.classList.toggle('is-expired', expired);
+    recentOrderState.classList.toggle('is-abandoned', abandoned || denied || review);
+    recentOrder.classList.toggle('is-expired', expired && !review);
     recentOrder.classList.toggle('is-denied', denied);
     recentOrder.querySelector('.recent-order-sticker').textContent = expired ? '⌛' : denied ? '!' : '♡';
     recentOrderCode.textContent = `Pedido ${cleanText(order.code, 40)}`;
@@ -625,7 +627,7 @@
     recentOrderTimer = null;
     if (recentOrderPolling || orderDialog.open || checkoutDialog.open || document.hidden || !navigator.onLine) return;
     const current = latestOrder();
-    if (!['paypal', 'webpay'].includes(current?.paymentMethod) || !(current.paypalOrderId || current.webpayBuyOrder) || ['paid', 'payment_denied'].includes(current.status) ||
+    if (!['paypal', 'webpay'].includes(current?.paymentMethod) || current.reviewRequired || !(current.paypalOrderId || current.webpayBuyOrder) || ['paid', 'payment_denied'].includes(current.status) ||
       (current.status === 'abandoned' && Date.now() - Date.parse(current.createdAt) > 86400_000)) return;
     recentOrderPolling = true;
     try {
@@ -638,7 +640,15 @@
             current.paymentMethod === 'webpay' ? { orderCode: current.code, buyOrder: current.webpayBuyOrder } : { orderCode: current.code, orderId: current.paypalOrderId });
           if (result.status === 'paid' && latestOrder()?.code === current.code) {
             latest.status = 'paid';
+            latest.reviewRequired = false;
             clearCartForOrder(latest);
+            saveOrder(latest);
+            break;
+          }
+          if (current.paymentMethod === 'webpay' && result.reviewRequired) {
+            latest.reviewRequired = true;
+            latest.status = result.status;
+            latest.abandonReason = result.abandonReason;
             saveOrder(latest);
             break;
           }
@@ -662,7 +672,7 @@
     } finally {
       recentOrderPolling = false;
       const latest = latestOrder();
-      if (['paypal', 'webpay'].includes(latest?.paymentMethod) && (latest.paypalOrderId || latest.webpayBuyOrder) && !['paid', 'payment_denied'].includes(latest.status) &&
+      if (['paypal', 'webpay'].includes(latest?.paymentMethod) && !latest.reviewRequired && (latest.paypalOrderId || latest.webpayBuyOrder) && !['paid', 'payment_denied'].includes(latest.status) &&
         (latest.status !== 'abandoned' || Date.now() - Date.parse(latest.createdAt) <= 86400_000) &&
         !orderDialog.open && !checkoutDialog.open && !document.hidden && navigator.onLine) {
         recentOrderTimer = window.setTimeout(() => { void pollRecentOrderStatus(); }, 30000);
@@ -950,10 +960,14 @@
   }
 
   function orderMessage(order) {
-    const lines = [`Hola Gimae ♡ Quiero confirmar mi pedido ${cleanText(order.code, 40)}:`, ''];
+    const lines = [order.paymentMethod === 'webpay' && order.reviewRequired
+      ? `Hola Gimae ♡ Necesito ayuda con el resultado de mi pedido ${cleanText(order.code, 40)}:`
+      : `Hola Gimae ♡ Quiero confirmar mi pedido ${cleanText(order.code, 40)}:`, ''];
     order.items.forEach(item => lines.push(`• ${item.quantity}× ${cleanText(item.name, 80)}${item.option ? ` (${cleanText(item.option, 60)})` : ''} — ${money.format(item.unitPrice * item.quantity)}`));
     lines.push('', `Entrega: ${cleanText(order.shipping?.label || 'A coordinar', 100)}`, `Total productos: ${money.format(Number(order.total) || 0)}`);
     if (order.paymentMethod === 'paypal' && order.paypalOrderId) lines.push(`Pago PayPal: ${cleanText(order.paypalOrderId, 80)}`);
+    if (order.paymentMethod === 'webpay' && order.webpayBuyOrder) lines.push(`Orden Webpay: ${cleanText(order.webpayBuyOrder, 80)}`);
+    if (order.paymentMethod === 'webpay' && order.reviewRequired) lines.push('Necesito revisar el resultado de este intento antes de volver a pagar.');
     lines.push(`Nombre: ${cleanText(order.buyer?.name, 60)}`, `Contacto: ${cleanText(order.buyer?.contact, 80)}`);
     return lines.join('\n').slice(0, 3000);
   }
@@ -986,7 +1000,7 @@
     orderStatusTimer = null;
     openOrderConfirmation = null;
     orderSummary.replaceChildren();
-    orderDialog.classList.remove('is-paid', 'is-expired', 'is-denied');
+    orderDialog.classList.remove('is-paid', 'is-expired', 'is-denied', 'is-review');
     const isPayPal = order.paymentMethod === 'paypal';
     const isWebpay = order.paymentMethod === 'webpay';
     const online = isPayPal || isWebpay;
@@ -995,13 +1009,15 @@
     const abandoned = online && order.status === 'abandoned';
     const denied = online && order.status === 'payment_denied';
     const expired = abandoned && order.abandonReason === 'reservation_expired';
+    const review = isWebpay && order.reviewRequired && !paid;
     let pendingConfirmation = null;
-    orderDialog.querySelector(':scope > .eyebrow').textContent = denied ? 'NO SE COMPLETÓ EL PAGO' : expired ? (order.sandbox ? 'TIEMPO DE PRUEBA AGOTADO' : 'TIEMPO DE RESERVA AGOTADO') : 'RESUMEN DEL PEDIDO';
-    document.querySelector('#order-title').textContent = paid ? (order.sandbox ? '¡Prueba confirmada!' : '¡Pago confirmado!') : denied ? 'Pago rechazado' : expired ? (order.sandbox ? 'Prueba vencida' : 'Reserva vencida') : abandoned ? 'Intento cerrado' : awaiting ? 'Revisa tu pago' : 'Tu pedido quedó guardado';
-    const status = element('p', `order-status${paid ? ' is-paid' : denied ? ' is-denied' : abandoned ? ' is-abandoned' : ''}`,
-      online ? (paid ? (order.sandbox ? 'Pago de prueba confirmado · pedido de prueba' : 'Pago confirmado · pedido recibido') : expired ? (order.sandbox ? 'Prueba finalizada · sin pago confirmado' : 'Reserva finalizada · sin pago confirmado') : abandoned ? 'Sin pago confirmado · intento cerrado' : awaiting ? 'Pago sin confirmar' : order.status === 'payment_denied' ? 'Pago rechazado · sin cobro confirmado' : 'Verificando confirmación') : 'Pendiente de pago');
-    status.setAttribute('role', denied ? 'alert' : 'status');
-    status.setAttribute('aria-live', denied ? 'assertive' : 'polite');
+    orderDialog.classList.toggle('is-review', review);
+    orderDialog.querySelector(':scope > .eyebrow').textContent = review ? 'REVISIÓN DE PAGO' : denied ? 'NO SE COMPLETÓ EL PAGO' : expired ? (order.sandbox ? 'TIEMPO DE PRUEBA AGOTADO' : 'TIEMPO DE RESERVA AGOTADO') : 'RESUMEN DEL PEDIDO';
+    document.querySelector('#order-title').textContent = paid ? (order.sandbox ? '¡Prueba confirmada!' : '¡Pago confirmado!') : review ? 'Necesitamos revisar este pago' : denied ? 'Pago rechazado' : expired ? (order.sandbox ? 'Prueba vencida' : 'Reserva vencida') : abandoned ? 'Intento cerrado' : awaiting ? 'Revisa tu pago' : 'Tu pedido quedó guardado';
+    const status = element('p', `order-status${paid ? ' is-paid' : review || abandoned ? ' is-abandoned' : denied ? ' is-denied' : ''}`,
+      online ? (paid ? (order.sandbox ? 'Pago de prueba confirmado · pedido de prueba' : 'Pago confirmado · pedido recibido') : review ? 'Resultado incierto · requiere revisión' : expired ? (order.sandbox ? 'Prueba finalizada · sin pago confirmado' : 'Reserva finalizada · sin pago confirmado') : abandoned ? 'Sin pago confirmado · intento cerrado' : awaiting ? 'Pago sin confirmar' : order.status === 'payment_denied' ? 'Pago rechazado · sin cobro confirmado' : 'Verificando confirmación') : 'Pendiente de pago');
+    status.setAttribute('role', denied || review ? 'alert' : 'status');
+    status.setAttribute('aria-live', denied || review ? 'assertive' : 'polite');
     orderSummary.append(status);
     if (order.sandbox) orderSummary.append(element('p', 'order-local-note', 'Pedido de prueba Sandbox · sin dinero real, preparación ni entrega.'));
     const code = element('div', 'order-code'); code.append(element('span', '', 'Código de pedido'), element('strong', '', cleanText(order.code, 40)), copyButton(order.code));
@@ -1029,6 +1045,7 @@
       orderSummary.append(copyRow('Orden Webpay', order.webpayBuyOrder || 'Pendiente'));
       const instruction = element('p', 'order-instruction', paid
         ? `Pago de prueba por ${money.format(Number(order.total))} confirmado en Webpay. Este pedido de integración no se preparará.`
+        : review ? 'No pudimos determinar el resultado de esta transacción. Conserva el ID Webpay y contacta a Gimae antes de volver a pagar; el equipo debe revisar este intento en Transbank.'
         : expired ? 'El intento de prueba terminó sin pago confirmado. No afectó el inventario. Si tu banco muestra un cargo, contacta a Gimae con el ID antes de repetir.'
         : order.status === 'payment_denied' ? 'Transbank no confirmó el cobro. Conserva esta orden y revisa tu actividad de prueba antes de iniciar otro intento desde el carrito.'
         : order.webpayReturn === 'cancelled' ? 'Volviste sin completar el pago. Este intento de prueba vencerá a la hora indicada. Puedes iniciar otro después.'
@@ -1036,9 +1053,9 @@
         : 'Estamos verificando el resultado con Transbank. No repitas el pago.');
       orderSummary.append(instruction);
     if (!paid && order.webpayBuyOrder) {
-        const check = element('button', 'copy-button', expired ? 'Comprobar si llegó un pago' : 'Consultar confirmación');
+        const check = element('button', 'copy-button', expired && !review ? 'Comprobar si llegó un pago' : 'Consultar confirmación');
         check.type = 'button';
-        if (expired) check.classList.add('order-expired-refresh');
+        if (expired && !review) check.classList.add('order-expired-refresh');
         check.addEventListener('click', () => confirmWebpayOrder(order, instruction, check));
         orderSummary.append(check);
         pendingConfirmation = () => confirmWebpayOrder(order, instruction, check);
@@ -1072,16 +1089,54 @@
       }
     }
     if (!paid) orderSummary.append(element('p', 'order-local-note', online ? 'El intento se guarda en el servidor. Esta copia local sirve para reabrir el resumen.' : 'Este resumen existe solo en este navegador. El pedido se confirma cuando el equipo recibe y verifica el comprobante.'));
-    if (!order.sandbox) {
+    if (!order.sandbox || review) {
       const actions = contactActions(order);
       if (actions.children.length) orderSummary.append(actions);
     }
     if (paid) showPaidOrder(status, order.sandbox, isWebpay ? 'Webpay Plus' : 'PayPal Sandbox');
     else if (denied) showDeniedOrder(order, status);
-    else if (expired) showExpiredOrder(order, status);
+    else if (expired && !review) showExpiredOrder(order, status);
+    else if (review) showWebpayReview(order, status);
     openDialog(orderDialog, opener || document.querySelector('[data-open-cart]'));
     openOrderConfirmation = pendingConfirmation;
     pendingConfirmation?.();
+  }
+
+  function showWebpayReview(order, status) {
+    const hero = element('section', 'order-review-hero');
+    hero.setAttribute('aria-label', 'Resultado Webpay pendiente de revisión');
+    const art = element('span', 'order-review-art', '?');
+    art.setAttribute('aria-hidden', 'true');
+    const message = element('div', 'order-review-message');
+    message.append(status, element('h3', '', 'Tu pedido está en pausa'),
+      element('p', '', 'Webpay todavía no nos entrega un resultado concluyente. No consideramos este pedido pagado ni lo prepararemos hasta comprobarlo. Evita iniciar otro pago por ahora.'));
+    const webpayId = orderSummary.querySelector('.order-copy-row');
+    if (webpayId) message.append(webpayId);
+    hero.append(art, message);
+
+    const guide = element('section', 'order-review-guide');
+    guide.append(element('h3', '', 'Qué hacer ahora'));
+    const steps = element('ol', 'order-review-steps');
+    [
+      'Guarda el código del pedido y la orden Webpay que aparecen arriba. Puedes volver a consultar este mismo intento sin iniciar otro pago.',
+      order.sandbox
+        ? 'Es una prueba de integración sin dinero real. Si la pantalla de Transbank muestra otro resultado, conserva sus datos para que podamos compararlos.'
+        : 'Revisa los movimientos de tu banco. Si aparece un cargo, conserva el comprobante; verlo en el banco todavía no confirma que la tienda haya recibido el pago.',
+      'Escríbenos con ambos códigos y, si corresponde, la fecha, el importe y el comprobante. Nunca envíes tu clave ni el número completo de la tarjeta.',
+    ].forEach(value => steps.append(element('li', '', value)));
+    guide.append(steps);
+    if (!order.sandbox) guide.append(element('p', 'order-review-reversal',
+      'Si aparece una retención o un cargo, su eventual reversa o liberación debe comprobarse en este caso. No podemos afirmar que ya ocurrió ni indicar cuándo lo reflejará tu banco.'));
+
+    const actions = element('div', 'order-review-actions');
+    const check = orderSummary.querySelector(':scope > .copy-button');
+    if (check) { check.textContent = 'Consultar de nuevo'; actions.append(check); }
+    actions.append(copyButton(orderMessage(order), 'Copiar mensaje para Gimae'));
+    guide.append(actions);
+    const contacts = orderSummary.querySelector('.order-contact-actions');
+    if (contacts) guide.append(contacts);
+
+    orderSummary.prepend(hero, guide);
   }
 
   function showPaidOrder(status, sandbox = false, provider = 'PayPal Sandbox') {
@@ -1326,15 +1381,16 @@
       try {
         const result = await edgeFunction('webpay-order-status', { orderCode: order.code, buyOrder: order.webpayBuyOrder });
         if (epoch !== statusPollEpoch || !orderDialog.open) return;
-        if (result.status !== order.status || result.abandonReason !== order.abandonReason) {
+        if (result.status !== order.status || result.abandonReason !== order.abandonReason || Boolean(result.reviewRequired) !== Boolean(order.reviewRequired)) {
           order.status = result.status;
           order.abandonReason = result.abandonReason;
+          order.reviewRequired = Boolean(result.reviewRequired);
           if (order.status === 'paid' || order.status === 'capture_pending') clearCartForOrder(order);
           saveOrder(order);
           renderOrder(order, button);
           return;
         }
-        if (result.status === 'paid' || result.status === 'payment_denied') { button.disabled = false; return; }
+        if (result.status === 'paid' || result.status === 'payment_denied' || result.reviewRequired) { button.disabled = false; return; }
         if (checks >= 12) instruction.textContent = 'Seguimos esperando una respuesta segura de Transbank. Conserva este ID y no repitas el pago.';
       } catch (error) {
         instruction.textContent = 'No pudimos consultar el servidor. Conserva este ID y prueba de nuevo cuando vuelva la conexión.';

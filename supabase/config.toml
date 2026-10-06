@@ -29,3 +29,7 @@ verify_jwt = false
 
 [functions.webpay-order-status]
 verify_jwt = false
+
+# Cron only: random credential in Vault, checked against a hash in Postgres.
+[functions.webpay-reconcile]
+verify_jwt = false
