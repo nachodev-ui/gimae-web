@@ -48,7 +48,7 @@ Funciona en CLP y solo con retiro presencial; los costos y lugares de entrega si
 ## Cancelación y vencimiento
 
 - Haz una segunda prueba y vuelve desde Transbank sin autorizar. Consulta el pedido. No debe marcarse pagado. El intento de integración dura 9 minutos para terminar antes del límite aproximado de 10 minutos del formulario de Transbank. Cron lo deja `abandoned`, motivo `reservation_expired`; esta operación puede tardar aproximadamente un minuto adicional. Ninguna unidad queda apartada.
-- La función de retorno acepta `GET ?token_ws=...` y `POST` de Transbank. Una respuesta HTTP 422 del commit exige consultar el estado remoto: si Webpay sigue en `INITIALIZED`, el intento se cierra sin marcarse pagado. Ante incertidumbre permanece pendiente para revisión.
+- La función de retorno acepta `GET ?token_ws=...` y `POST` de Transbank. Una respuesta HTTP 422 del commit exige consultar el estado remoto: si Webpay sigue en `INITIALIZED`, el pedido permanece pendiente para los reintentos acotados y, si no se resuelve, se muestra una alerta de revisión. Ese estado por sí solo no demuestra rechazo ni autorización.
 - Si Transbank rechaza la transacción tras la confirmación del servidor, se verá `payment_denied`.
 - Si una autorización llega después de vencer, se registra como `paid` de prueba y permanece fuera de preparación.
 
@@ -62,7 +62,7 @@ Funciona en CLP y solo con retiro presencial; los costos y lugares de entrega si
 
 ## Aceptación de la conciliación sin retorno
 
-1. Una compra normal de integración aprobada debe seguir volviendo a «Prueba confirmada». `webpay_commit_attempts` puede ser cero porque el navegador completó el flujo; no se reserva inventario real.
+1. Una compra normal de integración aprobada debe seguir volviendo a «Prueba confirmada». Para comprobar que la conciliación no interrumpe un pago en curso, espera unos tres minutos en el formulario de Transbank antes de aprobar (sin superar los nueve minutos de la orden). `webpay_commit_attempts` puede ser mayor que cero si el trabajador programado revisó la orden mientras esperabas; no se reserva inventario real.
 2. Para probar el retorno perdido en Firefox, bloquea **solo** la petición a `https://hvaonobbpzbupanuymkh.supabase.co/functions/v1/webpay-return` en Herramientas de desarrollo → Red → Bloqueo de solicitudes, antes de iniciar una orden nueva. Mantén `http://localhost:8000/shop.html?webpay-sandbox=1` como origen. Aprueba con tarjeta de integración, deja bloqueada la navegación a la función de retorno y anota `webpay_buy_order` desde Supabase. No hagas un segundo intento de pago con el mismo pedido.
 3. Espera y consulta `merch_orders` por ese ID: `status=paid`, `order_environment=test`, `stock_state=not_applicable`, `webpay_reconcile_attempts>0`, `webpay_commit_attempts>=1`, `webpay_reconcile_error IS NULL` y `webpay_reconcile_alert_at IS NULL`. La ventana de Webpay es corta: si no se confirma a tiempo, **no infieras rechazo**; revisa la alerta y la respuesta remota.
 4. Desactiva el bloqueo en Firefox al terminar. Comprueba stock sin cambios y que el pedido pagado de prueba no figure en «Pedidos pagados».
