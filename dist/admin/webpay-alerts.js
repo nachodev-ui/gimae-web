@@ -15,7 +15,7 @@ function replyFor(order) {
     'Nuestra tienda todavía no tiene un resultado concluyente de Transbank. Por seguridad, no lo consideramos pagado ni prepararemos el pedido. Te pedimos que no inicies otro pago hasta que comprobemos este intento.',
     sandbox
       ? 'Este intento corresponde al ambiente de integración: no se utilizó dinero real. Si ves un resultado distinto en la pantalla de prueba, envíanos los datos para contrastarlos.'
-      : 'Si tu banco muestra un cargo, conserva el comprobante y envíanos la fecha y el importe. No compartas claves ni el número completo de tu tarjeta. Transbank indica que las transacciones sin confirmación se reversan; primero debemos verificar si eso ocurrió en este caso y no podemos asegurar cuándo lo reflejará tu banco.',
+      : 'Si tu banco muestra un cargo o una retención, conserva el comprobante y envíanos la fecha y el importe. No compartas claves ni el número completo de tu tarjeta. Su eventual reversa o liberación debe verificarse para este caso; todavía no podemos afirmar que ocurrió ni indicar cuándo la reflejará tu banco.',
     'Te informaremos cuando tengamos un resultado verificado. Gracias por conservar estos códigos.'
   ].join('\n\n');
 }
