@@ -395,11 +395,11 @@
     const cost = shipping ? positiveNumber(shipping.cost) : null;
     const eta = cleanText(shipping?.eta, 100);
     const starken = selectedShippingId === 'starken_por_pagar';
-    shippingDetail.textContent = starken ? 'Transporte POR PAGAR al recibir · tarifa de Starken no incluida · plazo sujeto a cobertura' :
+    shippingDetail.textContent = starken ? 'Cobertura y plazo sujetos a confirmación' :
       [cost === null ? 'Costo: A coordinar' : `Costo: ${money.format(cost)}`, eta ? `Plazo: ${eta}` : 'Plazo: A coordinar'].join(' · ');
     starkenCartExplainer.hidden = !starken;
     cartTotalNote.textContent = starken
-      ? 'Pagas aquí solo los productos. El transporte se paga a Starken cuando recibas el paquete.'
+      ? 'La tarifa del despacho no forma parte de este total.'
       : 'El total corresponde a los productos. El retiro se coordina con Gimae.';
     renderTotals();
   }
@@ -407,7 +407,7 @@
   function renderTotals() {
     const current = totals();
     cartSubtotal.textContent = money.format(current.subtotal);
-    cartShippingCost.textContent = selectedShippingId === 'starken_por_pagar' ? 'POR PAGAR a Starken' :
+    cartShippingCost.textContent = selectedShippingId === 'starken_por_pagar' ? 'Se paga al recibir' :
       current.shippingCost === null ? 'A coordinar' : money.format(current.shippingCost);
     cartTotal.textContent = money.format(current.total);
   }
@@ -1077,7 +1077,7 @@
     totalsBox.append(element('span', '', 'Total productos'), element('strong', '', money.format(Number(order.total) || 0)), copyButton(String(Math.round(Number(order.total) || 0)), 'Copiar total'));
     orderSummary.append(totalsBox);
     orderSummary.append(element('p', 'order-shipping-copy', order.shipping?.id === 'starken_por_pagar'
-      ? `Starken a domicilio · POR PAGAR. ${cleanText(order.shipping.destination, 170)}. El transporte se paga a Starken al recibir; no está incluido en los productos. ${order.sandbox ? 'Esta prueba no genera un despacho real.' : 'Gimae compartirá el comprobante y seguimiento después del despacho.'}`
+      ? `Starken a domicilio · ${cleanText(order.shipping.destination, 170)}. El envío se paga a Starken al recibir y no está incluido en este total. ${order.sandbox ? 'Esta prueba no genera un despacho real.' : 'Gimae te compartirá el comprobante y seguimiento.'}`
       : `Entrega: ${cleanText(order.shipping?.label || 'A coordinar', 100)} · retiro a coordinar.`));
 
     if (order.paymentMethod === 'bankTransfer') {
@@ -1202,7 +1202,7 @@
     const receipt = element('section', 'order-receipt');
     receipt.setAttribute('aria-label', 'Detalles del pedido');
     const heading = element('div', 'order-receipt-heading');
-    heading.append(element('span', '', 'TU COMPRA EN DETALLE'), element('span', 'order-receipt-dots', '● ● ●'));
+    heading.append(element('span', '', 'GIMAE · COMPROBANTE DE PEDIDO'), element('span', 'order-receipt-dots', '● ● ●'));
     receipt.append(heading, orderSummary.querySelector('.order-code'));
 
     const products = element('div', 'order-receipt-products');

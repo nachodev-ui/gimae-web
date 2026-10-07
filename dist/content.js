@@ -27,7 +27,7 @@ window.GIMAE = {
       },
       {
         "id": "starken_por_pagar",
-        "label": "Starken a domicilio · envío POR PAGAR",
+        "label": "Starken · entrega a domicilio",
         "enabled": true,
         "cost": null,
         "eta": ""
