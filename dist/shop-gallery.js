@@ -76,8 +76,8 @@
         id: cleanText(member.id, 40),
         label: cleanText(`${member.name} · ${member.colorLabel}`, 60),
         price: positiveNumber(product.price),
-        image: assetPath(product.image),
-        imageAlt: cleanText(product.imageAlt, 160),
+        image: assetPath(product.memberImages?.[member.id]?.src || product.image),
+        imageAlt: cleanText(product.memberImages?.[member.id]?.alt || product.imageAlt, 160),
         typeId: cleanText(member.id, 40),
         typeLabel: cleanText(`${member.name} · ${member.colorLabel}`, 60),
         memberId: '',
@@ -133,9 +133,11 @@
       const src = assetPath(srcValue);
       if (!src || seen.has(src)) return;
       seen.add(src);
+      const linked = Object.entries(product.memberImages || {}).find(([, image]) => assetPath(image?.src) === src);
       gallery.push({
         src,
-        alt: cleanText(altValue || product.imageAlt || product.name, 160)
+        alt: cleanText(linked?.[1]?.alt || altValue || product.imageAlt || product.name, 160),
+        memberId: cleanText(linked?.[0], 40)
       });
     };
 
@@ -148,6 +150,40 @@
     }
     optionsFor(product).forEach(option => push(option.image, option.imageAlt));
     return gallery;
+  }
+
+  function usesMemberPhotos(product, options, gallery) {
+    if (product.variantSource !== 'members' || options.length < 2 || gallery.length !== options.length) return false;
+    const images = options.map(option => option.image);
+    return images.every(Boolean) && new Set(images).size === options.length && gallery.every(item => images.includes(item.src));
+  }
+
+  function memberFor(option) {
+    return (config.members || []).find(member => String(member.id) === String(option?.id));
+  }
+
+  function memberChoiceLabel(product, member) {
+    return `${product.id === '01' ? 'Polera' : 'Diseño'} de ${cleanText(member.name, 40)} · ${cleanText(member.colorLabel, 40)}`;
+  }
+
+  function attachSwipe(stage, navigate) {
+    let start = null;
+    let suppressClickUntil = 0;
+    stage.addEventListener('touchstart', event => {
+      if (event.touches.length !== 1 || event.target.closest('.shop-carousel-arrow, .product-gallery-dot')) return;
+      start = { x: event.touches[0].clientX, y: event.touches[0].clientY };
+    }, { passive: true });
+    stage.addEventListener('touchend', event => {
+      if (!start || !event.changedTouches.length) return;
+      const dx = event.changedTouches[0].clientX - start.x;
+      const dy = event.changedTouches[0].clientY - start.y;
+      start = null;
+      if (Math.abs(dx) < 42 || Math.abs(dx) < Math.abs(dy) * 1.25) return;
+      suppressClickUntil = Date.now() + 550;
+      navigate(dx < 0 ? 1 : -1);
+    }, { passive: true });
+    stage.addEventListener('touchcancel', () => { start = null; }, { passive: true });
+    return () => Date.now() < suppressClickUntil;
   }
 
   function cardFor(productId) {
@@ -165,6 +201,10 @@
   }
 
   function syncCardMedia(card, option) {
+    if (typeof card?._syncGalleryMedia === 'function') {
+      card._syncGalleryMedia(option);
+      return;
+    }
     const image = card?.querySelector('.shop-product-media img');
     if (!image || !option) return;
     const src = option.image || '';
@@ -301,9 +341,10 @@
     heroImage.alt = cleanText(alt || 'Imagen del producto', 160);
   }
 
-  function openProduct(product, opener) {
+  function openProduct(product, opener, initialSrc = '') {
     const options = optionsFor(product);
     const gallery = galleryFor(product);
+    const photoChoices = usesMemberPhotos(product, options, gallery);
     const card = cardFor(product.id);
     const cardVariant = canonicalVariant(card);
     let selectedOptionId = options.some(option => option.id === cardVariant?.value)
@@ -326,11 +367,22 @@
       element('strong', '', 'Imagen por publicar'),
       element('small', '', 'El producto sigue disponible para consultar.')
     );
-    stage.append(heroImage, heroPlaceholder);
+    const memberBadge = element('span', 'shop-photo-member product-gallery-member');
+    memberBadge.hidden = true;
+    memberBadge.setAttribute('aria-live', 'polite');
+    const previous = element('button', 'shop-carousel-arrow shop-carousel-arrow--previous', '‹');
+    previous.type = 'button';
+    previous.setAttribute('aria-label', 'Imagen anterior');
+    const next = element('button', 'shop-carousel-arrow shop-carousel-arrow--next', '›');
+    next.type = 'button';
+    next.setAttribute('aria-label', 'Imagen siguiente');
+    stage.append(heroImage, heroPlaceholder, memberBadge, previous, next);
 
-    const thumbs = element('div', 'product-gallery-thumbs');
-    thumbs.setAttribute('aria-label', 'Vistas del producto');
-    mediaColumn.append(stage, thumbs);
+    const position = element('p', 'shop-carousel-position');
+    position.setAttribute('aria-live', 'polite');
+    const dots = element('div', 'product-gallery-dots');
+    dots.setAttribute('aria-label', 'Vistas del producto');
+    mediaColumn.append(stage, position, dots);
 
     const info = element('div', 'product-detail-info');
     info.append(element('p', 'eyebrow', `GIMAE! GOODIE · NO. ${cleanText(product.id, 10)}`));
@@ -354,7 +406,7 @@
     let memberSelect = null;
     let memberLabel = null;
 
-    if (options.length > 1) {
+    if (options.length > 1 && !photoChoices) {
       const variantField = element('label', 'product-detail-field');
       variantField.append(element('span', '', cleanText(product.variantLabel || 'Variante', 60)));
 
@@ -440,8 +492,8 @@
       memberSelect.value = option.memberId || memberOptions[0].memberId;
     }
 
-    function markActiveThumb() {
-      thumbs.querySelectorAll('.product-gallery-thumb').forEach(button => {
+    function markActiveDot() {
+      dots.querySelectorAll('.product-gallery-dot').forEach(button => {
         button.setAttribute('aria-pressed', String(button.dataset.src === activeMediaSrc));
       });
     }
@@ -449,7 +501,16 @@
     function showMedia(src, alt) {
       activeMediaSrc = assetPath(src);
       setHeroMedia(heroImage, heroPlaceholder, activeMediaSrc, alt);
-      markActiveThumb();
+      markActiveDot();
+      const index = gallery.findIndex(item => item.src === activeMediaSrc);
+      const option = photoChoices ? options.find(item => item.image === activeMediaSrc) : null;
+      const member = memberFor(option);
+      memberBadge.hidden = !member;
+      if (member) {
+        memberBadge.textContent = memberChoiceLabel(product, member);
+        memberBadge.dataset.memberColor = cleanText(member.color, 20);
+      }
+      position.textContent = gallery.length > 1 && index >= 0 ? `${index + 1} / ${gallery.length} · Desliza para ver más` : '';
     }
 
     function syncOption(changeMedia = true) {
@@ -470,8 +531,8 @@
       quantity.max = String(stock ?? 99);
       if (stock === 0) quantity.value = '1';
       else if (Number(quantity.value) > Number(quantity.max)) quantity.value = quantity.max;
-      addButton.disabled = stock === 0;
-      addButton.textContent = stock === 0 ? 'Agotado' : 'Agregar al carrito ♡';
+      addButton.disabled = stock === 0 || (stock === null && product.inventoryMode === 'variants');
+      addButton.textContent = stock === 0 ? 'Agotado' : addButton.disabled ? 'Stock por confirmar' : 'Agregar al carrito ♡';
 
       if (changeMedia) {
         const src = option.image || product.image || gallery[0]?.src || '';
@@ -492,32 +553,39 @@
       syncOption(true);
     }
 
+    function navigateTo(index) {
+      if (!gallery.length) return;
+      const item = gallery[(index + gallery.length) % gallery.length];
+      const matches = options.filter(option => option.image && option.image === item.src);
+      if (matches.length) {
+        const currentMember = selectedOption()?.memberId || '';
+        const matchingOption = photoChoices ? matches[0] : matches.find(option => option.memberId === currentMember) || matches[0];
+        selectedOptionId = matchingOption.id;
+        syncOption(false);
+        if (cardVariant) {
+          cardVariant.value = matchingOption.id;
+          cardVariant.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      }
+      showMedia(item.src, item.alt);
+    }
+
     gallery.forEach((item, index) => {
-      const button = element('button', 'product-gallery-thumb');
+      const button = element('button', 'product-gallery-dot');
       button.type = 'button';
       button.dataset.src = item.src;
-      button.setAttribute('aria-label', `Ver imagen ${index + 1} de ${cleanText(product.name, 70)}`);
+      const member = memberFor(options.find(option => option.image === item.src));
+      button.setAttribute('aria-label', member && photoChoices ? `Ver ${memberChoiceLabel(product, member)}` : `Ver imagen ${index + 1} de ${cleanText(product.name, 70)}`);
       button.setAttribute('aria-pressed', 'false');
-      const image = element('img', '');
-      image.src = item.src;
-      image.alt = '';
-      image.loading = 'lazy';
-      image.decoding = 'async';
-      button.append(image);
-      button.addEventListener('click', () => {
-        const matches = options.filter(option => option.image && option.image === item.src);
-        if (matches.length) {
-          const currentMember = selectedOption()?.memberId || '';
-          const matchingOption = matches.find(option => option.memberId === currentMember) || matches[0];
-          selectedOptionId = matchingOption.id;
-          syncOption(false);
-        }
-        showMedia(item.src, item.alt);
-      });
-      thumbs.append(button);
+      button.addEventListener('click', () => navigateTo(index));
+      dots.append(button);
     });
 
-    if (gallery.length <= 1) thumbs.hidden = true;
+    const step = direction => navigateTo(gallery.findIndex(item => item.src === activeMediaSrc) + direction);
+    previous.addEventListener('click', () => step(-1));
+    next.addEventListener('click', () => step(1));
+    attachSwipe(stage, step);
+    previous.hidden = next.hidden = dots.hidden = gallery.length <= 1;
 
     variantSelect?.addEventListener('change', () => {
       selectedOptionId = variantSelect.value;
@@ -549,8 +617,10 @@
       }
     });
 
-    if (!gallery.length) thumbs.hidden = true;
+    if (!gallery.length) dots.hidden = true;
     syncOption(true);
+    const initialIndex = gallery.findIndex(item => item.src === initialSrc);
+    if (initialIndex >= 0) navigateTo(initialIndex);
 
     returnFocus = opener instanceof HTMLElement ? opener : document.activeElement;
     if (!productDialog.open) {
@@ -574,6 +644,10 @@
         return;
       }
 
+      const gallery = galleryFor(product);
+      const options = optionsFor(product);
+      const photoChoices = usesMemberPhotos(product, options, gallery);
+      const shell = element('div', 'shop-product-carousel');
       const mediaButton = element('button', 'shop-product-media');
       mediaButton.type = 'button';
       mediaButton.setAttribute('aria-label', `Ver detalle de ${cleanText(product.name, 80)}`);
@@ -590,14 +664,67 @@
         placeholder.append(element('span', '', '✦'), element('small', '', 'Imagen por publicar'));
         mediaButton.append(placeholder);
       }
-      mediaButton.append(element('span', 'shop-product-media-action', 'VER ♡'));
-      mediaButton.addEventListener('click', () => openProduct(product, mediaButton));
+      const memberBadge = element('span', 'shop-photo-member shop-card-member');
+      memberBadge.hidden = true;
+      memberBadge.setAttribute('aria-live', 'polite');
+      const position = element('span', 'shop-card-position');
+      mediaButton.append(memberBadge, position, element('span', 'shop-product-media-action', 'VER ♡'));
+      let activeIndex = 0;
+      const canonical = canonicalVariant(card);
+      const updateCard = (index, selectOption = false) => {
+        if (!gallery.length) return;
+        activeIndex = (index + gallery.length) % gallery.length;
+        const item = gallery[activeIndex];
+        const image = mediaButton.querySelector('img');
+        if (image) { image.src = item.src; image.alt = item.alt; }
+        const matching = options.find(option => option.image === item.src);
+        if (selectOption && matching && canonical) {
+          canonical.value = matching.id;
+          canonical.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        const member = photoChoices ? memberFor(matching) : null;
+        memberBadge.hidden = !member;
+        if (member) {
+          memberBadge.textContent = memberChoiceLabel(product, member);
+          memberBadge.dataset.memberColor = cleanText(member.color, 20);
+        }
+        mediaButton.setAttribute('aria-label', member ? `Ver detalle de ${cleanText(product.name, 70)}, ${memberChoiceLabel(product, member)}` : `Ver detalle de ${cleanText(product.name, 80)}`);
+        position.textContent = gallery.length > 1 ? `${activeIndex + 1} / ${gallery.length}` : '';
+        mediaButton.dataset.activeMediaSrc = item.src;
+      };
+      card._syncGalleryMedia = option => {
+        const index = gallery.findIndex(item => item.src === option?.image);
+        if (index >= 0) updateCard(index);
+      };
+      if (photoChoices && canonical) {
+        canonical.hidden = true;
+        canonical.tabIndex = -1;
+        canonical.setAttribute('aria-hidden', 'true');
+      }
+      canonical?.addEventListener('change', () => syncCardMedia(card, selectedCardOption(product, card)));
+      const suppressed = attachSwipe(mediaButton, direction => updateCard(activeIndex + direction, true));
+      mediaButton.addEventListener('click', event => {
+        if (suppressed()) { event.preventDefault(); return; }
+        openProduct(product, mediaButton, mediaButton.dataset.activeMediaSrc);
+      });
+
+      shell.append(mediaButton);
+      if (gallery.length > 1) {
+        const previous = element('button', 'shop-carousel-arrow shop-carousel-arrow--previous', '‹');
+        previous.type = 'button';previous.setAttribute('aria-label',`Imagen anterior de ${cleanText(product.name, 70)}`);
+        const next = element('button', 'shop-carousel-arrow shop-carousel-arrow--next', '›');
+        next.type = 'button';next.setAttribute('aria-label',`Imagen siguiente de ${cleanText(product.name, 70)}`);
+        previous.addEventListener('click', () => updateCard(activeIndex - 1, true));
+        next.addEventListener('click', () => updateCard(activeIndex + 1, true));
+        shell.append(previous, next);
+      }
 
       const top = card.querySelector('.product-top');
-      if (top) top.insertAdjacentElement('afterend', mediaButton);
-      else card.prepend(mediaButton);
+      if (top) top.insertAdjacentElement('afterend', shell);
+      else card.prepend(shell);
 
-      syncCardMedia(card, selectedCardOption(product, card));
+      const initial = gallery.findIndex(item => item.src === selectedCardOption(product, card)?.image);
+      updateCard(photoChoices ? 0 : initial >= 0 ? initial : 0, photoChoices);
     });
   }
 
@@ -610,7 +737,7 @@
     event.stopImmediatePropagation();
     const card = detail.closest('.shop-product-card');
     const product = productById(card?.dataset.productId);
-    if (product) openProduct(product, detail);
+    if (product) openProduct(product, detail, card?.querySelector('.shop-product-media')?.dataset.activeMediaSrc);
   }, true);
 
   productDialog.addEventListener('close', () => {
