@@ -160,25 +160,43 @@ async function removeStorage(url){
 }
 async function persistImageOrder(images){
   for(let index=0;index<images.length;index++){
-    const {error}=await client.from('product_images').update({display_order:index}).eq('id',images[index].id);
-    if(error)throw error;
-    images[index].display_order=index;
+    const saved=await query(client.from('product_images').update({display_order:index})
+      .eq('id',images[index].id).eq('product_id',images[index].product_id).select('id,display_order'));
+    if(saved.length!==1||saved[0].id!==images[index].id||saved[0].display_order!==index){
+      throw new Error('No se confirmó el cambio en la base de datos. Revisa los permisos de tu cuenta.');
+    }
   }
 }
 async function renderImages(id){
   try{
-    let images=await query(client.from('product_images').select('*').eq('product_id',id).order('display_order',{ascending:true}).order('id',{ascending:true}));
+    const loadImages=()=>query(client.from('product_images').select('*').eq('product_id',id).order('display_order',{ascending:true}).order('id',{ascending:true}));
+    let images=await loadImages();
     const target=$('#image-list');if(!target)return;
     let busy=false;
-    target.setAttribute('aria-label','Galería actual del producto. Usa las flechas para cambiar el orden.');
+    target.setAttribute('aria-label','Galería actual del producto. Arrastra una foto para cambiar el orden.');
 
     const setBusy=value=>{
       busy=value;
       target.setAttribute('aria-busy',String(value));
-      target.querySelectorAll('button').forEach(button=>{button.disabled=value||button.dataset.edge==='true'});
+      target.querySelectorAll('button').forEach(button=>{button.disabled=value});
     };
 
-    const paint=(focusId=null,focusDirection=null)=>{
+    const reorder=async(from,to,focusId)=>{
+      if(busy||from===to||to<0||to>=images.length)return;
+      const previous=[...images];const next=[...images];const [moved]=next.splice(from,1);next.splice(to,0,moved);
+      images=next;paint(focusId);setBusy(true);
+      try{
+        await persistImageOrder(next);
+        const confirmed=await loadImages();
+        if(confirmed.map(image=>image.id).join('|')!==next.map(image=>image.id).join('|'))throw new Error('El orden guardado no coincide. Actualiza la galería antes de intentarlo otra vez.');
+        images=confirmed;paint(focusId);notice('Orden guardado. La primera foto es la imagen principal.');toast('success','Galería ordenada','La tienda mostrará las fotos en este orden.');
+      }catch(error){
+        try{images=await loadImages()}catch{images=previous}
+        paint(focusId);notice(`No se pudo guardar el orden: ${error.message}`);toast('error','No se pudo cambiar el orden',error.message);
+      }finally{if(target.isConnected)setBusy(false)}
+    };
+
+    const paint=(focusId=null)=>{
       target.replaceChildren();
       images.forEach((img,index)=>{
         const role=index===0?'Imagen principal':`Imagen ${index+1}`;
@@ -186,28 +204,58 @@ async function renderImages(id){
         const wrap=document.createElement('article');wrap.className='merch-current-image-card';wrap.dataset.merchImageCard='true';wrap.dataset.imageId=img.id;
         const badge=document.createElement('span');badge.className='merch-image-role';badge.textContent=role;
         const removeButton=document.createElement('button');removeButton.type='button';removeButton.className='merch-image-delete';removeButton.textContent='×';removeButton.setAttribute('aria-label',`Quitar ${role.toLowerCase()} de la galería`);removeButton.title='Quitar imagen';
-        const preview=document.createElement('img');preview.src=img.url;preview.alt=img.alt||'Imagen de producto';
+        const head=document.createElement('div');head.className='merch-image-card-head';head.append(badge,removeButton);
+        const stage=document.createElement('div');stage.className='merch-image-drag';stage.tabIndex=0;stage.setAttribute('role','group');stage.setAttribute('aria-label',`${role}. Arrastra esta foto para cambiar su posición; con teclado usa las flechas izquierda o derecha.`);
+        const preview=document.createElement('img');preview.src=img.url;preview.alt=img.alt||'Imagen de producto';preview.draggable=false;
+        stage.append(preview);
         const footer=document.createElement('div');footer.className='merch-image-card-footer';
         const position=document.createElement('span');position.className='merch-image-position';position.textContent=`${index+1} / ${images.length}`;
-        const order=document.createElement('div');order.className='merch-image-order';order.setAttribute('role','group');order.setAttribute('aria-label',`Cambiar orden de ${description}`);
-        const before=document.createElement('button');before.type='button';before.className='merch-image-move';before.dataset.direction='before';before.dataset.edge=String(index===0);before.textContent='←';before.setAttribute('aria-label',`Mover ${role.toLowerCase()} una posición a la izquierda`);before.title='Mover antes';before.disabled=index===0;
-        const after=document.createElement('button');after.type='button';after.className='merch-image-move';after.dataset.direction='after';after.dataset.edge=String(index===images.length-1);after.textContent='→';after.setAttribute('aria-label',`Mover ${role.toLowerCase()} una posición a la derecha`);after.title='Mover después';after.disabled=index===images.length-1;
+        const hint=document.createElement('span');hint.className='merch-image-drag-hint';hint.textContent='⠿ Arrastra la foto';
+        footer.append(position,hint);
 
-        const move=async direction=>{
-          if(busy)return;
-          const next=index+direction;if(next<0||next>=images.length)return;
-          const previous=[...images];
-          [images[index],images[next]]=[images[next],images[index]];
-          paint(img.id,direction<0?'before':'after');setBusy(true);
-          try{
-            await persistImageOrder(images);
-            notice('Orden de imágenes actualizado. La primera imagen es la principal.');
-          }catch(error){
-            images=previous;paint(img.id,direction<0?'before':'after');notice(`No se pudo cambiar el orden: ${error.message}`);toast('error','No se pudo cambiar el orden',error.message);
-          }finally{if(target.isConnected)setBusy(false)}
+        let drag=null;
+        const findDrop=(x,y)=>[...target.querySelectorAll('.merch-current-image-card')].find(card=>{
+          if(card===wrap)return false;
+          const rect=card.getBoundingClientRect();return x>=rect.left-6&&x<=rect.right+6&&y>=rect.top-6&&y<=rect.bottom+6;
+        });
+        const showDrop=(x,y)=>{
+          const candidate=findDrop(x,y);
+          if(drag.over!==candidate){drag.over?.classList.remove('is-drop-target');drag.over=candidate;candidate?.classList.add('is-drop-target')}
         };
-        before.addEventListener('click',()=>move(-1));
-        after.addEventListener('click',()=>move(1));
+        const scrollDuringDrag=()=>{
+          if(!drag?.active)return;
+          const speed=drag.clientY<65?-11:drag.clientY>window.innerHeight-65?11:0;
+          if(speed){window.scrollBy(0,speed);wrap.style.transform=`translate3d(${drag.clientX-drag.x}px,${drag.clientY-drag.y+window.scrollY-drag.scrollY}px,0)`;showDrop(drag.clientX,drag.clientY)}
+          drag.scrollFrame=requestAnimationFrame(scrollDuringDrag);
+        };
+        stage.addEventListener('pointerdown',event=>{
+          if(busy||!event.isPrimary||(event.pointerType==='mouse'&&event.button!==0))return;
+          event.preventDefault();stage.setPointerCapture(event.pointerId);
+          drag={id:event.pointerId,x:event.clientX,y:event.clientY,clientX:event.clientX,clientY:event.clientY,scrollY:window.scrollY,active:false,over:null,scrollFrame:null};
+        });
+        stage.addEventListener('pointermove',event=>{
+          if(!drag||event.pointerId!==drag.id)return;
+          drag.clientX=event.clientX;drag.clientY=event.clientY;
+          const dx=event.clientX-drag.x,dy=event.clientY-drag.y+window.scrollY-drag.scrollY;
+          if(!drag.active&&Math.hypot(dx,dy)<7)return;
+          if(!drag.active){drag.active=true;wrap.classList.add('is-dragging');drag.scrollFrame=requestAnimationFrame(scrollDuringDrag)}
+          wrap.style.transform=`translate3d(${dx}px,${dy}px,0)`;
+          showDrop(event.clientX,event.clientY);
+        });
+        const finishDrag=event=>{
+          if(!drag||event.pointerId!==drag.id)return;
+          const destination=event.type==='pointerup'&&drag.active?drag.over:null;
+          if(drag.scrollFrame!==null)cancelAnimationFrame(drag.scrollFrame);
+          drag.over?.classList.remove('is-drop-target');wrap.classList.remove('is-dragging');wrap.style.transform='';
+          drag=null;
+          if(stage.hasPointerCapture(event.pointerId))stage.releasePointerCapture(event.pointerId);
+          if(destination){const to=images.findIndex(image=>image.id===destination.dataset.imageId);reorder(index,to,img.id)}
+        };
+        stage.addEventListener('pointerup',finishDrag);stage.addEventListener('pointercancel',finishDrag);
+        stage.addEventListener('keydown',event=>{
+          if(event.key!=='ArrowLeft'&&event.key!=='ArrowRight')return;
+          event.preventDefault();reorder(index,index+(event.key==='ArrowLeft'?-1:1),img.id);
+        });
 
         removeButton.addEventListener('click',async()=>{
           if(busy)return;
@@ -229,7 +277,7 @@ async function renderImages(id){
           }finally{if(target.isConnected)setBusy(false)}
         });
 
-        order.append(before,after);footer.append(position,order);wrap.append(badge,removeButton,preview,footer);target.append(wrap);
+        wrap.append(head,stage,footer);target.append(wrap);
       });
       if(!images.length){
         const empty=document.createElement('p');empty.className='merch-current-empty';empty.textContent='Este producto todavía no tiene imágenes guardadas.';target.append(empty);
@@ -237,7 +285,7 @@ async function renderImages(id){
       if(focusId){
         requestAnimationFrame(()=>{
           const card=[...target.children].find(node=>node.dataset?.imageId===focusId);
-          card?.querySelector(`.merch-image-move[data-direction="${focusDirection}"]`)?.focus();
+          card?.querySelector('.merch-image-drag')?.focus({preventScroll:true});
         });
       }
     };

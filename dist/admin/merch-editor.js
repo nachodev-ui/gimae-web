@@ -96,7 +96,7 @@ function buildImageManager(form,fieldset,cleanup){
   const pendingGrid=el('div','merch-pending-grid');pendingBox.append(pendingHead,pendingGrid);
 
   const currentBox=el('div','merch-current-images');
-  const currentHead=el('div','merch-current-head');currentHead.append(el('strong','','Galería actual'),el('span','merch-current-help','Usa × para quitar una foto y las flechas para cambiar el orden. La primera imagen queda como principal.'));
+  const currentHead=el('div','merch-current-head');currentHead.append(el('strong','','Galería actual'),el('span','merch-current-help','Mantén pulsada una foto y arrástrala a otra posición. La primera será la imagen principal. Usa × para quitar una foto.'));
   currentBox.append(currentHead);
   if(currentList)currentBox.append(currentList);
 
@@ -133,14 +133,14 @@ function buildImageManager(form,fieldset,cleanup){
 
   if(currentList){
     const decorateCurrent=()=>{
-      currentList.setAttribute('aria-label','Galería actual del producto. Usa las flechas para cambiar el orden.');
+      currentList.setAttribute('aria-label','Galería actual del producto. Arrastra una foto para cambiar el orden.');
       [...currentList.children].forEach((card,index)=>{
         if(!card.querySelector('img'))return;
         card.dataset.merchImageCard='true';card.classList.add('merch-current-image-card');
         let badge=card.querySelector('.merch-image-role');
         if(!badge){badge=el('span','merch-image-role');card.prepend(badge)}
         badge.textContent=index===0?'Imagen principal':`Imagen ${index+1}`;
-        const legacyButton=card.querySelector('button:not(.merch-image-delete):not(.merch-image-move)');
+        const legacyButton=card.querySelector('button:not(.merch-image-delete)');
         if(legacyButton){legacyButton.classList.add('merch-current-remove');legacyButton.textContent='Quitar imagen'}
       });
     };
