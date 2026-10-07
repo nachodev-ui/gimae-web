@@ -350,6 +350,7 @@
     let selectedOptionId = options.some(option => option.id === cardVariant?.value)
       ? cardVariant.value
       : (options[0]?.id || 'default');
+    let preferredMemberId = options.find(option => option.id === selectedOptionId)?.memberId || '';
     let activeMediaSrc = '';
 
     productDialogContent.replaceChildren();
@@ -556,11 +557,13 @@
     function navigateTo(index) {
       if (!gallery.length) return;
       const item = gallery[(index + gallery.length) % gallery.length];
+      const currentMember = selectedOption()?.memberId || preferredMemberId;
+      if (selectedOption()?.memberId) preferredMemberId = selectedOption().memberId;
       const matches = options.filter(option => option.image && option.image === item.src);
       if (matches.length) {
-        const currentMember = selectedOption()?.memberId || '';
         const matchingOption = photoChoices ? matches[0] : matches.find(option => option.memberId === currentMember) || matches[0];
         selectedOptionId = matchingOption.id;
+        if (matchingOption.memberId) preferredMemberId = matchingOption.memberId;
         syncOption(false);
         if (cardVariant) {
           cardVariant.value = matchingOption.id;
@@ -671,15 +674,20 @@
       mediaButton.append(memberBadge, position, element('span', 'shop-product-media-action', 'VER ♡'));
       let activeIndex = 0;
       const canonical = canonicalVariant(card);
+      let preferredMemberId = selectedCardOption(product, card)?.memberId || '';
       const updateCard = (index, selectOption = false) => {
         if (!gallery.length) return;
         activeIndex = (index + gallery.length) % gallery.length;
         const item = gallery[activeIndex];
         const image = mediaButton.querySelector('img');
         if (image) { image.src = item.src; image.alt = item.alt; }
-        const matching = options.find(option => option.image === item.src);
+        const current = selectedCardOption(product, card);
+        if (current?.memberId) preferredMemberId = current.memberId;
+        const matches = options.filter(option => option.image === item.src);
+        const matching = matches.find(option => option.memberId === preferredMemberId) || matches[0];
         if (selectOption && matching && canonical) {
           canonical.value = matching.id;
+          if (matching.memberId) preferredMemberId = matching.memberId;
           canonical.dispatchEvent(new Event('change', { bubbles: true }));
         }
         const member = photoChoices ? memberFor(matching) : null;
