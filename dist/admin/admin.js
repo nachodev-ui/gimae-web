@@ -1,6 +1,6 @@
 import {renderPayPalAttempts} from './paypal-attempts.js?v=20261001-attempts01';
 import {renderWebpayAlerts} from './webpay-alerts.js?v=20261006-reconcile01';
-import {renderMerchOrders} from './merch-orders.js?v=20261006-practice01';
+import {renderMerchOrders} from './merch-orders.js?v=20261007-starken02';
 const $=s=>document.querySelector(s), settings=window.GIMAE_SUPABASE||{};
 const status=$('#status'), login=$('#login-section'), workspace=$('#workspace'), editor=$('#editor'), records=$('#records');
 const ui=window.GIMAE_UI;
@@ -118,7 +118,17 @@ async function save(event,row){event.preventDefault();const f=event.currentTarge
     if(tab==='events')data={title:word(fd.get('title')),description:word(fd.get('description')),venue:word(fd.get('venue'))||null,starts_at:new Date(fd.get('starts_at')).toISOString(),ends_at:fd.get('ends_at')?new Date(fd.get('ends_at')).toISOString():null,url:word(fd.get('url'))||null,active:fd.has('active')};
     const result=row?await query(client.from(tab).update(data).eq('id',row.id).select('*')):await query(client.from(tab).insert(data).select('*'));
     const saved=result[0];if(!saved)throw new Error('No se guardó el registro. Verifica tus permisos.');
-    if(tab==='products'){for(const file of fd.getAll('images'))if(file?.size){const url=await upload(file,'product',saved.id);await query(client.from('product_images').insert({product_id:saved.id,url,display_order:0}))}}
+    if(tab==='products'){
+      const productFiles=fd.getAll('images').filter(file=>file?.size);
+      if(productFiles.length){
+        const existingImages=await query(client.from('product_images').select('id').eq('product_id',saved.id));
+        let displayOrder=existingImages.length;
+        for(const file of productFiles){
+          const url=await upload(file,'product',saved.id);
+          await query(client.from('product_images').insert({product_id:saved.id,url,alt:file.name,display_order:displayOrder++}))
+        }
+      }
+    }
     if(tab==='posts'&&fd.get('cover')?.size){const url=await upload(fd.get('cover'),'post',saved.id);await query(client.from('posts').update({cover_url:url}).eq('id',saved.id));await removeStorage(row?.cover_url)}
     if(tab==='posts'){for(const file of fd.getAll('post_images'))if(file?.size){const url=await upload(file,'post',saved.id);await query(client.from('post_images').insert({post_id:saved.id,url,alt:file.name}))}}
     const action=row?'actualizó':'creó';const label=saved.title||saved.name||saved.id||singular[tab];
@@ -148,18 +158,138 @@ async function removeStorage(url){
   if(!path.startsWith(bucket==='gimae-products'?'products/':'posts/'))return;
   const {error}=await client.storage.from(bucket).remove([path]);if(error)throw error;
 }
+async function persistImageOrder(images){
+  for(let index=0;index<images.length;index++){
+    const saved=await query(client.from('product_images').update({display_order:index})
+      .eq('id',images[index].id).eq('product_id',images[index].product_id).select('id,display_order'));
+    if(saved.length!==1||saved[0].id!==images[index].id||saved[0].display_order!==index){
+      throw new Error('No se confirmó el cambio en la base de datos. Revisa los permisos de tu cuenta.');
+    }
+  }
+}
 async function renderImages(id){
   try{
-    const images=await query(client.from('product_images').select('*').eq('product_id',id).order('display_order'));const target=$('#image-list');target.replaceChildren();
-    for(const img of images){
-      const wrap=document.createElement('div'),preview=document.createElement('img'),button=document.createElement('button');preview.src=img.url;preview.alt=img.alt||'Imagen de producto';button.type='button';button.textContent='Quitar imagen';
-      button.addEventListener('click',async()=>{
-        const ok=await ask({tone:'danger',title:'Quitar imagen del producto',message:`Vas a eliminar “${img.alt||'esta imagen'}” de la galería del producto.`,detail:'El archivo también se eliminará del almacenamiento y esta acción no se puede deshacer.',confirmText:'Quitar imagen'});if(!ok)return;
-        try{button.disabled=true;button.textContent='Quitando…';await removeStorage(img.url);await query(client.from('product_images').delete().eq('id',img.id));wrap.remove();toast('success','Imagen eliminada','La imagen ya no forma parte del producto.')}
-        catch(error){button.disabled=false;button.textContent='Quitar imagen';notice(error.message);toast('error','No se pudo quitar la imagen',error.message)}
+    const loadImages=()=>query(client.from('product_images').select('*').eq('product_id',id).order('display_order',{ascending:true}).order('id',{ascending:true}));
+    let images=await loadImages();
+    const target=$('#image-list');if(!target)return;
+    let busy=false;
+    target.setAttribute('aria-label','Galería actual del producto. Arrastra una foto para cambiar el orden.');
+
+    const setBusy=value=>{
+      busy=value;
+      target.setAttribute('aria-busy',String(value));
+      target.querySelectorAll('button').forEach(button=>{button.disabled=value});
+    };
+
+    const reorder=async(from,to,focusId)=>{
+      if(busy||from===to||to<0||to>=images.length)return;
+      const previous=[...images];const next=[...images];const [moved]=next.splice(from,1);next.splice(to,0,moved);
+      images=next;paint(focusId);setBusy(true);
+      try{
+        await persistImageOrder(next);
+        const confirmed=await loadImages();
+        if(confirmed.map(image=>image.id).join('|')!==next.map(image=>image.id).join('|'))throw new Error('El orden guardado no coincide. Actualiza la galería antes de intentarlo otra vez.');
+        images=confirmed;paint(focusId);notice('Orden guardado. La primera foto es la imagen principal.');toast('success','Galería ordenada','La tienda mostrará las fotos en este orden.');
+      }catch(error){
+        try{images=await loadImages()}catch{images=previous}
+        paint(focusId);notice(`No se pudo guardar el orden: ${error.message}`);toast('error','No se pudo cambiar el orden',error.message);
+      }finally{if(target.isConnected)setBusy(false)}
+    };
+
+    const paint=(focusId=null)=>{
+      target.replaceChildren();
+      images.forEach((img,index)=>{
+        const role=index===0?'Imagen principal':`Imagen ${index+1}`;
+        const description=img.alt||role;
+        const wrap=document.createElement('article');wrap.className='merch-current-image-card';wrap.dataset.merchImageCard='true';wrap.dataset.imageId=img.id;
+        const badge=document.createElement('span');badge.className='merch-image-role';badge.textContent=role;
+        const removeButton=document.createElement('button');removeButton.type='button';removeButton.className='merch-image-delete';removeButton.textContent='×';removeButton.setAttribute('aria-label',`Quitar ${role.toLowerCase()} de la galería`);removeButton.title='Quitar imagen';
+        const head=document.createElement('div');head.className='merch-image-card-head';head.append(badge,removeButton);
+        const stage=document.createElement('div');stage.className='merch-image-drag';stage.tabIndex=0;stage.setAttribute('role','group');stage.setAttribute('aria-label',`${role}. Arrastra esta foto para cambiar su posición; con teclado usa las flechas izquierda o derecha.`);
+        const preview=document.createElement('img');preview.src=img.url;preview.alt=img.alt||'Imagen de producto';preview.draggable=false;
+        stage.append(preview);
+        const footer=document.createElement('div');footer.className='merch-image-card-footer';
+        const position=document.createElement('span');position.className='merch-image-position';position.textContent=`${index+1} / ${images.length}`;
+        const hint=document.createElement('span');hint.className='merch-image-drag-hint';hint.textContent='⠿ Arrastra la foto';
+        footer.append(position,hint);
+
+        let drag=null;
+        const findDrop=(x,y)=>[...target.querySelectorAll('.merch-current-image-card')].find(card=>{
+          if(card===wrap)return false;
+          const rect=card.getBoundingClientRect();return x>=rect.left-6&&x<=rect.right+6&&y>=rect.top-6&&y<=rect.bottom+6;
+        });
+        const showDrop=(x,y)=>{
+          const candidate=findDrop(x,y);
+          if(drag.over!==candidate){drag.over?.classList.remove('is-drop-target');drag.over=candidate;candidate?.classList.add('is-drop-target')}
+        };
+        const scrollDuringDrag=()=>{
+          if(!drag?.active)return;
+          const speed=drag.clientY<65?-11:drag.clientY>window.innerHeight-65?11:0;
+          if(speed){window.scrollBy(0,speed);wrap.style.transform=`translate3d(${drag.clientX-drag.x}px,${drag.clientY-drag.y+window.scrollY-drag.scrollY}px,0)`;showDrop(drag.clientX,drag.clientY)}
+          drag.scrollFrame=requestAnimationFrame(scrollDuringDrag);
+        };
+        stage.addEventListener('pointerdown',event=>{
+          if(busy||!event.isPrimary||(event.pointerType==='mouse'&&event.button!==0))return;
+          event.preventDefault();stage.setPointerCapture(event.pointerId);
+          drag={id:event.pointerId,x:event.clientX,y:event.clientY,clientX:event.clientX,clientY:event.clientY,scrollY:window.scrollY,active:false,over:null,scrollFrame:null};
+        });
+        stage.addEventListener('pointermove',event=>{
+          if(!drag||event.pointerId!==drag.id)return;
+          drag.clientX=event.clientX;drag.clientY=event.clientY;
+          const dx=event.clientX-drag.x,dy=event.clientY-drag.y+window.scrollY-drag.scrollY;
+          if(!drag.active&&Math.hypot(dx,dy)<7)return;
+          if(!drag.active){drag.active=true;wrap.classList.add('is-dragging');drag.scrollFrame=requestAnimationFrame(scrollDuringDrag)}
+          wrap.style.transform=`translate3d(${dx}px,${dy}px,0)`;
+          showDrop(event.clientX,event.clientY);
+        });
+        const finishDrag=event=>{
+          if(!drag||event.pointerId!==drag.id)return;
+          const destination=event.type==='pointerup'&&drag.active?drag.over:null;
+          if(drag.scrollFrame!==null)cancelAnimationFrame(drag.scrollFrame);
+          drag.over?.classList.remove('is-drop-target');wrap.classList.remove('is-dragging');wrap.style.transform='';
+          drag=null;
+          if(stage.hasPointerCapture(event.pointerId))stage.releasePointerCapture(event.pointerId);
+          if(destination){const to=images.findIndex(image=>image.id===destination.dataset.imageId);reorder(index,to,img.id)}
+        };
+        stage.addEventListener('pointerup',finishDrag);stage.addEventListener('pointercancel',finishDrag);
+        stage.addEventListener('keydown',event=>{
+          if(event.key!=='ArrowLeft'&&event.key!=='ArrowRight')return;
+          event.preventDefault();reorder(index,index+(event.key==='ArrowLeft'?-1:1),img.id);
+        });
+
+        removeButton.addEventListener('click',async()=>{
+          if(busy)return;
+          const primary=index===0;
+          const detail=primary
+            ?'Esta es la imagen principal. Si la quitas, la siguiente pasará automáticamente a ser la principal. El archivo también se eliminará del almacenamiento y esta acción no se puede deshacer.'
+            :'El archivo también se eliminará del almacenamiento y esta acción no se puede deshacer.';
+          const ok=await ask({tone:'danger',title:'¿Quitar esta imagen?',message:`Vas a quitar ${role.toLowerCase()} de la galería del producto.`,detail,image:{src:img.url,alt:`Vista previa de ${description}`,caption:role},confirmText:'Sí, quitar imagen'});if(!ok)return;
+          setBusy(true);
+          try{
+            await removeStorage(img.url);
+            await query(client.from('product_images').delete().eq('id',img.id));
+            images=images.filter(image=>image.id!==img.id);
+            await persistImageOrder(images);
+            paint();
+            notice('Imagen eliminada de la galería.');toast('success','Imagen eliminada','La galería y su orden ya están actualizados.');
+          }catch(error){
+            notice(`No se pudo quitar la imagen: ${error.message}`);toast('error','No se pudo quitar la imagen',error.message);
+          }finally{if(target.isConnected)setBusy(false)}
+        });
+
+        wrap.append(head,stage,footer);target.append(wrap);
       });
-      wrap.append(preview,button);target.append(wrap)
-    }
+      if(!images.length){
+        const empty=document.createElement('p');empty.className='merch-current-empty';empty.textContent='Este producto todavía no tiene imágenes guardadas.';target.append(empty);
+      }
+      if(focusId){
+        requestAnimationFrame(()=>{
+          const card=[...target.children].find(node=>node.dataset?.imageId===focusId);
+          card?.querySelector('.merch-image-drag')?.focus({preventScroll:true});
+        });
+      }
+    };
+    paint();
   }catch(error){notice(error.message);toast('error','No se pudieron cargar las imágenes',error.message)}
 }
 async function renderPostImages(id){

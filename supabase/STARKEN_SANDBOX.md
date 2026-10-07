@@ -10,7 +10,7 @@ Starken es el único transporte habilitado en esta etapa y solo se ofrece **a do
 
 ## Recorrido de comprador y administración
 
-1. Agrega un producto, selecciona **Starken a domicilio · envío POR PAGAR** y revisa que el carrito indique el transporte por pagar, fuera del total.
+1. Agrega un producto, selecciona **Starken · entrega a domicilio** y revisa que el carrito explique el cobro del transporte al recibir, fuera del total de productos.
 2. Completa los datos del comprador y del destinatario: nombre, RUT, celular, correo, región, comuna, calle, número y, si corresponden, unidad e indicaciones. El formulario debe rechazar un RUT incorrecto o una dirección incompleta.
 3. Aprueba un pago Sandbox/integración y espera la confirmación. El resumen debe indicar Starken POR PAGAR, destino y que la prueba no genera despacho real.
 4. Abre **Backstage → Pedidos pagados → Practicar con Sandbox**. Busca la orden, comprueba el destino y abre los datos de flete. Avanza a **En preparación**, **Listo para Starken** y **Registrar entrega a Starken**. Ingresa un código ficticio, como `SIMULADO-123`.
