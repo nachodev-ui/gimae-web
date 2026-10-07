@@ -1,3 +1,4 @@
+import {renderGacha} from './gacha-editor.js?v=20261007';
 import {renderPayPalAttempts} from './paypal-attempts.js?v=20261001-attempts01';
 import {renderWebpayAlerts} from './webpay-alerts.js?v=20261006-reconcile01';
 import {renderMerchOrders} from './merch-orders.js?v=20261007-starken02';
@@ -53,11 +54,16 @@ async function changePassword(event){
   catch(error){$('#password-error').textContent=error.message||'No se pudo guardar la contraseña.';toast('error','No se pudo cambiar la contraseña',error.message||'Inténtalo nuevamente.')}
   finally{button.disabled=false;button.textContent=original}
 }
-const titles={posts:'Entradas del blog',products:'Productos de merch',paypal_attempts:'Intentos PayPal',webpay_alerts:'Seguimiento Webpay',orders:'Pedidos pagados',members:'Integrantes',events:'Eventos'};
+const titles={gacha:'Gacha de photocards',posts:'Entradas del blog',products:'Productos de merch',paypal_attempts:'Intentos PayPal',webpay_alerts:'Seguimiento Webpay',orders:'Pedidos pagados',members:'Integrantes',events:'Eventos'};
 const singular={posts:'entrada',products:'producto',members:'integrante',events:'evento'};
 async function openTab(next){tab=next;notice(`Cargando ${titles[tab].toLowerCase()}…`);
   try{
     document.querySelectorAll('[data-tab]').forEach(b=>b.setAttribute('aria-current',String(b.dataset.tab===tab)));
+    if(tab==='gacha'){
+      editor.replaceChildren();
+      await renderGacha(client,records,editor,notice);
+      return;
+    }
     if(tab==='paypal_attempts'){
       editor.replaceChildren();
       await renderPayPalAttempts(client,records,notice);

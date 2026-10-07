@@ -1,40 +1,88 @@
-/*
- * GACHA DE PHOTOCARDS
- * CONFIGURACIÓN: modifica aquí probabilidades y límite diario.
- * Las probabilidades pueden cambiar, pero deberían sumar 100.
- * El límite diario está DESACTIVADO por defecto; cambia enabled a true para usarlo.
- */
+/* Purchase bonus Gacha. Credits and draws are authorized by the server. */
 (async () => {
   'use strict';
   await window.GIMAE_READY;
 
   const GACHA_CONFIG = {
     rarityWeights: { common: 70, rare: 25, ssr: 5 },
-    dailyLimit: { enabled: false, freePacks: 5 },
-    collectionStorageKey: 'gimae-gacha-collection-v1',
-    dailyStorageKey: 'gimae-gacha-daily-v1'
+    collectionStorageKey: 'gimae-gacha-collection-v1'
   };
 
-  /*
-   * CATÁLOGO EDITABLE:
-   * Para agregar una carta, copia un objeto y cambia serial, integrante, rareza,
-   * frase e imagen. "imagen" debe ser una ruta relativa dentro de dist/.
-   * crop acepta el mismo formato de object-position y zoom controla el acercamiento.
-   */
-  const CARD_CATALOG = [
-    { serial: 'GIM-001', integrante: 'Suki', rareza: 'common', imagen: 'images/suki.webp', frase: 'Una sonrisa para guardar.', crop: '50% 28%', zoom: 1 },
-    { serial: 'GIM-002', integrante: 'Usi', rareza: 'common', imagen: 'images/usi.webp', frase: 'Tu energía llegó al escenario.', crop: '50% 24%', zoom: 1 },
-    { serial: 'GIM-003', integrante: 'Vewe', rareza: 'common', imagen: 'images/vewe.webp', frase: 'Un rayito de luz para ti.', crop: '50% 30%', zoom: 1 },
-    { serial: 'GIM-004', integrante: 'Vali', rareza: 'common', imagen: 'images/vali.webp', frase: 'Que este recuerdo siga brillando.', crop: '50% 26%', zoom: 1 },
-    { serial: 'GIM-005', integrante: 'Suki', rareza: 'rare', imagen: 'images/suki.webp', frase: 'Nuestro momento más rosado.', crop: '47% 20%', zoom: 1.1 },
-    { serial: 'GIM-006', integrante: 'Usi', rareza: 'rare', imagen: 'images/usi.webp', frase: 'Rojo pasión, corazón idol.', crop: '53% 18%', zoom: 1.11 },
-    { serial: 'GIM-007', integrante: 'Vewe', rareza: 'rare', imagen: 'images/vewe.webp', frase: 'Atrapa este destello amarillo.', crop: '54% 24%', zoom: 1.1 },
-    { serial: 'GIM-008', integrante: 'Vali', rareza: 'rare', imagen: 'images/vali.webp', frase: 'Una melodía violeta para ti.', crop: '46% 22%', zoom: 1.12 },
-    { serial: 'GIM-009', integrante: 'Suki', rareza: 'ssr', imagen: 'images/suki.webp', frase: 'Tu cariño enciende nuestro cielo.', crop: '50% 16%', zoom: 1.2 },
-    { serial: 'GIM-010', integrante: 'Usi', rareza: 'ssr', imagen: 'images/usi.webp', frase: 'Este brillo nació para encontrarte.', crop: '50% 15%', zoom: 1.2 },
-    { serial: 'GIM-011', integrante: 'Vewe', rareza: 'ssr', imagen: 'images/vewe.webp', frase: 'Juntas hacemos magia de verdad.', crop: '52% 18%', zoom: 1.21 },
-    { serial: 'GIM-012', integrante: 'Vali', rareza: 'ssr', imagen: 'images/vali.webp', frase: 'Una estrella violeta solo para ti.', crop: '48% 17%', zoom: 1.2 }
-  ];
+  let CARD_CATALOG = [];
+  let legacyCollection = {};
+  const obtainedCards = new Map();
+  let liveSettings;
+  let vouchers = [];
+  let sessionToken;
+  let pendingDraw;
+  let viewerCard;
+  let storyFile;
+  let serviceReady = false;
+  const settings = window.GIMAE_SUPABASE;
+  const tokenKey = 'gimae-gacha-token-v1';
+  const pendingKey = 'gimae-gacha-pending-v1';
+  const money = n => new Intl.NumberFormat('es-CL', {style:'currency',currency:'CLP',maximumFractionDigits:0}).format(n);
+  async function api(action, extra = {}) {
+    const response = await fetch(`${settings.url}/functions/v1/gacha`, {
+      method:'POST',headers:{'Content-Type':'application/json'},signal:AbortSignal.timeout(15000),
+      body:JSON.stringify({action,token:sessionToken,...extra})
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || 'No pudimos conectar con el Gacha.');
+    return result;
+  }
+  async function restoreCredits() {
+    const data = await api('state');
+    vouchers = data.vouchers;
+    const counts = {};
+    obtainedCards.clear();
+    for (const voucher of vouchers) for (const card of voucher.cards) {
+      obtainedCards.set(card.serial,card);
+      counts[card.serial] = (counts[card.serial] || 0) + 1;
+      if (!CARD_CATALOG.some(c => c.serial === card.serial)) CARD_CATALOG.push(card);
+    }
+    collection = {...legacyCollection};
+    for (const [serial,count] of Object.entries(counts)) collection[serial] = (legacyCollection[serial] || 0) + count;
+    saveCollection();renderAlbum();updateDailyUI();
+  }
+  async function initializeService() {
+    try {
+      if (!storageAvailable) throw new Error('Permite el almacenamiento del navegador antes de canjear: lo usamos para conservar tus tiradas.');
+      sessionToken = localStorage.getItem(tokenKey);
+      if (!/^[0-9a-f]{64}$/.test(sessionToken || '')) {
+        sessionToken = Array.from(crypto.getRandomValues(new Uint8Array(32)),b=>b.toString(16).padStart(2,'0')).join('');
+        localStorage.setItem(tokenKey,sessionToken);
+      }
+      pendingDraw = JSON.parse(localStorage.getItem(pendingKey) || 'null');
+      const get = async table => {
+        const res = await fetch(`${settings.url}/rest/v1/${table}?select=*`, {headers:{apikey:settings.publishableKey},signal:AbortSignal.timeout(10000)});
+        if (!res.ok) throw new Error('El Gacha está en mantenimiento. Intenta más tarde.');
+        return res.json();
+      };
+      const [config,cards] = await Promise.all([get('gacha_settings'),get('gacha_cards')]);
+      liveSettings = config[0];
+      if (!liveSettings) throw new Error('El Gacha todavía no está disponible.');
+      CARD_CATALOG = cards.sort((a,b)=>a.display_order-b.display_order);
+      RARITY_ORDER.forEach(key => {
+        RARITIES[key].label = liveSettings.rarities[key].label;
+        RARITIES[key].short = liveSettings.rarities[key].label;
+        GACHA_CONFIG.rarityWeights[key] = Number(liveSettings.rarities[key].weight);
+      });
+      const baselineKey = 'gimae-gacha-legacy-v1';
+      const baseline = localStorage.getItem(baselineKey);
+      legacyCollection = baseline ? JSON.parse(baseline) : readCollection();
+      if (!baseline) localStorage.setItem(baselineKey,JSON.stringify(legacyCollection));
+      collection = {...legacyCollection};
+      document.querySelector('#gacha-redeem-info').textContent = `Cada pedido pagado con ${money(liveSettings.minimum_clp)} o más en productos te regala ${liveSettings.pulls_per_order} sobres. El envío no cuenta. Cada pedido se canjea una sola vez.`;
+      buildLegend();await restoreCredits();
+      serviceReady = true;updateDailyUI();
+      if (pendingDraw) status.textContent = 'Hay una tirada pendiente de recuperar. Presiona Abrir sobre para ver el resultado.';
+    } catch(error) {
+      status.textContent = error.message;
+      window.GIMAE_UI.toast({tone:'error',title:'No pudimos cargar el Gacha',message:error.message});
+    }
+  }
+
 
   const RARITIES = {
     common: { label: 'Común', short: 'C', accent: '#d96e9f' },
@@ -66,7 +114,6 @@
   let viewerOpener = null;
   let storageAvailable = testStorage();
   let collection = readCollection();
-  let memoryDaily = { date: localDateKey(), count: 0 };
 
   function testStorage() {
     try {
@@ -105,56 +152,12 @@
     }
   }
 
-  function localDateKey() {
-    const date = new Date();
-    return [date.getFullYear(), date.getMonth() + 1, date.getDate()].map((part, index) => index === 0 ? String(part) : String(part).padStart(2, '0')).join('-');
-  }
-
-  function readDailyState() {
-    if (!GACHA_CONFIG.dailyLimit.enabled) return { date: localDateKey(), count: 0 };
-    if (!storageAvailable) {
-      if (memoryDaily.date !== localDateKey()) memoryDaily = { date: localDateKey(), count: 0 };
-      return { ...memoryDaily };
-    }
-    try {
-      const saved = JSON.parse(localStorage.getItem(GACHA_CONFIG.dailyStorageKey) || '{}');
-      if (saved.date !== localDateKey()) return { date: localDateKey(), count: 0 };
-      return { date: saved.date, count: Math.max(0, Number(saved.count) || 0) };
-    } catch (error) {
-      return { date: localDateKey(), count: 0 };
-    }
-  }
-
-  function incrementDailyCount() {
-    if (!GACHA_CONFIG.dailyLimit.enabled) return;
-    const daily = readDailyState();
-    daily.count += 1;
-    memoryDaily = { ...daily };
-    if (!storageAvailable) return;
-    try {
-      localStorage.setItem(GACHA_CONFIG.dailyStorageKey, JSON.stringify(daily));
-    } catch (error) {
-      storageAvailable = false;
-      storageNote.hidden = false;
-    }
-  }
-
-  function remainingPacks() {
-    if (!GACHA_CONFIG.dailyLimit.enabled) return Infinity;
-    return Math.max(0, GACHA_CONFIG.dailyLimit.freePacks - readDailyState().count);
-  }
-
+  function remainingPacks() { return vouchers.reduce((sum,v)=>sum+v.remaining,0); }
   function updateDailyUI() {
-    if (!GACHA_CONFIG.dailyLimit.enabled) {
-      dailyNote.hidden = true;
-      openButton.disabled = busy;
-      return;
-    }
-    const remaining = remainingPacks();
     dailyNote.hidden = false;
-    dailyNote.textContent = `Sobres gratuitos disponibles hoy: ${remaining}/${GACHA_CONFIG.dailyLimit.freePacks}`;
-    openButton.disabled = busy || remaining <= 0;
-    if (remaining <= 0 && !busy) status.textContent = 'Ya abriste todos los sobres gratuitos de hoy. Vuelve mañana. ♡';
+    dailyNote.textContent = `Sobres de tus pedidos: ${remainingPacks()}`;
+    openButton.disabled = busy || !serviceReady || (!pendingDraw && remainingPacks() <= 0);
+    document.querySelector('#gacha-redeem button').disabled = busy || !serviceReady;
   }
 
   function memberAccent(name) {
@@ -198,7 +201,7 @@
     const group = document.createElement('span');
     group.textContent = 'GIMAE!';
     const rarity = document.createElement('strong');
-    rarity.textContent = RARITIES[card.rareza].short;
+    rarity.textContent = card.rarityLabel || RARITIES[card.rareza].short;
     top.append(group, rarity);
 
     const info = document.createElement('div');
@@ -244,8 +247,9 @@
       slot.className = 'album-slot';
       if (count > 0) {
         unique += 1;
-        const cardButton = createPhotocard(card, { interactive: true, compact: true });
-        cardButton.addEventListener('click', () => openViewer(card, cardButton));
+        const obtained = obtainedCards.get(card.serial) || card;
+        const cardButton = createPhotocard(obtained, { interactive: true, compact: true });
+        cardButton.addEventListener('click', () => openViewer(obtained, cardButton));
         const duplicate = document.createElement('span');
         duplicate.className = 'duplicate-count';
         duplicate.textContent = `×${count}`;
@@ -262,30 +266,12 @@
     storageNote.hidden = storageAvailable;
   }
 
-  function rollRarity() {
-    const total = RARITY_ORDER.reduce((sum, rarity) => sum + Math.max(0, Number(GACHA_CONFIG.rarityWeights[rarity]) || 0), 0);
-    if (total <= 0) return 'common';
-    let roll = Math.random() * total;
-    for (const rarity of RARITY_ORDER) {
-      roll -= Math.max(0, Number(GACHA_CONFIG.rarityWeights[rarity]) || 0);
-      if (roll < 0) return rarity;
-    }
-    return 'common';
-  }
-
-  function drawCard() {
-    const rarity = rollRarity();
-    const pool = CARD_CATALOG.filter(card => card.rareza === rarity);
-    const available = pool.length ? pool : CARD_CATALOG;
-    return available[Math.floor(Math.random() * available.length)];
-  }
-
   function pause(milliseconds) {
     return new Promise(resolve => window.setTimeout(resolve, milliseconds));
   }
 
   function clearStage() {
-    stage.classList.remove('is-shaking', 'is-opening', 'is-revealed', 'reveal-common', 'reveal-rare', 'reveal-ssr');
+    stage.classList.remove('is-shaking', 'is-opening', 'is-revealed', 'reveal-common', 'reveal-rare', 'reveal-ssr', 'is-special');
     revealSlot.replaceChildren();
     confettiHost.replaceChildren();
   }
@@ -306,7 +292,7 @@
 
   async function openPack() {
     if (busy) return;
-    if (remainingPacks() <= 0) {
+    if (!pendingDraw && remainingPacks() <= 0) {
       updateDailyUI();
       return;
     }
@@ -314,6 +300,24 @@
     busy = true;
     updateDailyUI();
     clearStage();
+    let card;
+    try {
+      if (!pendingDraw) {
+        const nextDraw = {orderCode:vouchers.find(v=>v.remaining>0).orderCode,requestId:crypto.randomUUID()};
+        localStorage.setItem(pendingKey,JSON.stringify(nextDraw));
+        pendingDraw = nextDraw;
+      }
+      status.textContent = 'Preparando tu sobre…';
+      const result = await api('draw',pendingDraw);
+      card = result.card;
+      await restoreCredits();
+      localStorage.removeItem(pendingKey);pendingDraw = null;
+      if (!CARD_CATALOG.some(c=>c.serial===card.serial)) CARD_CATALOG.push(card);
+    } catch(error) {
+      status.textContent = error.message;busy=false;updateDailyUI();
+      window.GIMAE_UI.toast({tone:'error',title:'Tu sobre está a salvo',message:error.message});
+      return;
+    }
     status.textContent = 'El sobre está temblando…';
     stage.classList.add('is-shaking');
     await pause(reducedMotion.matches ? 60 : 680);
@@ -322,11 +326,8 @@
     status.textContent = '¡Algo está brillando!';
     await pause(reducedMotion.matches ? 60 : 620);
 
-    const card = drawCard();
-    const previousCount = collection[card.serial] || 0;
-    collection[card.serial] = previousCount + 1;
-    saveCollection();
-    incrementDailyCount();
+
+    const previousCount = Math.max(0,(collection[card.serial] || 1) - 1);
     renderAlbum();
 
     const cardButton = createPhotocard(card, { interactive: true, reveal: true });
@@ -334,20 +335,32 @@
     cardButton.addEventListener('click', () => openViewer(card, cardButton));
     revealSlot.append(cardButton);
     stage.classList.add('is-revealed', `reveal-${card.rareza}`);
-    if (card.rareza === 'ssr') createConfetti();
+    if (card.special) {
+      stage.classList.add('is-special');createConfetti();
+      status.textContent = '¡Una estrella extraordinaria ha aparecido!';
+    }
 
     const copy = previousCount === 0 ? '¡Nueva!' : `¡Repetida! Ahora tienes ×${previousCount + 1}.`;
-    status.textContent = `${copy} ${card.integrante} · ${RARITIES[card.rareza].label} · ${card.serial}`;
+    status.textContent = `${card.special ? '✦ ¡DESTELLO ESPECIAL! ' : ''}${copy} ${card.integrante} · ${RARITIES[card.rareza].label} · ${card.serial}`;
     await pause(reducedMotion.matches ? 80 : card.rareza === 'ssr' ? 1500 : card.rareza === 'rare' ? 900 : 650);
     busy = false;
     updateDailyUI();
+    if (card.special) openViewer(card,cardButton);
   }
 
   function openViewer(card, opener) {
     viewerOpener = opener;
+    viewerCard = card;storyFile = null;
+    dialog.classList.toggle('is-special',Boolean(card.special));
+    document.querySelector('#gacha-dialog-title').textContent = card.special ? '¡Encontraste un destello especial!' : 'Una estrella en tu colección.';
+    document.querySelector('#gacha-story-share').disabled = true;
+    document.querySelector('#gacha-story-download').disabled = true;
+    document.querySelector('#gacha-story-status').textContent = 'Preparando tu imagen para Stories…';
+    prepareStory(card);
     dialogCard.replaceChildren(createPhotocard(card, { viewer: true }));
     resetTilt();
     dialog.showModal();
+    dialog.scrollTop = 0;
     document.body.classList.add('dialog-open');
   }
 
@@ -360,14 +373,59 @@
     if (dialog.open) dialog.close();
   }
 
-  function resetCollection() {
-    if (!window.confirm('¿Quieres reiniciar tu álbum? Se borrarán todas las cartas y duplicados guardados en este dispositivo.')) return;
-    collection = {};
-    saveCollection();
-    renderAlbum();
-    clearStage();
-    status.textContent = 'Tu álbum está vacío y listo para una nueva historia.';
+  async function resetCollection() {
+    try { await restoreCredits(); window.GIMAE_UI.toast({tone:'success',title:'Álbum actualizado',message:'Recuperamos las cartas de esta sesión.'}); }
+    catch(error) { window.GIMAE_UI.toast({tone:'error',title:'No pudimos sincronizar',message:error.message}); }
   }
+  async function prepareStory(card) {
+    try {
+      const photo = new Image();photo.crossOrigin = 'anonymous';photo.src = card.imagen;
+      await photo.decode();
+      const canvas = document.createElement('canvas');canvas.width=1080;canvas.height=1920;
+      const ctx=canvas.getContext('2d');
+      const gradient=ctx.createLinearGradient(0,0,1080,1920);gradient.addColorStop(0,'#fff2f8');gradient.addColorStop(1,'#eaf5ff');
+      ctx.fillStyle=gradient;ctx.fillRect(0,0,1080,1920);
+      ctx.fillStyle='#efd4e5';for(let i=0;i<36;i++){ctx.beginPath();ctx.arc((i*193)%1080,(i*307)%1920,6,0,Math.PI*2);ctx.fill();}
+      ctx.textAlign='center';ctx.fillStyle='#8f476b';ctx.font='bold 86px sans-serif';ctx.fillText('GIMAE!',540,280);
+      ctx.font='28px sans-serif';ctx.fillText(card.special?'✦ MI DESTELLO ESPECIAL ✦':'♡ MI PHOTOCARD ♡',540,355);
+      ctx.fillStyle='#ffffff';ctx.fillRect(105,430,870,1120);
+      const scale=Math.max(810/photo.width,870/photo.height)*Number(card.zoom || 1);
+      const [px,py]=(card.crop || '50% 25%').split(' ').map(v=>parseFloat(v)/100);
+      ctx.save();ctx.beginPath();ctx.rect(135,460,810,870);ctx.clip();
+      ctx.drawImage(photo,135+(810-photo.width*scale)*px,460+(870-photo.height*scale)*py,photo.width*scale,photo.height*scale);ctx.restore();
+      ctx.fillStyle='#8f476b';ctx.font='bold 48px sans-serif';ctx.fillText(card.integrante,540,1410,790);
+      ctx.font='30px sans-serif';ctx.fillText(card.rarityLabel || RARITIES[card.rareza].label,540,1480,790);
+      ctx.font='30px sans-serif';ctx.fillText(card.frase,540,1640,900);
+      ctx.font='28px sans-serif';ctx.fillText('@gimae_official · Gacha de photocards',540,1770);
+      const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));
+      if(!blob) throw new Error('No se pudo crear la imagen.');
+      if(viewerCard!==card)return;
+      storyFile=new File([blob],'gimae-photocard-story.png',{type:'image/png'});
+      document.querySelector('#gacha-story-share').disabled = !navigator.canShare?.({files:[storyFile]});
+      document.querySelector('#gacha-story-download').disabled = false;
+      document.querySelector('#gacha-story-status').textContent = 'Imagen vertical lista. Compártela desde tu teléfono o descárgala y añádela a una Story de Instagram.';
+    } catch(error) { if(viewerCard===card) document.querySelector('#gacha-story-status').textContent = 'No pudimos preparar la imagen. Revisa tu conexión o la imagen de la carta.'; }
+  }
+  document.querySelector('#gacha-story-share').addEventListener('click',async()=>{
+    if(!storyFile)return;
+    try { await navigator.share({files:[storyFile]}); }
+    catch(error) { if(error.name!=='AbortError') window.GIMAE_UI.toast({tone:'error',title:'No se pudo compartir',message:'Puedes descargar la imagen y subirla desde Instagram.'}); }
+  });
+  document.querySelector('#gacha-story-download').addEventListener('click',()=>{
+    if(!storyFile)return;
+    const url=URL.createObjectURL(storyFile),a=document.createElement('a');a.href=url;a.download=storyFile.name;a.click();setTimeout(()=>URL.revokeObjectURL(url),30000);
+  });
+  document.querySelector('#gacha-redeem').addEventListener('submit',async event=>{
+    event.preventDefault();if(busy || !serviceReady)return;
+    busy=true;updateDailyUI();
+    try {
+      const orderCode=document.querySelector('#gacha-order-code').value.trim().toLowerCase();
+      await api('redeem',{orderCode});await restoreCredits();
+      window.GIMAE_UI.toast({tone:'success',title:'¡Tus sobres están listos!',message:'El pedido quedó canjeado. Ya puedes abrir tus sobres disponibles.'});
+      status.textContent='¡Gracias por apoyar a Gimae! Abre tu próximo recuerdo.';
+    } catch(error) { window.GIMAE_UI.toast({tone:'error',title:'No pudimos canjear el pedido',message:error.message}); }
+    finally {busy=false;updateDailyUI();}
+  });
 
   openButton.addEventListener('click', openPack);
   resetButton.addEventListener('click', resetCollection);
@@ -393,7 +451,6 @@
   dialogTilt.addEventListener('pointerleave', resetTilt);
   dialogTilt.addEventListener('pointercancel', resetTilt);
 
-  buildLegend();
-  renderAlbum();
   updateDailyUI();
+  await initializeService();
 })();
