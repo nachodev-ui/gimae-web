@@ -74,6 +74,13 @@
     heading.append(eyebrow,title);top.append(icon,heading);
     const message=document.createElement('p');message.id=`${id}-message`;message.className='gimae-confirm-message';message.textContent=options.message||'';
     shell.append(top,message);
+    if(options.image?.src){
+      const media=document.createElement('figure');media.className='gimae-confirm-media';
+      const preview=document.createElement('img');preview.src=options.image.src;preview.alt=options.image.alt||'Vista previa del elemento seleccionado';
+      preview.addEventListener('error',()=>media.remove(),{once:true});media.append(preview);
+      if(options.image.caption){const caption=document.createElement('figcaption');caption.textContent=options.image.caption;media.append(caption)}
+      shell.append(media);
+    }
     if(options.detail){const detail=document.createElement('div');detail.className='gimae-confirm-detail';detail.textContent=options.detail;shell.append(detail)}
     dialog.setAttribute('aria-labelledby',title.id);
     if(options.message)dialog.setAttribute('aria-describedby',message.id);

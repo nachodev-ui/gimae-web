@@ -118,7 +118,17 @@ async function save(event,row){event.preventDefault();const f=event.currentTarge
     if(tab==='events')data={title:word(fd.get('title')),description:word(fd.get('description')),venue:word(fd.get('venue'))||null,starts_at:new Date(fd.get('starts_at')).toISOString(),ends_at:fd.get('ends_at')?new Date(fd.get('ends_at')).toISOString():null,url:word(fd.get('url'))||null,active:fd.has('active')};
     const result=row?await query(client.from(tab).update(data).eq('id',row.id).select('*')):await query(client.from(tab).insert(data).select('*'));
     const saved=result[0];if(!saved)throw new Error('No se guardó el registro. Verifica tus permisos.');
-    if(tab==='products'){for(const file of fd.getAll('images'))if(file?.size){const url=await upload(file,'product',saved.id);await query(client.from('product_images').insert({product_id:saved.id,url,display_order:0}))}}
+    if(tab==='products'){
+      const productFiles=fd.getAll('images').filter(file=>file?.size);
+      if(productFiles.length){
+        const existingImages=await query(client.from('product_images').select('id').eq('product_id',saved.id));
+        let displayOrder=existingImages.length;
+        for(const file of productFiles){
+          const url=await upload(file,'product',saved.id);
+          await query(client.from('product_images').insert({product_id:saved.id,url,alt:file.name,display_order:displayOrder++}))
+        }
+      }
+    }
     if(tab==='posts'&&fd.get('cover')?.size){const url=await upload(fd.get('cover'),'post',saved.id);await query(client.from('posts').update({cover_url:url}).eq('id',saved.id));await removeStorage(row?.cover_url)}
     if(tab==='posts'){for(const file of fd.getAll('post_images'))if(file?.size){const url=await upload(file,'post',saved.id);await query(client.from('post_images').insert({post_id:saved.id,url,alt:file.name}))}}
     const action=row?'actualizó':'creó';const label=saved.title||saved.name||saved.id||singular[tab];
@@ -148,18 +158,90 @@ async function removeStorage(url){
   if(!path.startsWith(bucket==='gimae-products'?'products/':'posts/'))return;
   const {error}=await client.storage.from(bucket).remove([path]);if(error)throw error;
 }
+async function persistImageOrder(images){
+  for(let index=0;index<images.length;index++){
+    const {error}=await client.from('product_images').update({display_order:index}).eq('id',images[index].id);
+    if(error)throw error;
+    images[index].display_order=index;
+  }
+}
 async function renderImages(id){
   try{
-    const images=await query(client.from('product_images').select('*').eq('product_id',id).order('display_order'));const target=$('#image-list');target.replaceChildren();
-    for(const img of images){
-      const wrap=document.createElement('div'),preview=document.createElement('img'),button=document.createElement('button');preview.src=img.url;preview.alt=img.alt||'Imagen de producto';button.type='button';button.textContent='Quitar imagen';
-      button.addEventListener('click',async()=>{
-        const ok=await ask({tone:'danger',title:'Quitar imagen del producto',message:`Vas a eliminar “${img.alt||'esta imagen'}” de la galería del producto.`,detail:'El archivo también se eliminará del almacenamiento y esta acción no se puede deshacer.',confirmText:'Quitar imagen'});if(!ok)return;
-        try{button.disabled=true;button.textContent='Quitando…';await removeStorage(img.url);await query(client.from('product_images').delete().eq('id',img.id));wrap.remove();toast('success','Imagen eliminada','La imagen ya no forma parte del producto.')}
-        catch(error){button.disabled=false;button.textContent='Quitar imagen';notice(error.message);toast('error','No se pudo quitar la imagen',error.message)}
+    let images=await query(client.from('product_images').select('*').eq('product_id',id).order('display_order',{ascending:true}).order('id',{ascending:true}));
+    const target=$('#image-list');if(!target)return;
+    let busy=false;
+    target.setAttribute('aria-label','Galería actual del producto. Usa las flechas para cambiar el orden.');
+
+    const setBusy=value=>{
+      busy=value;
+      target.setAttribute('aria-busy',String(value));
+      target.querySelectorAll('button').forEach(button=>{button.disabled=value||button.dataset.edge==='true'});
+    };
+
+    const paint=(focusId=null,focusDirection=null)=>{
+      target.replaceChildren();
+      images.forEach((img,index)=>{
+        const role=index===0?'Imagen principal':`Imagen ${index+1}`;
+        const description=img.alt||role;
+        const wrap=document.createElement('article');wrap.className='merch-current-image-card';wrap.dataset.merchImageCard='true';wrap.dataset.imageId=img.id;
+        const badge=document.createElement('span');badge.className='merch-image-role';badge.textContent=role;
+        const removeButton=document.createElement('button');removeButton.type='button';removeButton.className='merch-image-delete';removeButton.textContent='×';removeButton.setAttribute('aria-label',`Quitar ${role.toLowerCase()} de la galería`);removeButton.title='Quitar imagen';
+        const preview=document.createElement('img');preview.src=img.url;preview.alt=img.alt||'Imagen de producto';
+        const footer=document.createElement('div');footer.className='merch-image-card-footer';
+        const position=document.createElement('span');position.className='merch-image-position';position.textContent=`${index+1} / ${images.length}`;
+        const order=document.createElement('div');order.className='merch-image-order';order.setAttribute('role','group');order.setAttribute('aria-label',`Cambiar orden de ${description}`);
+        const before=document.createElement('button');before.type='button';before.className='merch-image-move';before.dataset.direction='before';before.dataset.edge=String(index===0);before.textContent='←';before.setAttribute('aria-label',`Mover ${role.toLowerCase()} una posición a la izquierda`);before.title='Mover antes';before.disabled=index===0;
+        const after=document.createElement('button');after.type='button';after.className='merch-image-move';after.dataset.direction='after';after.dataset.edge=String(index===images.length-1);after.textContent='→';after.setAttribute('aria-label',`Mover ${role.toLowerCase()} una posición a la derecha`);after.title='Mover después';after.disabled=index===images.length-1;
+
+        const move=async direction=>{
+          if(busy)return;
+          const next=index+direction;if(next<0||next>=images.length)return;
+          const previous=[...images];
+          [images[index],images[next]]=[images[next],images[index]];
+          paint(img.id,direction<0?'before':'after');setBusy(true);
+          try{
+            await persistImageOrder(images);
+            notice('Orden de imágenes actualizado. La primera imagen es la principal.');
+          }catch(error){
+            images=previous;paint(img.id,direction<0?'before':'after');notice(`No se pudo cambiar el orden: ${error.message}`);toast('error','No se pudo cambiar el orden',error.message);
+          }finally{if(target.isConnected)setBusy(false)}
+        };
+        before.addEventListener('click',()=>move(-1));
+        after.addEventListener('click',()=>move(1));
+
+        removeButton.addEventListener('click',async()=>{
+          if(busy)return;
+          const primary=index===0;
+          const detail=primary
+            ?'Esta es la imagen principal. Si la quitas, la siguiente pasará automáticamente a ser la principal. El archivo también se eliminará del almacenamiento y esta acción no se puede deshacer.'
+            :'El archivo también se eliminará del almacenamiento y esta acción no se puede deshacer.';
+          const ok=await ask({tone:'danger',title:'¿Quitar esta imagen?',message:`Vas a quitar ${role.toLowerCase()} de la galería del producto.`,detail,image:{src:img.url,alt:`Vista previa de ${description}`,caption:role},confirmText:'Sí, quitar imagen'});if(!ok)return;
+          setBusy(true);
+          try{
+            await removeStorage(img.url);
+            await query(client.from('product_images').delete().eq('id',img.id));
+            images=images.filter(image=>image.id!==img.id);
+            await persistImageOrder(images);
+            paint();
+            notice('Imagen eliminada de la galería.');toast('success','Imagen eliminada','La galería y su orden ya están actualizados.');
+          }catch(error){
+            notice(`No se pudo quitar la imagen: ${error.message}`);toast('error','No se pudo quitar la imagen',error.message);
+          }finally{if(target.isConnected)setBusy(false)}
+        });
+
+        order.append(before,after);footer.append(position,order);wrap.append(badge,removeButton,preview,footer);target.append(wrap);
       });
-      wrap.append(preview,button);target.append(wrap)
-    }
+      if(!images.length){
+        const empty=document.createElement('p');empty.className='merch-current-empty';empty.textContent='Este producto todavía no tiene imágenes guardadas.';target.append(empty);
+      }
+      if(focusId){
+        requestAnimationFrame(()=>{
+          const card=[...target.children].find(node=>node.dataset?.imageId===focusId);
+          card?.querySelector(`.merch-image-move[data-direction="${focusDirection}"]`)?.focus();
+        });
+      }
+    };
+    paint();
   }catch(error){notice(error.message);toast('error','No se pudieron cargar las imágenes',error.message)}
 }
 async function renderPostImages(id){
