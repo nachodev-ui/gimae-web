@@ -13,6 +13,10 @@ const labels = {
 };
 const steps = ['Pagado', 'Preparando', 'Listo', 'Entregado'];
 const stepIndex = { new: 0, preparing: 1, ready: 2, handed_over: 3 };
+const isStarken = order => order.delivery_method === 'starken_por_pagar';
+const labelFor = order => isStarken(order) ? {
+  ready: 'Listo para Starken', handed_over: 'Entregado a Starken'
+}[order.fulfillment_status] || labels[order.fulfillment_status] : labels[order.fulfillment_status];
 const opened = new Set();
 let selectedFilter = 'work';
 let firstOpen = true;
@@ -30,7 +34,7 @@ const feedback = (tone, title, message, notice) => {
 export async function renderMerchOrders(client, records, notice, focus = null) {
   const practice = selectedEnvironment === 'test';
   const { data, error } = await client.from('merch_orders')
-    .select('id,buyer_name,buyer_contact,items,total_clp,total_usd_cents,payment_provider,paypal_order_id,paypal_capture_id,webpay_buy_order,webpay_authorization_code,paid_at,order_environment,stock_state,stock_allocations,reservation_issue,reservation_reviewed_at,fulfillment_status,fulfillment_note,fulfillment_updated_at,ready_at,handed_over_at,test_fulfillment_status,test_fulfillment_note,test_fulfillment_updated_at,test_ready_at,test_handed_over_at')
+    .select('id,buyer_name,buyer_contact,delivery_method,shipping_details,starken_waybill,test_starken_waybill,items,total_clp,total_usd_cents,payment_provider,paypal_order_id,paypal_capture_id,webpay_buy_order,webpay_authorization_code,paid_at,order_environment,stock_state,stock_allocations,reservation_issue,reservation_reviewed_at,fulfillment_status,fulfillment_note,fulfillment_updated_at,ready_at,handed_over_at,test_fulfillment_status,test_fulfillment_note,test_fulfillment_updated_at,test_ready_at,test_handed_over_at')
     .eq('status', 'paid').eq('order_environment', selectedEnvironment)
     .order('paid_at', { ascending: false }).limit(100);
   if (error) throw error;
@@ -81,7 +85,7 @@ export async function renderMerchOrders(client, records, notice, focus = null) {
     node('h3', '', practice ? 'Ensaya el recorrido completo' : 'Cada venta, un siguiente paso'),
     node('p', '', practice
       ? 'Usa pagos de prueba confirmados para practicar cada etapa, pausar un pedido y guardar notas. Las acciones quedan solo en este recorrido de práctica.'
-      : 'Aquí solo aparecen pagos reales confirmados. El stock se asigna al confirmarse el pago; los faltantes se señalan antes de preparar.'));
+      : 'Aquí solo aparecen pagos reales confirmados. Revisa en cada tarjeta si corresponde retiro o despacho con Starken antes de preparar.'));
   const refresh = node('button', 'merch-orders-refresh', '↻  Actualizar pedidos');
   refresh.type = 'button';
   refresh.addEventListener('click', async () => {
@@ -94,8 +98,8 @@ export async function renderMerchOrders(client, records, notice, focus = null) {
   shell.append(intro);
   const guide = node('p', 'merch-orders-guide');
   guide.append(node('span', '', '✦'), document.createTextNode(practice
-    ? ' Ensaya: revisa → prepara → marca listo → registra una entrega simulada. Puedes pausar y reanudar durante el recorrido.'
-    : ' Revisa los productos → prepara → marca listo → registra la entrega. Cada tarjeta muestra el próximo paso.'));
+    ? ' Ensaya el recorrido de retiro o Starken: revisa → prepara → marca listo → registra el paso final simulado.'
+    : ' Revisa productos y destino → prepara → marca listo → registra retiro o entrega a Starken según la tarjeta.'));
   shell.append(guide);
   if (totals.attention || totals.legacy) {
     const alert = node('div', 'merch-orders-alert');
@@ -133,11 +137,11 @@ export async function renderMerchOrders(client, records, notice, focus = null) {
     filters.querySelectorAll('button').forEach(button =>
       button.setAttribute('aria-pressed', String(button.dataset.filter === selectedFilter)));
     if (!visible.length) list.append(node('p', 'merch-orders-empty', selectedFilter === 'work'
-      ? practice ? 'No hay prácticas pendientes. Crea una compra Sandbox confirmada o revisa «Entregados».' : '♡ Todo al día: no hay ventas pendientes de preparación o entrega.'
+      ? practice ? 'No hay prácticas pendientes. Crea una compra Sandbox confirmada o revisa «Finalizados».' : '♡ Todo al día: no hay ventas pendientes de preparación o despacho.'
       : 'No hay pedidos en este grupo.'));
     for (const order of visible) list.append(orderCard(order));
   };
-  for (const [value, label] of [['work','Por gestionar'],['attention','Necesitan atención'],['done',practice ? 'Entregas simuladas' : 'Entregados'],['legacy','Ventas anteriores'],['all','Todos']]) {
+  for (const [value, label] of [['work','Por gestionar'],['attention','Necesitan atención'],['done',practice ? 'Finalizados en práctica' : 'Finalizados'],['legacy','Ventas anteriores'],['all','Todos']]) {
     if (practice && value === 'legacy') continue;
     const button = node('button', '', undefined);
     button.type = 'button';
@@ -172,6 +176,7 @@ export async function renderMerchOrders(client, records, notice, focus = null) {
       let query = client.from('merch_orders').update(practice ? {
         ...(Object.hasOwn(changes, 'fulfillment_status') ? { test_fulfillment_status: changes.fulfillment_status } : {}),
         ...(Object.hasOwn(changes, 'fulfillment_note') ? { test_fulfillment_note: changes.fulfillment_note } : {}),
+        ...(Object.hasOwn(changes, 'starken_waybill') ? { test_starken_waybill: changes.starken_waybill } : {}),
       } : changes).eq('id', order.id).eq('order_environment', practice ? 'test' : 'live')
         .eq('status', 'paid');
       query = practice
@@ -204,13 +209,19 @@ export async function renderMerchOrders(client, records, notice, focus = null) {
     ref.tabIndex = -1;
     title.append(ref);
     const badge = node('span', `merch-order-badge is-${isLegacy(order) ? 'legacy' : order.fulfillment_status}`,
-      isLegacy(order) ? 'Auditoría manual' : `${practice ? 'Práctica · ' : ''}${labels[order.fulfillment_status] || 'Revisar'}`);
+      isLegacy(order) ? 'Auditoría manual' : `${practice ? 'Práctica · ' : ''}${labelFor(order) || 'Revisar'}`);
     head.append(title, badge);
     const buyer = node('div', 'merch-order-buyer');
     const buyerCopy = node('div');
     buyerCopy.append(node('small', '', 'COMPRADOR'), node('strong', '', order.buyer_name), node('span', '', order.buyer_contact));
     buyer.append(buyerCopy, node('strong', 'merch-order-total', money.format(order.total_clp)));
     card.append(head, buyer);
+    const method = node('div', `merch-order-method${isStarken(order) ? ' is-shipping' : ''}`);
+    method.append(node('strong', '', isStarken(order) ? '↗ Starken · POR PAGAR' : '♡ Retiro presencial'),
+      node('span', '', isStarken(order)
+        ? `${order.shipping_details?.commune || 'Comuna sin datos'}, ${order.shipping_details?.region || 'región sin datos'} · el destinatario paga el transporte a Starken`
+        : 'Coordina el lugar y horario con el comprador.'));
+    card.append(method);
     const detail = node('details', 'merch-order-details');
     if (opened.has(order.id)) detail.open = true;
     detail.addEventListener('toggle', () => detail.open ? opened.add(order.id) : opened.delete(order.id));
@@ -223,6 +234,21 @@ export async function renderMerchOrders(client, records, notice, focus = null) {
       return false;
     }
     const body = node('div', 'merch-order-body');
+    if (isStarken(order)) {
+      const shipping = order.shipping_details || {};
+      const destination = node('section', 'merch-order-destination');
+      destination.append(node('h5', '', 'Datos para entregar el paquete a Starken'),
+        node('p', '', 'El flete va POR PAGAR: no cobres el transporte con los productos. Confirma cobertura y datos antes de despachar.'));
+      const details = node('dl');
+      for (const [label, value] of [['Destinatario', shipping.name], ['RUT', shipping.rut],
+        ['Celular', shipping.phone], ['Correo', shipping.email], ['Región', shipping.region],
+        ['Comuna', shipping.commune], ['Dirección', [shipping.street, shipping.number, shipping.unit].filter(Boolean).join(' ')],
+        ['Indicaciones', shipping.instructions]].filter(([, value]) => Boolean(value))) {
+        details.append(node('dt', '', label), node('dd', '', value));
+      }
+      destination.append(details);
+      body.append(destination);
+    }
     if (practice) body.append(node('p', 'merch-order-stock-note is-practice',
       'Sandbox · recorre las etapas con los datos de esta compra, sin preparar ni entregar los productos. El inventario no cambia al ensayar.'));
     const allocations = Array.isArray(order.stock_allocations) ? order.stock_allocations : [];
@@ -258,9 +284,9 @@ export async function renderMerchOrders(client, records, notice, focus = null) {
     if (!isLegacy(order) && order.fulfillment_status !== 'on_hold') {
       const progress = node('ol', 'merch-order-progress');
       const active = stepIndex[order.fulfillment_status] ?? 0;
-      steps.forEach((label, index) => {
+      (isStarken(order) ? ['Pagado', 'Preparando', 'Listo para despacho', 'Entregado a Starken'] : steps).forEach((label, index) => {
         const step = node('li', index < active ? 'is-complete' : index === active ? 'is-current' : '');
-        step.append(node('span', 'merch-order-progress-dot', index < active ? '✓' : index + 1), node('span', '', practice && index === 3 ? 'Simulado' : label));
+        step.append(node('span', 'merch-order-progress-dot', index < active ? '✓' : index + 1), node('span', '', practice && index === 3 ? `${label} · simulado` : label));
         if (index === active) step.setAttribute('aria-current', 'step');
         progress.append(step);
       });
@@ -268,9 +294,13 @@ export async function renderMerchOrders(client, records, notice, focus = null) {
     }
     const actions = {
       new: ['Comprueba productos y cantidades', 'Al empezar a reunirlos, registra que el pedido está en preparación.', 'Empezar preparación', 'preparing'],
-      preparing: ['Prepara y revisa el pedido', 'Cuando todas las unidades estén separadas, márcalo como listo.', 'Marcar como listo', 'ready'],
-      ready: ['Espera el retiro', 'Registra la entrega únicamente después de entregar el pedido en persona.', 'Confirmar entrega', 'handed_over'],
-      handed_over: ['Pedido entregado', 'La entrega quedó registrada. No hay más pasos en esta bandeja.']
+      preparing: ['Prepara y revisa el pedido', isStarken(order) ? 'Cuando esté embalado, márcalo listo para llevar a Starken.' : 'Cuando todas las unidades estén separadas, márcalo como listo.', 'Marcar como listo', 'ready'],
+      ready: isStarken(order)
+        ? ['Lleva el paquete a Starken', 'Entrega el paquete como POR PAGAR. Registra el número de la orden de flete solo después de recibir el comprobante.', 'Registrar entrega a Starken', 'handed_over']
+        : ['Espera el retiro', 'Registra la entrega únicamente después de entregar el pedido en persona.', 'Confirmar entrega', 'handed_over'],
+      handed_over: isStarken(order)
+        ? ['Paquete entregado a Starken', practice ? 'Fue una simulación. No contactes al destinatario.' : 'Copia el aviso y adjunta una foto del comprobante al enviarlo al destinatario. El seguimiento posterior corresponde a Starken.']
+        : ['Pedido entregado', 'La entrega quedó registrada. No hay más pasos en esta bandeja.']
     };
     const next = isLegacy(order) ? null : practice && order.fulfillment_status === 'on_hold'
       ? ['Ensayo en pausa', 'Cuando termines de revisar el motivo, retoma la práctica desde «Por preparar».', 'Reanudar práctica', 'new']
@@ -331,6 +361,24 @@ export async function renderMerchOrders(client, records, notice, focus = null) {
             return;
           }
           if (next[3] === 'handed_over') {
+            if (isStarken(order)) {
+              const waybill = await window.GIMAE_UI?.input({ tone: 'warning', title: practice ? 'Simular entrega a Starken' : 'Registrar entrega a Starken',
+                message: practice ? 'Escribe un número de flete de ejemplo. No entregues productos reales.' : 'Solo registra el número después de entregar el paquete y recibir el comprobante de Starken.',
+                label: practice ? 'N.º de flete de práctica' : 'N.º de orden de flete del comprobante', value: '', confirmText: practice ? 'Continuar simulación' : 'Revisar y confirmar' });
+              if (waybill === null || waybill === undefined) return;
+              const code = waybill.trim().toUpperCase();
+              if (!/^[A-Z0-9-]{5,40}$/.test(code)) {
+                feedback('warning', 'Revisa el número de flete', 'Usa entre 5 y 40 letras, números o guiones tal como aparece en el comprobante.', notice); return;
+              }
+              const accepted = await window.GIMAE_UI?.confirm({ tone: 'warning', title: practice ? '¿Simular el despacho?' : '¿Ya entregaste el paquete a Starken?',
+                message: `Pedido ${reference(order)} · orden de flete ${code}.`,
+                detail: practice ? 'Solo registra la simulación Sandbox. No avisa al destinatario.' : 'Al confirmar, el pedido quedará como entregado a Starken. Después copia el aviso y adjunta una foto del comprobante al enviarlo al destinatario.',
+                confirmText: practice ? 'Sí, simular despacho' : 'Sí, registrar despacho', cancelText: 'Volver al pedido' });
+              if (!accepted) return;
+              await saveChange(order, { fulfillment_status: 'handed_over', starken_waybill: code }, button,
+                practice ? 'Despacho simulado' : 'Entregado a Starken', `Orden de flete ${code}. ${practice ? 'No envíes avisos reales.' : 'Envía al destinatario el aviso y una foto del comprobante.'}`);
+              return;
+            }
             const accepted = await window.GIMAE_UI?.confirm({ tone: 'warning', title: '¿Ya entregaste este pedido?',
               message: practice ? `Vas a ensayar la entrega del pedido ${reference(order)} a ${order.buyer_name}.` : `Vas a registrar la entrega del pedido ${reference(order)} a ${order.buyer_name}.`,
               detail: practice ? 'Es una simulación Sandbox: no registra una entrega real ni avisa al comprador.' : 'Hazlo solo después de la entrega en persona. Este registro no envía un aviso automático al comprador.',
@@ -338,7 +386,7 @@ export async function renderMerchOrders(client, records, notice, focus = null) {
             if (!accepted) return;
           }
           await saveChange(order, { fulfillment_status: next[3] }, button, next[3] === 'handed_over' ? practice ? 'Entrega simulada' : 'Entrega registrada' : 'Paso actualizado',
-            `El pedido ${reference(order)} ahora está «${labels[next[3]]}»${practice ? ' en la práctica' : ''}.`);
+            `El pedido ${reference(order)} ahora está «${labelFor({ ...order, fulfillment_status: next[3] })}»${practice ? ' en la práctica' : ''}.`);
         });
         action.append(button);
       }
@@ -367,6 +415,23 @@ export async function renderMerchOrders(client, records, notice, focus = null) {
       payment.append(node('dt', '', label), node('dd', '', value || '—'));
     }
     body.append(payment);
+    if (isStarken(order) && order.fulfillment_status === 'handed_over') {
+      const code = practice ? order.test_starken_waybill : order.starken_waybill;
+      const receipt = node('div', 'merch-order-receipt');
+      receipt.append(node('strong', '', `Orden de flete: ${code || 'Sin número registrado'}`));
+      if (!practice && code) {
+        const tracking = node('a', '', 'Abrir seguimiento oficial ↗');
+        tracking.href = 'https://www.starken.cl/SEGUIMIENTO'; tracking.target = '_blank'; tracking.rel = 'noopener noreferrer';
+        const message = `Hola ${order.buyer_name}, tu pedido ${reference(order)} ya fue entregado a Starken. El envío es POR PAGAR: pagarás el transporte directamente a Starken al recibirlo. Número de orden de flete: ${code}. Puedes seguirlo en https://www.starken.cl/SEGUIMIENTO . Adjuntamos el comprobante de entrega a Starken. Si necesitas ayuda, responde a este mensaje. — Gimae`;
+        const copy = node('button', '', 'Copiar aviso para el destinatario'); copy.type = 'button';
+        copy.addEventListener('click', async () => {
+          try { await navigator.clipboard.writeText(message); feedback('success', 'Aviso copiado', 'Pégalo en tu canal de contacto y adjunta una foto del comprobante. No se envió automáticamente.', notice); }
+          catch { feedback('error', 'No se pudo copiar', 'Copia el número de flete del comprobante y redacta el aviso manualmente.', notice); }
+        });
+        receipt.append(tracking, copy, node('p', '', 'El texto queda copiado; adjunta manualmente la foto del comprobante y verifica que el mensaje se haya enviado.'));
+      } else if (practice) receipt.append(node('p', '', 'Solo práctica: no envíes este número al destinatario.'));
+      body.append(receipt);
+    }
     const noteLabel = node('label', 'merch-order-note');
     noteLabel.append(node('span', '', practice ? 'Nota de práctica · visible solo para el equipo' : 'Nota interna · visible solo para el equipo'));
     const note = node('textarea');
@@ -382,7 +447,7 @@ export async function renderMerchOrders(client, records, notice, focus = null) {
     save.addEventListener('click', () => saveChange(order, { fulfillment_note: note.value.trim() }, save,
       'Nota guardada', `La nota interna del pedido ${reference(order)} quedó actualizada.`, 'note'));
     body.append(noteLabel, save);
-    if (order.handed_over_at) body.append(node('small', 'merch-order-history', `${practice ? 'Entrega simulada' : 'Entregado'}: ${date.format(new Date(order.handed_over_at))}`));
+    if (order.handed_over_at) body.append(node('small', 'merch-order-history', `${isStarken(order) ? practice ? 'Despacho simulado' : 'Entregado a Starken' : practice ? 'Entrega simulada' : 'Entregado'}: ${date.format(new Date(order.handed_over_at))}`));
     else if (order.ready_at && order.fulfillment_status === 'ready') body.append(node('small', 'merch-order-history', `Listo desde: ${date.format(new Date(order.ready_at))}`));
     detail.append(body);
     card.append(detail);

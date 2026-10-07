@@ -1,6 +1,6 @@
 import {renderPayPalAttempts} from './paypal-attempts.js?v=20261001-attempts01';
 import {renderWebpayAlerts} from './webpay-alerts.js?v=20261006-reconcile01';
-import {renderMerchOrders} from './merch-orders.js?v=20261006-practice01';
+import {renderMerchOrders} from './merch-orders.js?v=20261007-starken02';
 const $=s=>document.querySelector(s), settings=window.GIMAE_SUPABASE||{};
 const status=$('#status'), login=$('#login-section'), workspace=$('#workspace'), editor=$('#editor'), records=$('#records');
 const ui=window.GIMAE_UI;

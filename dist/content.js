@@ -15,7 +15,7 @@ window.GIMAE = {
     "volume": 0.035
   },
   // TIENDA: activa o desactiva aquí cada forma de entrega.
-  // Deja cost y eta vacíos cuando todavía deban coordinarse; la interfaz mostrará "A coordinar".
+  // Starken se cobra directamente al destinatario al recibir; nunca se suma al pago de productos.
   "SHIPPING": {
     "options": [
       {
@@ -26,8 +26,8 @@ window.GIMAE = {
         "eta": ""
       },
       {
-        "id": "instagram_shipping",
-        "label": "Envío a coordinar por Instagram",
+        "id": "starken_por_pagar",
+        "label": "Starken · entrega a domicilio",
         "enabled": true,
         "cost": null,
         "eta": ""
