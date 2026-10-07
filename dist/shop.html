@@ -53,8 +53,8 @@
       <div class="section-shell">
         <div class="section-heading"><div><p class="eyebrow">02 / ANTES DE COMPRAR</p><h2 id="trust-title">Todo claro,<br><em>sin letra chica.</em></h2></div><p>Estas condiciones son plantillas<br>pendientes de revisión final.</p></div>
         <div class="trust-grid">
-          <article><span aria-hidden="true">01</span><h3>Cómo comprar</h3><p>Agrega tus productos, revisa variantes y cantidades, elige entrega y completa solo tu nombre y un contacto. El pedido se confirma cuando el equipo de Gimae verifica disponibilidad y pago.</p></article>
-          <article><span aria-hidden="true">02</span><h3>Envíos y retiros</h3><p>Las modalidades habilitadas aparecen en el carrito. Costos, cobertura y plazos que no estén publicados se mostrarán como “A coordinar”. <strong>[PENDIENTE: definir zonas, costos y plazos]</strong></p></article>
+          <article><span aria-hidden="true">01</span><h3>Cómo comprar</h3><p>Agrega tus productos, elige retiro o despacho, completa tus datos y revisa el pago. La disponibilidad se reserva al crear el intento de pago online.</p></article>
+          <article><span aria-hidden="true">02</span><h3>Envíos y retiros</h3><p>El retiro presencial se coordina con Gimae. Si eliges Starken a domicilio, el despacho es <strong>POR PAGAR</strong>: pagas el transporte directamente a Starken al recibir el paquete. Su valor no está incluido en el pago de productos y depende del envío; cobertura y plazo se confirman antes del despacho. <a href="https://www.starken.cl/distribucion" target="_blank" rel="noopener noreferrer">Cómo funciona en Starken ↗</a></p></article>
           <article><span aria-hidden="true">03</span><h3>Cambios y devoluciones</h3><p><strong>[PENDIENTE: definir condiciones, plazos y canal de atención]</strong>. Nada en esta plantilla limita los derechos que correspondan según la legislación chilena aplicable.</p></article>
           <article><span aria-hidden="true">04</span><h3>Contacto</h3><p>Para confirmar un pedido o resolver dudas, utiliza únicamente los canales oficiales habilitados al finalizar la compra. <strong>[PENDIENTE: indicar horario de atención]</strong></p></article>
         </div>
@@ -74,9 +74,14 @@
     <p class="eyebrow">TU PEDIDO</p><h2 id="cart-title">Carrito de merch</h2>
     <p class="cart-storage-note" id="cart-storage-note" hidden>Tu navegador no permite guardar el carrito. Podrás continuar, pero se perderá al cerrar esta página.</p>
     <div class="cart-items" id="cart-items"></div><p class="cart-empty" id="cart-empty">Tu carrito está esperando un poquito de magia. ♡</p>
-    <div class="cart-shipping"><label for="shipping-option">Entrega o despacho</label><select id="shipping-option"></select><small id="shipping-detail"></small></div>
+    <div class="cart-shipping"><label for="shipping-option">Entrega o despacho</label><select id="shipping-option"></select><small id="shipping-detail"></small>
+      <div class="starken-explainer" id="starken-cart-explainer" hidden>
+        <a href="https://www.starken.cl/distribucion" target="_blank" rel="noopener noreferrer" aria-label="Abrir información oficial sobre Starken"><img src="images/starken-logo.webp" width="160" height="40" alt="Starken" loading="lazy"></a>
+        <p><strong>Envío POR PAGAR a domicilio.</strong> Aquí pagas solo los productos. Gimae entrega el paquete a Starken y te envía el comprobante y número de seguimiento. Tú pagas el transporte directamente a Starken al recibirlo. El importe final se determina en Starken según el paquete y destino; no se cobra en este checkout. <a href="https://www.starken.cl/distribucion" target="_blank" rel="noopener noreferrer">Fuente oficial ↗</a></p>
+      </div>
+    </div>
     <dl class="cart-totals"><div><dt>Subtotal</dt><dd id="cart-subtotal">$0</dd></div><div><dt>Entrega</dt><dd id="cart-shipping-cost">A coordinar</dd></div><div class="cart-total-row"><dt>Total productos</dt><dd id="cart-total">$0</dd></div></dl>
-    <p class="cart-total-note">Si el despacho tiene un costo todavía no publicado, se coordina antes de transferir o pagar.</p>
+    <p class="cart-total-note" id="cart-total-note">El total corresponde a los productos. El retiro se coordina con Gimae.</p>
     <div class="pending-order" id="pending-order" hidden><p>Tienes un pedido reciente. Puedes consultar su resumen y estado.</p><button class="text-link" id="reopen-order" type="button">Reabrir resumen <span aria-hidden="true">↗</span></button></div>
     <p class="shop-error" id="cart-error" role="alert" hidden></p>
     <button class="button primary cart-checkout" id="start-checkout" type="button">Continuar al pago <span aria-hidden="true">↗</span></button>
@@ -88,9 +93,24 @@
     <p class="eyebrow">CHECKOUT SEGURO Y SIMPLE</p><h2 id="checkout-title">Confirma tus datos</h2>
     <form id="checkout-form" novalidate>
       <div class="checkout-fields"><label for="buyer-name">Nombre <input id="buyer-name" name="buyerName" type="text" maxlength="60" autocomplete="name" required></label><label for="buyer-contact">Contacto <input id="buyer-contact" name="buyerContact" type="text" maxlength="80" placeholder="Instagram, WhatsApp o correo" autocomplete="email" required></label></div>
+      <fieldset class="delivery-fields" id="starken-fields" hidden><legend>Datos de la persona que recibe en domicilio</legend>
+        <p>Estos datos irán en la orden de flete de Starken. Confirma que la dirección tenga cobertura antes de pagar; si hay dudas, Gimae te contactará antes del despacho.</p>
+        <div class="checkout-fields">
+          <label for="ship-name">Nombre completo de quien recibe<input id="ship-name" autocomplete="shipping name" maxlength="80" required></label>
+          <label for="ship-rut">RUT de quien recibe<input id="ship-rut" placeholder="12345678-5" inputmode="text" maxlength="12" required></label>
+          <label for="ship-phone">Celular chileno<input id="ship-phone" autocomplete="shipping tel" type="tel" placeholder="+56912345678" maxlength="16" required></label>
+          <label for="ship-email">Correo de quien recibe<input id="ship-email" autocomplete="shipping email" type="email" maxlength="120" required></label>
+          <label for="ship-region">Región<select id="ship-region" required><option value="">Elige una región</option><option>Arica y Parinacota</option><option>Tarapacá</option><option>Antofagasta</option><option>Atacama</option><option>Coquimbo</option><option>Valparaíso</option><option>Metropolitana de Santiago</option><option>Libertador General Bernardo O'Higgins</option><option>Maule</option><option>Ñuble</option><option>Biobío</option><option>La Araucanía</option><option>Los Ríos</option><option>Los Lagos</option><option>Aysén del General Carlos Ibáñez del Campo</option><option>Magallanes y de la Antártica Chilena</option></select></label>
+          <label for="ship-commune">Comuna<input id="ship-commune" autocomplete="shipping address-level2" maxlength="80" required></label>
+          <label for="ship-street">Calle / avenida<input id="ship-street" autocomplete="shipping address-line1" maxlength="120" required></label>
+          <label for="ship-number">Número<input id="ship-number" maxlength="20" required></label>
+          <label for="ship-unit">Depto., casa u oficina (opcional)<input id="ship-unit" autocomplete="shipping address-line2" maxlength="60"></label>
+          <label for="ship-instructions">Indicaciones para encontrar la dirección (opcional)<input id="ship-instructions" maxlength="200"></label>
+        </div>
+      </fieldset>
       <fieldset class="payment-methods"><legend>Forma de pago</legend><div id="payment-method-list"></div></fieldset>
       <div class="paypal-conversion" id="paypal-conversion" hidden></div>
-      <p class="checkout-privacy" id="checkout-privacy">Usaremos tu nombre y contacto para coordinar el retiro. PayPal cobra en USD.</p>
+      <p class="checkout-privacy" id="checkout-privacy">Usaremos tus datos para gestionar el pedido y, si eliges despacho, para emitir la orden de flete de Starken. PayPal cobra en USD.</p>
       <p class="shop-error" id="checkout-error" role="alert" hidden></p>
       <p class="checkout-status" id="checkout-status" aria-live="polite"></p>
       <div class="checkout-loading" id="checkout-loading" role="status" aria-live="polite" hidden>

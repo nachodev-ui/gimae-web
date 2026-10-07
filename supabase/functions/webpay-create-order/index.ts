@@ -1,5 +1,6 @@
 import { admin, body, CheckoutError, cors, failure, json, rateLimit } from "../_shared/paypal.ts";
 import { webpay, webpayOrigin } from "../_shared/webpay.ts";
+import { readDelivery } from "../_shared/delivery.ts";
 
 type CartLine = { productId: string; optionId: string; quantity: number };
 
@@ -20,12 +21,7 @@ Deno.serve(async (req) => {
     ) {
       throw new CheckoutError(400, "Revisa tu nombre y contacto.");
     }
-    if (input.shippingId !== "pickup") {
-      throw new CheckoutError(
-        400,
-        "Webpay de prueba está disponible solo para retiro en persona.",
-      );
-    }
+    const delivery = readDelivery(input);
     if (
       !Array.isArray(input.items) || input.items.length < 1 ||
       input.items.length > 20
@@ -111,9 +107,10 @@ Deno.serve(async (req) => {
       throw new CheckoutError(400, "El total está fuera del rango admitido.");
     }
     const sessionId = crypto.randomUUID();
-    const { data: order, error: insertError } = await db.rpc("reserve_webpay_order", {
+    const { data: order, error: insertError } = await db.rpc("reserve_webpay_order_with_delivery", {
       p_buyer_name: buyerName, p_buyer_contact: buyerContact, p_items: priced,
       p_origin: origin, p_session_id: sessionId,
+      p_delivery_method: delivery.method, p_shipping_details: delivery.details,
     });
     if (insertError?.message?.match(/stock available|Price changed|Product unavailable|Variant unavailable/)) {
       throw new CheckoutError(409, "La disponibilidad cambió. Actualiza el carrito e intenta de nuevo.");

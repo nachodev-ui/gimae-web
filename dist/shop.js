@@ -45,6 +45,9 @@
   const cartTotal = document.querySelector('#cart-total');
   const shippingSelect = document.querySelector('#shipping-option');
   const shippingDetail = document.querySelector('#shipping-detail');
+  const starkenCartExplainer = document.querySelector('#starken-cart-explainer');
+  const starkenFields = document.querySelector('#starken-fields');
+  const cartTotalNote = document.querySelector('#cart-total-note');
   const cartError = document.querySelector('#cart-error');
   const checkoutError = document.querySelector('#checkout-error');
   const checkoutStatus = document.querySelector('#checkout-status');
@@ -391,14 +394,21 @@
     const shipping = selectedShipping();
     const cost = shipping ? positiveNumber(shipping.cost) : null;
     const eta = cleanText(shipping?.eta, 100);
-    shippingDetail.textContent = [cost === null ? 'Costo: A coordinar' : `Costo: ${money.format(cost)}`, eta ? `Plazo: ${eta}` : 'Plazo: A coordinar'].join(' · ');
+    const starken = selectedShippingId === 'starken_por_pagar';
+    shippingDetail.textContent = starken ? 'Transporte POR PAGAR al recibir · tarifa de Starken no incluida · plazo sujeto a cobertura' :
+      [cost === null ? 'Costo: A coordinar' : `Costo: ${money.format(cost)}`, eta ? `Plazo: ${eta}` : 'Plazo: A coordinar'].join(' · ');
+    starkenCartExplainer.hidden = !starken;
+    cartTotalNote.textContent = starken
+      ? 'Pagas aquí solo los productos. El transporte se paga a Starken cuando recibas el paquete.'
+      : 'El total corresponde a los productos. El retiro se coordina con Gimae.';
     renderTotals();
   }
 
   function renderTotals() {
     const current = totals();
     cartSubtotal.textContent = money.format(current.subtotal);
-    cartShippingCost.textContent = current.shippingCost === null ? 'A coordinar' : money.format(current.shippingCost);
+    cartShippingCost.textContent = selectedShippingId === 'starken_por_pagar' ? 'POR PAGAR a Starken' :
+      current.shippingCost === null ? 'A coordinar' : money.format(current.shippingCost);
     cartTotal.textContent = money.format(current.total);
   }
 
@@ -463,7 +473,7 @@
   }
 
   function readyMethods() {
-    return [bankReady() ? 'bankTransfer' : null, paypalReady() ? 'paypal' : null,
+    return [bankReady() && selectedShippingId === 'pickup' ? 'bankTransfer' : null, paypalReady() ? 'paypal' : null,
       webpayReady() ? 'webpay' : null].filter(Boolean);
   }
 
@@ -481,16 +491,16 @@
   function renderPaymentMethods() {
     paymentMethodList.replaceChildren();
     const methods = [
-      { id: 'bankTransfer', label: cleanText(config.PAYMENT_METHODS?.bankTransfer?.label || 'Transferencia bancaria', 60), enabled: Boolean(config.PAYMENT_METHODS?.bankTransfer?.enabled), ready: bankReady() },
-      { id: 'paypal', label: sandboxPreview ? 'PayPal Sandbox · prueba sin dinero real' : cleanText(config.PAYMENT_METHODS?.paypal?.label || 'PayPal', 60), enabled: paypalEnabled, ready: paypalReady() && selectedShippingId === 'pickup' },
-      { id: 'webpay', label: 'Webpay Plus · integración, sin dinero real', enabled: webpayEnabled, ready: webpayReady() && selectedShippingId === 'pickup' }
+      { id: 'bankTransfer', label: cleanText(config.PAYMENT_METHODS?.bankTransfer?.label || 'Transferencia bancaria', 60), enabled: Boolean(config.PAYMENT_METHODS?.bankTransfer?.enabled), ready: bankReady() && selectedShippingId === 'pickup' },
+      { id: 'paypal', label: sandboxPreview ? 'PayPal Sandbox · prueba sin dinero real' : cleanText(config.PAYMENT_METHODS?.paypal?.label || 'PayPal', 60), enabled: paypalEnabled, ready: paypalReady() },
+      { id: 'webpay', label: 'Webpay Plus · integración, sin dinero real', enabled: webpayEnabled, ready: webpayReady() }
     ].filter(method => method.enabled);
     methods.forEach((method, index) => {
       const label = element('label', `payment-choice${method.ready ? '' : ' is-disabled'}`);
       const radio = element('input'); radio.type = 'radio'; radio.name = 'paymentMethod'; radio.value = method.id; radio.disabled = !method.ready;
       radio.checked = method.ready && !methods.slice(0, index).some(previous => previous.ready);
       const copy = element('span', '', method.label);
-      if (!method.ready) copy.append(element('small', '', 'Configuración pendiente'));
+      if (!method.ready) copy.append(element('small', '', method.id === 'bankTransfer' && selectedShippingId !== 'pickup' ? 'Solo para retiro' : 'Configuración pendiente'));
       label.append(radio, copy); paymentMethodList.append(label);
       radio.addEventListener('change', updatePaymentUI);
     });
@@ -505,15 +515,18 @@
     paypalPrepared = false;
     const method = chosenPayment();
     const isPaypal = method === 'paypal';
+    const starken = selectedShippingId === 'starken_por_pagar';
+    starkenFields.hidden = !starken;
+    for (const field of starkenFields.querySelectorAll('[required]')) field.disabled = !starken;
     paypalConversion.hidden = !isPaypal;
     checkoutPrivacy.textContent = isPaypal
-      ? (sandboxPreview ? 'Pago de prueba sin dinero real. El pedido Sandbox no se preparará ni entregará.' : 'Usaremos tu nombre y contacto para coordinar el retiro. PayPal cobra en USD.')
+      ? (sandboxPreview ? 'Pago de prueba sin dinero real. El pedido Sandbox no se preparará ni entregará.' : 'Usaremos tus datos para gestionar el pedido y el despacho elegido. PayPal cobra en USD.')
       : method === 'webpay' ? 'Pago de prueba en pesos chilenos. Usa solamente tarjetas de prueba de Transbank; este pedido no se preparará ni entregará.'
       : 'Tus datos quedan en el resumen del pedido de este dispositivo.';
     paypalButtons.hidden = true;
     paypalButtons.replaceChildren();
     if (isPaypal) {
-      paypalConversion.textContent = 'Verás el total exacto en USD antes de pagar. Retiro en persona sin costo.';
+      paypalConversion.textContent = starken ? 'Verás el valor de los productos en USD. El transporte NO está incluido: lo pagarás a Starken al recibir.' : 'Verás el total exacto en USD antes de pagar. Retiro en persona sin costo.';
       preparePayment.textContent = 'Preparar pago con PayPal';
     } else if (method === 'webpay') {
       preparePayment.textContent = 'Continuar a Webpay de prueba';
@@ -530,7 +543,38 @@
     nameInput.value = name; contactInput.value = contact;
     if (name.length < 2) { nameInput.focus(); return { error: 'Escribe tu nombre para continuar.' }; }
     if (contact.length < 3) { contactInput.focus(); return { error: 'Escribe un contacto válido para continuar.' }; }
-    return { name, contact };
+    if (selectedShippingId !== 'starken_por_pagar') return { name, contact, shippingDetails: {} };
+    const fields = { name: '#ship-name', rut: '#ship-rut', phone: '#ship-phone', email: '#ship-email',
+      region: '#ship-region', commune: '#ship-commune', street: '#ship-street', number: '#ship-number',
+      unit: '#ship-unit', instructions: '#ship-instructions' };
+    const details = Object.fromEntries(Object.entries(fields).map(([key, selector]) => [key, document.querySelector(selector).value.trim().replace(/\s+/g, ' ')]));
+    details.rut = details.rut.replace(/\./g, '').toUpperCase();
+    details.phone = details.phone.replace(/[\s()-]/g, '');
+    if (/^9\d{8}$/.test(details.phone)) details.phone = `+56${details.phone}`;
+    if (/^569\d{8}$/.test(details.phone)) details.phone = `+${details.phone}`;
+    const rutParts = details.rut.match(/^([0-9]{7,8})-([0-9K])$/);
+    let rutValid = false;
+    if (rutParts) {
+      let sum = 0, factor = 2;
+      for (let i = rutParts[1].length - 1; i >= 0; i--, factor = factor === 7 ? 2 : factor + 1) sum += Number(rutParts[1][i]) * factor;
+      const check = 11 - (sum % 11);
+      rutValid = rutParts[2] === (check === 11 ? '0' : check === 10 ? 'K' : String(check));
+    }
+    const checks = [
+      ['name', details.name.length >= 2, 'Escribe el nombre completo de quien recibirá el paquete.'],
+      ['rut', rutValid, 'Revisa el RUT de quien recibirá el paquete.'],
+      ['phone', /^\+569\d{8}$/.test(details.phone), 'Escribe un celular chileno válido, por ejemplo +56912345678.'],
+      ['email', /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(details.email), 'Escribe el correo de quien recibirá el paquete.'],
+      ['region', Boolean(details.region), 'Elige la región de destino.'],
+      ['commune', details.commune.length >= 2, 'Escribe la comuna de destino.'],
+      ['street', details.street.length >= 3, 'Escribe la calle o avenida de destino.'],
+      ['number', Boolean(details.number), 'Escribe el número del domicilio.']
+    ];
+    const invalid = checks.find(([, valid]) => !valid);
+    if (invalid) { document.querySelector(fields[invalid[0]]).focus(); return { error: invalid[2] }; }
+    document.querySelector('#ship-rut').value = details.rut;
+    document.querySelector('#ship-phone').value = details.phone;
+    return { name, contact, shippingDetails: details };
   }
 
   function orderCode() {
@@ -553,7 +597,8 @@
       paymentMethod: method,
       sandbox: (method === 'paypal' && sandboxPreview) || method === 'webpay',
       buyer: { name: cleanText(buyer.name, 60), contact: cleanText(buyer.contact, 80) },
-      shipping: shipping ? { id: cleanText(shipping.id, 40), label: cleanText(shipping.label, 100), cost: positiveNumber(shipping.cost), eta: cleanText(shipping.eta, 100) } : null,
+      shipping: shipping ? { id: cleanText(shipping.id, 40), label: cleanText(shipping.label, 100), cost: positiveNumber(shipping.cost), eta: cleanText(shipping.eta, 100),
+        destination: shipping.id === 'starken_por_pagar' ? `${buyer.shippingDetails.commune}, ${buyer.shippingDetails.region}` : '' } : null,
       items: cartDetails().map(item => ({ productId: item.productId, optionId: item.optionId, name: cleanText(item.product.name, 80), option: cleanText(item.option.label, 60), quantity: item.quantity, unitPrice: item.unitPrice })),
       subtotal: current.subtotal,
       total: current.total
@@ -791,9 +836,8 @@
     }
   }
 
-  async function renderPayPal(order) {
+  async function renderPayPal(order, shippingDetails) {
     if (paypalPreparing || paypalPrepared) return;
-    if (selectedShippingId !== 'pickup') return showError(checkoutError, 'PayPal solo está disponible para retiro en persona.');
     paypalPreparing = true;
     preparePayment.disabled = true;
     checkoutLoading.hidden = false;
@@ -804,7 +848,7 @@
     try {
       const quote = await edgeFunction('paypal-create-order', {
         buyerName: order.buyer.name, buyerContact: order.buyer.contact,
-        shippingId: 'pickup',
+        shippingId: order.shipping.id, shippingDetails,
         items: cart.map(({ productId, optionId, quantity }) => ({ productId, optionId, quantity }))
       });
       order.code = quote.orderCode;
@@ -817,7 +861,7 @@
       // Persistir las dos IDs antes de abrir PayPal permite consultar el pago tras recargar o perder conexión.
       order.status = 'awaiting_approval';
       saveOrder(order);
-      paypalConversion.textContent = `${money.format(quote.totalClp)} CLP → ${usd.format(Number(quote.totalUsd))} USD · Retiro sin costo. ${order.sandbox ? 'Prueba sin reserva de inventario. El intento termina' : 'Tus unidades están reservadas hasta'} las ${new Intl.DateTimeFormat('es-CL', { timeStyle: 'short' }).format(new Date(quote.reservationExpiresAt))}.`;
+      paypalConversion.textContent = `${money.format(quote.totalClp)} CLP → ${usd.format(Number(quote.totalUsd))} USD · ${order.shipping.id === 'starken_por_pagar' ? 'Transporte POR PAGAR a Starken, no incluido.' : 'Retiro sin costo.'} ${order.sandbox ? 'Prueba sin reserva de inventario. El intento termina' : 'Tus unidades están reservadas hasta'} las ${new Intl.DateTimeFormat('es-CL', { timeStyle: 'short' }).format(new Date(quote.reservationExpiresAt))}.`;
       await loadPayPal(quote.clientId);
       paypalButtons.hidden = false;
       let capturing = false;
@@ -899,16 +943,15 @@
     }
   }
 
-  async function renderWebpay(order) {
+  async function renderWebpay(order, shippingDetails) {
     if (webpayPreparing) return;
-    if (selectedShippingId !== 'pickup') return showError(checkoutError, 'Webpay de prueba solo está disponible para retiro en persona.');
     webpayPreparing = true;
     preparePayment.disabled = true;
     checkoutLoading.hidden = false;
     showError(checkoutError, '');
     try {
       const quote = await edgeFunction('webpay-create-order', {
-        buyerName: order.buyer.name, buyerContact: order.buyer.contact, shippingId: 'pickup',
+        buyerName: order.buyer.name, buyerContact: order.buyer.contact, shippingId: order.shipping.id, shippingDetails,
         items: cart.map(({ productId, optionId, quantity }) => ({ productId, optionId, quantity }))
       });
       order.code = quote.orderCode;
@@ -965,6 +1008,7 @@
       : `Hola Gimae ♡ Quiero confirmar mi pedido ${cleanText(order.code, 40)}:`, ''];
     order.items.forEach(item => lines.push(`• ${item.quantity}× ${cleanText(item.name, 80)}${item.option ? ` (${cleanText(item.option, 60)})` : ''} — ${money.format(item.unitPrice * item.quantity)}`));
     lines.push('', `Entrega: ${cleanText(order.shipping?.label || 'A coordinar', 100)}`, `Total productos: ${money.format(Number(order.total) || 0)}`);
+    if (order.shipping?.id === 'starken_por_pagar') lines.push(`Destino: ${cleanText(order.shipping.destination, 170)}`, 'Transporte POR PAGAR al recibir en Starken; no incluido en el total de productos.');
     if (order.paymentMethod === 'paypal' && order.paypalOrderId) lines.push(`Pago PayPal: ${cleanText(order.paypalOrderId, 80)}`);
     if (order.paymentMethod === 'webpay' && order.webpayBuyOrder) lines.push(`Orden Webpay: ${cleanText(order.webpayBuyOrder, 80)}`);
     if (order.paymentMethod === 'webpay' && order.reviewRequired) lines.push('Necesito revisar el resultado de este intento antes de volver a pagar.');
@@ -1032,7 +1076,9 @@
     const totalsBox = element('div', 'order-total-box');
     totalsBox.append(element('span', '', 'Total productos'), element('strong', '', money.format(Number(order.total) || 0)), copyButton(String(Math.round(Number(order.total) || 0)), 'Copiar total'));
     orderSummary.append(totalsBox);
-    orderSummary.append(element('p', 'order-shipping-copy', `Entrega: ${cleanText(order.shipping?.label || 'A coordinar', 100)} · ${order.shipping?.cost === null ? 'Costo a coordinar' : money.format(order.shipping?.cost || 0)}.`));
+    orderSummary.append(element('p', 'order-shipping-copy', order.shipping?.id === 'starken_por_pagar'
+      ? `Starken a domicilio · POR PAGAR. ${cleanText(order.shipping.destination, 170)}. El transporte se paga a Starken al recibir; no está incluido en los productos. ${order.sandbox ? 'Esta prueba no genera un despacho real.' : 'Gimae compartirá el comprobante y seguimiento después del despacho.'}`
+      : `Entrega: ${cleanText(order.shipping?.label || 'A coordinar', 100)} · retiro a coordinar.`));
 
     if (order.paymentMethod === 'bankTransfer') {
       const bank = config.BANK_TRANSFER;
@@ -1477,8 +1523,8 @@
     const method = chosenPayment();
     if (!method) return showError(checkoutError, 'Elige una forma de pago disponible.');
     const order = createOrderSnapshot(method, buyer);
-    if (method === 'paypal') return renderPayPal(order);
-    if (method === 'webpay') return renderWebpay(order);
+    if (method === 'paypal') return renderPayPal(order, buyer.shippingDetails);
+    if (method === 'webpay') return renderWebpay(order, buyer.shippingDetails);
     if (!bankReady()) return showError(checkoutError, 'La transferencia todavía no está configurada.');
     saveOrder(order); cart = []; saveCart(); checkoutDialog.close(); renderOrder(order, preparePayment);
   });

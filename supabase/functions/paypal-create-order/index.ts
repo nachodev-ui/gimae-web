@@ -14,6 +14,7 @@ import {
   paypalToken,
   rateLimit,
 } from "../_shared/paypal.ts";
+import { readDelivery } from "../_shared/delivery.ts";
 
 type CartLine = { productId: string; optionId: string; quantity: number };
 
@@ -38,12 +39,7 @@ Deno.serve(async (req) => {
     ) {
       throw new CheckoutError(400, "Revisa tu nombre y contacto.");
     }
-    if (input.shippingId !== "pickup") {
-      throw new CheckoutError(
-        400,
-        "PayPal está disponible solo para retiro en persona.",
-      );
-    }
+    const delivery = readDelivery(input);
     if (
       !Array.isArray(input.items) || input.items.length < 1 ||
       input.items.length > 20
@@ -143,7 +139,7 @@ Deno.serve(async (req) => {
       throw new CheckoutError(503, "No se pudo calcular el total USD.");
     }
     // La comprobación definitiva y la reserva comparten una transacción SQL.
-    const { data: order, error: insertError } = await db.rpc("reserve_merch_order", {
+    const { data: order, error: insertError } = await db.rpc("reserve_merch_order_with_delivery", {
       p_buyer_name: buyerName,
       p_buyer_contact: buyerContact,
       p_items: priced,
@@ -151,6 +147,8 @@ Deno.serve(async (req) => {
       p_rate_date: fx.observation_date,
       p_usd_cents: usdCents,
       p_environment: orderEnvironment,
+      p_delivery_method: delivery.method,
+      p_shipping_details: delivery.details,
     });
     if (insertError?.message?.includes("No confirmed stock available") ||
       insertError?.message?.includes("Price changed") ||
@@ -170,7 +168,7 @@ Deno.serve(async (req) => {
           purchase_units: [{
             reference_id: order.id,
             custom_id: order.id,
-            description: `Merch Gimae - retiro`,
+            description: delivery.method === "pickup" ? "Merch Gimae - retiro" : "Merch Gimae - Starken por pagar",
             payee: { merchant_id: paypalMerchantId() },
             amount: { currency_code: "USD", value: (usdCents / 100).toFixed(2) },
           }],
