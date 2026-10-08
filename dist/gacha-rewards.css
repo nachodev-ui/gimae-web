@@ -7,6 +7,8 @@
 .gacha-redeem-message::before{content:'♡';margin-right:8px;color:var(--gyaru-pink-dark)}
 .gacha-redeem-message[data-tone="success"]{background:var(--gyaru-cream);border-color:var(--gyaru-gold);color:#614718}
 .gacha-redeem-message[data-tone="success"]::before{content:'✦';color:#795a12}
+.gacha-redeem-message[data-tone="warning"]{background:var(--gyaru-blue);border-color:var(--gyaru-pink-dark);color:#432b43}
+.gacha-redeem-message[data-tone="warning"]::before{content:'↺';color:var(--gyaru-pink-dark)}
 .gacha-status.is-notice{padding:10px 14px;border:1px solid var(--gyaru-pink);border-radius:14px;background:var(--gyaru-blush);color:#652345;font-weight:700}
 .gacha-status.is-notice::before{content:'♡';margin-right:8px;color:var(--gyaru-pink-dark)}
 .gacha-credit-sparkles{position:absolute;inset:0;z-index:1000;pointer-events:none;overflow:visible}

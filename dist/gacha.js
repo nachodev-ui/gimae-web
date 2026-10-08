@@ -181,11 +181,21 @@
     if (!historyAvailable) return [];
     try {
       const saved = JSON.parse(localStorage.getItem(codeHistoryKey) || '[]');
-      return Array.isArray(saved) ? saved.filter(entry =>
+      if (!Array.isArray(saved)) return [];
+      const valid = saved.filter(entry =>
         entry && typeof entry.code === 'string' && entry.code.length > 0 && entry.code.length <= 36 &&
         ['redeemed', 'failed'].includes(entry.status) &&
         (entry.at === null || (Number.isFinite(entry.at) && entry.at > 0 && entry.at <= Date.now() + 86400000))
-      ).slice(0, 30) : [];
+      );
+      const unique = new Map();
+      for (const entry of valid) {
+        const code = entry.code.toLowerCase();
+        const previous = unique.get(code);
+        if (!previous || (previous.status !== 'redeemed' && entry.status === 'redeemed')) unique.set(code, {...entry, code});
+      }
+      const compacted = [...unique.values()].slice(0, 30);
+      if (JSON.stringify(compacted) !== JSON.stringify(saved)) localStorage.setItem(codeHistoryKey, JSON.stringify(compacted));
+      return compacted;
     } catch (error) {
       historyAvailable = false;
       return [];
@@ -246,22 +256,39 @@
   }
 
   function rememberCodeAttempt(code, status) {
-    codeHistory.unshift({code, status, at:Date.now()});
-    codeHistory = codeHistory.slice(0, 30);
+    const previous = codeHistory.find(entry => entry.code === code);
+    if (previous?.status === 'redeemed' && status !== 'redeemed') return;
+    codeHistory = [{code, status, at:Date.now()}, ...codeHistory.filter(entry => entry.code !== code)].slice(0, 30);
     saveCodeHistory();
   }
 
   function syncRedeemedCodeHistory() {
-    const redeemed = new Set(codeHistory.filter(entry => entry.status === 'redeemed').map(entry => entry.code));
-    const recovered = vouchers.filter(voucher => orderCodePattern.test(voucher.orderCode) && !redeemed.has(voucher.orderCode))
-      .map(voucher => {
-        redeemed.add(voucher.orderCode);
-        return {code:voucher.orderCode, status:'redeemed', at:null};
-      });
-    if (recovered.length) {
-      codeHistory = [...recovered, ...codeHistory].slice(0, 30);
+    let changed = false;
+    for (const voucher of vouchers) {
+      const code = String(voucher.orderCode || '').toLowerCase();
+      if (!orderCodePattern.test(code)) continue;
+      const existing = codeHistory.find(entry => entry.code === code);
+      if (existing?.status === 'redeemed') continue;
+      codeHistory = [{code, status:'redeemed', at:null}, ...codeHistory.filter(entry => entry.code !== code)].slice(0, 30);
+      changed = true;
+    }
+    if (changed) {
       saveCodeHistory();
     } else renderCodeHistory();
+  }
+
+  function hasRedeemedCode(code) {
+    return vouchers.some(voucher => String(voucher.orderCode || '').toLowerCase() === code) ||
+      codeHistory.some(entry => entry.code === code && entry.status === 'redeemed');
+  }
+
+  function showAlreadyRedeemed(code) {
+    if (!codeHistory.some(entry => entry.code === code && entry.status === 'redeemed')) {
+      codeHistory = [{code, status:'redeemed', at:null}, ...codeHistory.filter(entry => entry.code !== code)].slice(0, 30);
+      saveCodeHistory();
+    }
+    codeInput.value = '';
+    showRedeemMessage('Este código ya fue canjeado anteriormente. No se añadieron sobres nuevos; puedes consultarlo en Historial.', 'warning');
   }
 
   async function animateRedeemedPacks(previousPacks) {
@@ -589,12 +616,27 @@
       codeInput.focus();
       return;
     }
+    if (hasRedeemedCode(orderCode)) {
+      showAlreadyRedeemed(orderCode);
+      return;
+    }
     showRedeemMessage('');
     busy=true;updateDailyUI();
     let redeemed = false;
+    let attemptedRedeem = false;
     try {
+      await restoreCredits();
+      if (hasRedeemedCode(orderCode)) {
+        showAlreadyRedeemed(orderCode);
+        return;
+      }
       const previousPacks = remainingPacks();
-      await api('redeem',{orderCode});
+      attemptedRedeem = true;
+      const redemption = await api('redeem',{orderCode});
+      if (Number(redemption.remaining) < Number(redemption.granted)) {
+        showAlreadyRedeemed(orderCode);
+        return;
+      }
       redeemed = true;
       rememberCodeAttempt(orderCode, 'redeemed');
       codeInput.value = '';
@@ -607,13 +649,16 @@
       status.textContent='¡Gracias por apoyar a Gimae! Abre tu próximo recuerdo.';
       status.classList.remove('is-notice');
     } catch(error) {
-      if (!redeemed) rememberCodeAttempt(orderCode, 'failed');
+      if (attemptedRedeem && !redeemed) rememberCodeAttempt(orderCode, 'failed');
       const belowMinimum = error.message.includes('Debe estar pagado y cumplir el mínimo');
       const message = redeemed ? 'El código se canjeó, pero no pudimos actualizar los sobres. Conserva el código del historial y prueba «Sincronizar colección».'
         : belowMinimum ? `El pedido debe estar pagado y sumar al menos ${money(liveSettings.minimum_clp)} en productos, sin contar el envío.`
-          : error.message;
+          : error.message.includes('ya fue canjeado o no pertenece a esta sesión') ? 'Este código ya fue canjeado o pertenece a otra sesión. No se añadieron sobres nuevos.'
+            : error.message;
       showRedeemMessage(message);
-      window.GIMAE_UI.toast({tone:'error',title:redeemed ? 'No pudimos actualizar tus sobres' : 'No pudimos canjear el pedido',message});
+      if (redeemed || !error.message.includes('ya fue canjeado o no pertenece a esta sesión')) {
+        window.GIMAE_UI.toast({tone:'error',title:redeemed ? 'No pudimos actualizar tus sobres' : 'No pudimos canjear el pedido',message});
+      }
     } finally {displayedPacks=null;busy=false;updateDailyUI();}
   });
 
