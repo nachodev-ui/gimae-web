@@ -1,4 +1,4 @@
-import {renderGacha} from './gacha-editor.js?v=20261007';
+import {renderGacha} from './gacha-editor.js?v=20261008-ui01';
 import {renderPayPalAttempts} from './paypal-attempts.js?v=20261001-attempts01';
 import {renderWebpayAlerts} from './webpay-alerts.js?v=20261006-reconcile01';
 import {renderMerchOrders} from './merch-orders.js?v=20261007-starken02';
