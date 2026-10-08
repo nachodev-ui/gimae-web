@@ -38,17 +38,17 @@ Una web no puede garantizar que Instagram aparezca en ese menú o que abra direc
 
 ## Activación del backend
 
-La migración y función están preparadas en esta rama, **pendientes de aprobación para desplegar en el Supabase compartido**. Traer la rama y servir `dist` no crea automáticamente las tablas ni la función.
+La migración se aplicó al proyecto `hvaonobbpzbupanuymkh` y la función `gacha` versión 1 está activa, con aprobación del usuario. Hay 12 cartas iniciales y el canje de Sandbox está desactivado por defecto. El nombre del archivo de migración coincide con la versión registrada en Supabase (`20261008022035`).
 
 Archivos necesarios:
 
-- `supabase/migrations/20261007172438_gacha_order_rewards.sql`
+- `supabase/migrations/20261008022035_gacha_order_rewards.sql`
 - `supabase/functions/gacha/index.ts`
 - `supabase/functions/_shared/paypal.ts` (utilidades existentes; se conserva)
 - `supabase/functions/deno.json` (dependencia fijada ya existente)
 - `supabase/config.toml` (canje público sin cuenta, validación en cuerpo y servidor)
 
-Después de aprobar, aplicar la migración al proyecto correcto y desplegar `gacha` usando su configuración. Reutiliza los secretos de Supabase y `PAYPAL_ALLOWED_ORIGINS` ya configurados. La función no necesita credenciales nuevas de pagos.
+El despliegue reutiliza los secretos de Supabase y `PAYPAL_ALLOWED_ORIGINS` ya configurados. La función no necesita credenciales nuevas de pagos. No vuelvas a ejecutar manualmente la migración en el proyecto ya actualizado.
 
 Prueba manual tras activación:
 
@@ -70,4 +70,8 @@ Prueba manual tras activación:
 
 Dependencias temporales: `@electric-sql/pglite@0.5.8`, `playwright@1.62.1` (o el Playwright del entorno), Chromium compatible. No se añaden dependencias al sitio estático. Variables de test: `GACHA_TEST_MODULES` para node_modules, `GACHA_PLAYWRIGHT` y `GACHA_CHROMIUM` opcionales para rutas del entorno.
 
-Verificación pendiente: aplicar/desplegar en Supabase compartido y probar allí un pedido real de Sandbox, junto con solicitudes concurrentes y compartir en Instagram desde un dispositivo físico.
+Verificado en Supabase: 12 cartas, RLS habilitado en las cuatro tablas de Gacha, RPC de canje ejecutable solo por service_role y sin lectura pública de créditos ni escritura pública de configuración. Comprobaciones HTTP del backend activo: configuración y catálogo públicos 200, sesión nueva 200 con saldo vacío, código malformado 400, pedido inexistente 409, origen no autorizado 403 y RPC directo público 401. No se canjearon pedidos ni se consumieron tiradas durante la activación.
+
+Los avisos informativos de tablas privadas sin políticas son intencionales: no se concede acceso a clientes. Las advertencias de [pg_net en public](https://supabase.com/docs/guides/database/database-linter?lint=0014_extension_in_public) y [protección de contraseñas filtradas](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection) son previas a este cambio.
+
+Verificación pendiente: probar un pedido Sandbox pagado y solicitudes concurrentes, y compartir en Instagram desde un dispositivo físico.

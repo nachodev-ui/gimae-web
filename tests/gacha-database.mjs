@@ -23,7 +23,7 @@ await db.exec(`
  ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
  GRANT SELECT,INSERT,UPDATE,DELETE ON storage.objects TO anon,authenticated;
 `);
-await db.exec(fs.readFileSync(new URL('../supabase/migrations/20261007172438_gacha_order_rewards.sql',import.meta.url),'utf8'));
+await db.exec(fs.readFileSync(new URL('../supabase/migrations/20261008022035_gacha_order_rewards.sql',import.meta.url),'utf8'));
 const query=async(sql,args=[])=> (await db.query(sql,args)).rows;
 const expectError=async(sql,args=[])=>{let threw=false;try{await query(sql,args)}catch{threw=true}assert.ok(threw,`Expected rejection: ${sql}`);};
 const hash='1'.repeat(64),other='2'.repeat(64);
