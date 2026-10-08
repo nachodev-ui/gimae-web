@@ -7,12 +7,17 @@ const {JSDOM}=require('jsdom');
 
 const dom=new JSDOM('<button data-tab="gacha" aria-current="true"></button><main id="records"></main><aside id="editor"></aside>',{url:'https://example.test/admin/'});
 global.window=dom.window;global.document=dom.window.document;global.HTMLImageElement=dom.window.HTMLImageElement;
+global.URL=dom.window.URL;
+const revokedUrls=[];let nextPreview=0;
+URL.createObjectURL=()=>`blob:gacha-preview-${++nextPreview}`;
+URL.revokeObjectURL=url=>revokedUrls.push(url);
 dom.window.HTMLElement.prototype.scrollIntoView=function(){};
 dom.window.matchMedia=()=>({matches:true});
 
 const config={id:true,minimum_clp:2000,pulls_per_order:3,allow_test_orders:false,rarities:{common:{label:'Común',weight:70},rare:{label:'Rara',weight:25},ssr:{label:'SSR',weight:5}}};
 const cards=['common','rare','ssr'].map((tier,index)=>({serial:`TEST-${index}`,integrante:`Carta ${index}`,rareza:tier,imagen:'images/suki.webp',frase:`Frase ${index}`,crop:'50% 25%',zoom:1,active:true,display_order:index}));
 const toasts=[],confirmations=[],uploads=[],orders=[];
+let releaseUpload=null,holdUpload=false,failUpload=false;
 dom.window.GIMAE_UI={toast:message=>toasts.push(message),confirm:async options=>{confirmations.push(options);return true;}};
 
 class Query{
@@ -38,7 +43,7 @@ const client={
   from:table=>new Query(table),
   rpc:async(name,{p_serials})=>{assert.equal(name,'reorder_gacha_cards');orders.push([...p_serials]);p_serials.forEach((serial,index)=>{cards.find(card=>card.serial===serial).display_order=index;});return {data:null,error:null};},
   storage:{from:bucket=>{assert.equal(bucket,'gimae-gacha');return {
-    upload:async(path,file,options)=>{uploads.push({path,file,options});return {data:{},error:null};},
+    upload:async(path,file,options)=>{uploads.push({path,file,options});if(holdUpload)await new Promise(resolve=>{releaseUpload=resolve;});return failUpload?{data:null,error:new Error('Storage no disponible')}:{data:{},error:null};},
     getPublicUrl:path=>({data:{publicUrl:`https://example.test/${path}`}})
   };}}
 };
@@ -80,12 +85,19 @@ const tick=()=>new Promise(resolve=>setTimeout(resolve,0));
   assert.ok(toasts.some(item=>item.title==='Álbum reorganizado'));
 
   click('[data-edit]');
+  assert.ok(document.querySelector('.member-editor-visual-layout.gacha-visual-layout'));
+  assert.ok(document.querySelector('.member-editor-photo-card.gacha-preview-box'));
+  assert.match(document.querySelector('.member-editor-photo-copy').textContent,/2\.55:3\.65/);
+  assert.ok([...document.querySelectorAll('#records button,#editor button')].every(button=>button.classList.contains('gacha-button')));
   assert.equal(document.querySelector('#gacha-file').type,'file');
   assert.equal(document.querySelector('#gacha-file').labels.length,1);
   assert.equal(document.querySelector('#gacha-file').tabIndex,0);
+  assert.ok(document.querySelector('#gacha-image-spec'));
+  assert.equal(document.querySelector('.gacha-preview-box').hidden,false);
   assert.equal(document.querySelector('#gacha-pick-image').textContent,'Reemplazar');
   click('#gacha-remove-image');await tick();
-  assert.equal(document.querySelector('.gacha-preview-box').hidden,true);
+  assert.equal(document.querySelector('#gacha-preview').hidden,true);
+  assert.equal(document.querySelector('.gacha-preview-fallback').hidden,false);
   assert.equal(document.querySelector('#gacha-pick-image').textContent,'＋ Seleccionar imagen');
   const bad=new dom.window.File(['x'],'bad.gif',{type:'image/gif'});
   const zone=document.querySelector('.gacha-image-drop');
@@ -95,11 +107,24 @@ const tick=()=>new Promise(resolve=>setTimeout(resolve,0));
   const hugeDrop=new dom.window.Event('drop',{bubbles:true,cancelable:true});hugeDrop.dataTransfer={files:[huge]};zone.dispatchEvent(hugeDrop);await tick();
   assert.match(document.querySelector('#gacha-upload-status').textContent,/máximo de 8 MB/);assert.equal(uploads.length,0);
   const image=new dom.window.File(['image'],'photo.webp',{type:'image/webp'});
-  const goodDrop=new dom.window.Event('drop',{bubbles:true,cancelable:true});goodDrop.dataTransfer={files:[image]};zone.dispatchEvent(goodDrop);await tick();
+  holdUpload=true;
+  const goodDrop=new dom.window.Event('drop',{bubbles:true,cancelable:true});goodDrop.dataTransfer={files:[image]};zone.dispatchEvent(goodDrop);
+  assert.match(document.querySelector('#gacha-preview').src,/^blob:gacha-preview-/);
+  assert.equal(document.querySelector('#gacha-preview').hidden,false);
+  releaseUpload();holdUpload=false;await tick();
   assert.equal(uploads.length,1);assert.equal(uploads[0].options.upsert,false);
   assert.match(document.querySelector('#gacha-upload-status').textContent,/Imagen lista/);
-  assert.equal(document.querySelector('.gacha-preview-box').hidden,false);
+  assert.match(document.querySelector('#gacha-preview').src,/^https:\/\/example\.test\/cards\//);
+  assert.equal(revokedUrls.length,1);
   assert.equal(document.querySelector('#gacha-pick-image').textContent,'Reemplazar');
+  const savedPreview=document.querySelector('#gacha-preview').src;
+  failUpload=true;
+  const failedDrop=new dom.window.Event('drop',{bubbles:true,cancelable:true});failedDrop.dataTransfer={files:[image]};zone.dispatchEvent(failedDrop);
+  assert.match(document.querySelector('#gacha-preview').src,/^blob:gacha-preview-/);
+  await tick();failUpload=false;
+  assert.equal(document.querySelector('#gacha-preview').src,savedPreview);
+  assert.match(document.querySelector('#gacha-upload-status').textContent,/No pudimos subir/);
+  assert.equal(revokedUrls.length,2);
   click('#gacha-editor-cancel');click('[data-delete]');await tick();
   assert.equal(confirmations.at(-1).confirmText,'Quitar carta');
   assert.equal(cards.length,2);
@@ -114,5 +139,5 @@ const tick=()=>new Promise(resolve=>setTimeout(resolve,0));
   assert.ok(document.querySelector('.merch-image-drop'));
   assert.ok(document.querySelector('.merch-media-primary'));
   assert.ok(document.querySelector('.merch-current-image-card'));
-  console.log('PASS: integer probability states and save gate, settings save, keyboard and drag order, confirmed Fisher-Yates shuffle and reload, image replace/remove, type/size validation and Storage upload, confirmed card removal, Merch image manager regression.');
+  console.log('PASS: probability states and save gate, keyboard/drag/shuffle order, shared member preview and Gacha buttons, instant image preview and failed-upload rollback, Storage upload, confirmed removal, Merch regression.');
 })().catch(error=>{console.error(error);process.exitCode=1;});
