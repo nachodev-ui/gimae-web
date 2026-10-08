@@ -21,6 +21,8 @@
   const settings = window.GIMAE_SUPABASE;
   const tokenKey = 'gimae-gacha-token-v1';
   const pendingKey = 'gimae-gacha-pending-v1';
+  const codeHistoryKey = 'gimae-gacha-code-history-v1';
+  const orderCodePattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
   const money = n => new Intl.NumberFormat('es-CL', {style:'currency',currency:'CLP',maximumFractionDigits:0}).format(n);
   async function api(action, extra = {}) {
     const response = await fetch(`${settings.url}/functions/v1/gacha`, {
@@ -34,6 +36,7 @@
   async function restoreCredits() {
     const data = await api('state');
     vouchers = data.vouchers;
+    syncRedeemedCodeHistory();
     const counts = {};
     obtainedCards.clear();
     for (const voucher of vouchers) for (const card of voucher.cards) {
@@ -100,6 +103,13 @@
   const codeInput = document.querySelector('#gacha-order-code');
   const redeemButton = redeemForm.querySelector('button[type="submit"]');
   const redeemMessage = document.querySelector('#gacha-redeem-message');
+  const historyToggle = document.querySelector('#gacha-history-toggle');
+  const historyPanel = document.querySelector('#gacha-code-history');
+  const historyList = document.querySelector('#gacha-history-list');
+  const historyCount = document.querySelector('#gacha-history-count');
+  const historyEmpty = document.querySelector('#gacha-history-empty');
+  const historyNote = document.querySelector('#gacha-history-note');
+  const historyFeedback = document.querySelector('#gacha-history-feedback');
   const revealSlot = document.querySelector('#gacha-reveal-slot');
   const confettiHost = document.querySelector('#gacha-confetti');
   const status = document.querySelector('#gacha-status');
@@ -119,6 +129,8 @@
   let viewerOpener = null;
   let storageAvailable = testStorage();
   let collection = readCollection();
+  let historyAvailable = storageAvailable;
+  let codeHistory = readCodeHistory();
 
   function testStorage() {
     try {
@@ -165,11 +177,91 @@
     redeemButton.disabled = busy || !serviceReady;
   }
 
+  function readCodeHistory() {
+    if (!historyAvailable) return [];
+    try {
+      const saved = JSON.parse(localStorage.getItem(codeHistoryKey) || '[]');
+      return Array.isArray(saved) ? saved.filter(entry =>
+        entry && typeof entry.code === 'string' && entry.code.length > 0 && entry.code.length <= 36 &&
+        ['redeemed', 'failed'].includes(entry.status) &&
+        (entry.at === null || (Number.isFinite(entry.at) && entry.at > 0 && entry.at <= Date.now() + 86400000))
+      ).slice(0, 30) : [];
+    } catch (error) {
+      historyAvailable = false;
+      return [];
+    }
+  }
+
   function showRedeemMessage(message, tone = 'error') {
     redeemMessage.textContent = message;
     redeemMessage.dataset.tone = tone;
     redeemMessage.hidden = !message;
     codeInput.setAttribute('aria-invalid', String(Boolean(message) && tone === 'error'));
+  }
+
+  function renderCodeHistory() {
+    historyList.replaceChildren();
+    historyCount.textContent = `${codeHistory.length} ${codeHistory.length === 1 ? 'registro' : 'registros'}`;
+    historyEmpty.hidden = codeHistory.length > 0;
+    if (!historyAvailable) historyNote.textContent = 'Este navegador no permite guardar el historial. Conserva tus códigos en un lugar privado para pedir ayuda si la necesitas.';
+    for (const entry of codeHistory) {
+      const item = document.createElement('li');
+      const meta = document.createElement('div');
+      meta.className = 'gacha-history-meta';
+      const state = document.createElement('span');
+      state.className = 'gacha-history-state';
+      state.dataset.state = entry.status;
+      state.textContent = entry.status === 'redeemed' ? 'Canjeado' : 'Intento fallido';
+      const when = document.createElement('span');
+      when.textContent = entry.at === null ? 'Recuperado de tu colección' :
+        new Intl.DateTimeFormat('es-CL', {dateStyle:'short',timeStyle:'short'}).format(entry.at);
+      const code = document.createElement('code');
+      code.textContent = entry.code;
+      const copy = document.createElement('button');
+      copy.type = 'button';
+      copy.className = 'gacha-history-copy';
+      copy.textContent = 'Copiar';
+      copy.setAttribute('aria-label', `Copiar código ${entry.code}`);
+      copy.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(entry.code);
+          historyFeedback.textContent = 'Código copiado. Compártelo solo con soporte si necesitas ayuda.';
+        } catch (error) {
+          historyFeedback.textContent = 'No pudimos copiarlo. Selecciona el código y cópialo manualmente.';
+        }
+        historyFeedback.hidden = false;
+      });
+      meta.append(state, when);
+      item.append(meta, code, copy);
+      historyList.append(item);
+    }
+  }
+
+  function saveCodeHistory() {
+    if (historyAvailable) {
+      try { localStorage.setItem(codeHistoryKey, JSON.stringify(codeHistory)); }
+      catch (error) { historyAvailable = false; }
+    }
+    renderCodeHistory();
+  }
+
+  function rememberCodeAttempt(code, status) {
+    codeHistory.unshift({code, status, at:Date.now()});
+    codeHistory = codeHistory.slice(0, 30);
+    saveCodeHistory();
+  }
+
+  function syncRedeemedCodeHistory() {
+    const redeemed = new Set(codeHistory.filter(entry => entry.status === 'redeemed').map(entry => entry.code));
+    const recovered = vouchers.filter(voucher => orderCodePattern.test(voucher.orderCode) && !redeemed.has(voucher.orderCode))
+      .map(voucher => {
+        redeemed.add(voucher.orderCode);
+        return {code:voucher.orderCode, status:'redeemed', at:null};
+      });
+    if (recovered.length) {
+      codeHistory = [...recovered, ...codeHistory].slice(0, 30);
+      saveCodeHistory();
+    } else renderCodeHistory();
   }
 
   async function animateRedeemedPacks(previousPacks) {
@@ -475,6 +567,14 @@
     const url=URL.createObjectURL(storyFile),a=document.createElement('a');a.href=url;a.download=storyFile.name;a.click();setTimeout(()=>URL.revokeObjectURL(url),30000);
   });
   codeInput.addEventListener('input', () => showRedeemMessage(''));
+  historyToggle.addEventListener('click', () => {
+    historyPanel.hidden = !historyPanel.hidden;
+    const expanded = !historyPanel.hidden;
+    if (expanded) renderCodeHistory();
+    historyToggle.setAttribute('aria-expanded', String(expanded));
+    historyToggle.setAttribute('aria-label', expanded ? 'Ocultar historial de códigos' : 'Mostrar historial de códigos');
+    historyFeedback.hidden = true;
+  });
   redeemForm.addEventListener('submit',async event=>{
     event.preventDefault();if(busy || !serviceReady)return;
     const orderCode = codeInput.value.trim().toLowerCase();
@@ -483,16 +583,21 @@
       codeInput.focus();
       return;
     }
-    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(orderCode)) {
+    if (!orderCodePattern.test(orderCode)) {
+      rememberCodeAttempt(orderCode, 'failed');
       showRedeemMessage('Revisa el código: debe tener el formato que aparece en tu comprobante.');
       codeInput.focus();
       return;
     }
     showRedeemMessage('');
     busy=true;updateDailyUI();
+    let redeemed = false;
     try {
       const previousPacks = remainingPacks();
       await api('redeem',{orderCode});
+      redeemed = true;
+      rememberCodeAttempt(orderCode, 'redeemed');
+      codeInput.value = '';
       displayedPacks = previousPacks;
       await restoreCredits();
       showRedeemMessage('¡Pedido canjeado! Tus sobres van camino a la máquina.', 'success');
@@ -502,12 +607,13 @@
       status.textContent='¡Gracias por apoyar a Gimae! Abre tu próximo recuerdo.';
       status.classList.remove('is-notice');
     } catch(error) {
+      if (!redeemed) rememberCodeAttempt(orderCode, 'failed');
       const belowMinimum = error.message.includes('Debe estar pagado y cumplir el mínimo');
-      const message = belowMinimum
-        ? `El pedido debe estar pagado y sumar al menos ${money(liveSettings.minimum_clp)} en productos, sin contar el envío.`
-        : error.message;
+      const message = redeemed ? 'El código se canjeó, pero no pudimos actualizar los sobres. Conserva el código del historial y prueba «Sincronizar colección».'
+        : belowMinimum ? `El pedido debe estar pagado y sumar al menos ${money(liveSettings.minimum_clp)} en productos, sin contar el envío.`
+          : error.message;
       showRedeemMessage(message);
-      window.GIMAE_UI.toast({tone:'error',title:'No pudimos canjear el pedido',message});
+      window.GIMAE_UI.toast({tone:'error',title:redeemed ? 'No pudimos actualizar tus sobres' : 'No pudimos canjear el pedido',message});
     } finally {displayedPacks=null;busy=false;updateDailyUI();}
   });
 

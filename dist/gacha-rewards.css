@@ -18,3 +18,27 @@
 @keyframes gacha-credit-flight{0%{opacity:0;transform:translate(-50%,-50%) scale(.3)}16%{opacity:1}55%{opacity:1;transform:translate(calc(-50% + var(--spark-mid-x)),calc(-50% + var(--spark-mid-y))) scale(1.15)}100%{opacity:0;transform:translate(calc(-50% + var(--spark-x)),calc(-50% + var(--spark-y))) scale(.25)}}
 @keyframes gacha-credit-arrival{50%{transform:scale(1.12);color:var(--gyaru-pink-dark)}}
 @media(prefers-reduced-motion:reduce){.gacha-credit-sparkles span,.gacha-daily.is-credit-arrival{animation:none}}
+
+.gacha-code-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.gacha-history-toggle{display:inline-flex;align-items:center;gap:6px;padding:7px 10px;border:1px solid var(--gyaru-pink);border-radius:999px;background:#fff;color:var(--gyaru-pink-dark);font:700 .78rem var(--body);cursor:pointer}
+.gacha-history-toggle:hover,.gacha-history-toggle[aria-expanded="true"]{background:var(--gyaru-blush);color:#652345}
+.gacha-history-toggle:active{transform:translateY(1px)}
+.gacha-history-toggle:focus-visible,.gacha-history-copy:focus-visible{outline:3px solid var(--gyaru-pink-dark);outline-offset:3px}
+.gacha-code-history{padding:14px;border:1px solid #efc7da;border-radius:16px;background:#fffafd;box-shadow:0 6px 16px #a64b7915}
+.gacha-code-history[hidden]{display:none}
+.gacha-history-heading,.gacha-history-meta{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.gacha-history-heading{color:#652345;font-size:.88rem}.gacha-history-heading span{color:#795d70;font-size:.76rem}
+.gacha-code-history ol{display:grid;gap:9px;max-height:330px;overflow-y:auto;list-style:none;padding:0;margin:12px 0}
+.gacha-code-history li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:7px 10px;padding:10px;border:1px solid #f1d3e3;border-radius:12px;background:white}
+.gacha-history-meta{grid-column:1/-1;color:#795d70;font-size:.7rem}
+.gacha-history-state{padding:3px 8px;border-radius:999px;background:var(--gyaru-cream);color:#614718;font-weight:700}
+.gacha-history-state[data-state="failed"]{background:var(--gyaru-blush);color:#652345}
+.gacha-code-history code{align-self:center;min-width:0;overflow-wrap:anywhere;color:#432b43;font-size:.76rem}
+.gacha-history-copy{align-self:center;padding:6px 10px;border:1px solid var(--gyaru-pink);border-radius:9px;background:var(--gyaru-blush);color:#652345;font:700 .74rem var(--body);cursor:pointer}
+.gacha-history-copy:hover{background:var(--gyaru-pink-dark);color:white}
+.gacha-history-copy:active{transform:translateY(1px)}
+.gacha-history-copy:disabled{cursor:not-allowed;opacity:.6}
+.gacha-code-history .gacha-history-empty,.gacha-code-history .gacha-history-note,.gacha-code-history .gacha-history-feedback{margin:9px 0 0;color:#795d70;font-size:.74rem;line-height:1.5}
+.gacha-code-history .gacha-history-feedback{color:#652345;font-weight:700}
+@media(max-width:400px){.gacha-history-toggle span{display:none}}
+@media(prefers-reduced-motion:reduce){.gacha-history-toggle:active,.gacha-history-copy:active{transform:none}}
