@@ -115,6 +115,7 @@
   const dialogTilt = document.querySelector('#gacha-dialog-tilt');
   const dialogClose = document.querySelector('#gacha-dialog-close');
   let busy = false;
+  let displayedPacks = null;
   let viewerOpener = null;
   let storageAvailable = testStorage();
   let collection = readCollection();
@@ -159,7 +160,7 @@
   function remainingPacks() { return vouchers.reduce((sum,v)=>sum+v.remaining,0); }
   function updateDailyUI() {
     dailyNote.hidden = false;
-    dailyNote.textContent = `Sobres de tus pedidos: ${remainingPacks()}`;
+    dailyNote.textContent = `Sobres de tus pedidos: ${displayedPacks ?? remainingPacks()}`;
     openButton.disabled = busy || !serviceReady;
     redeemButton.disabled = busy || !serviceReady;
   }
@@ -169,6 +170,47 @@
     redeemMessage.dataset.tone = tone;
     redeemMessage.hidden = !message;
     codeInput.setAttribute('aria-invalid', String(Boolean(message) && tone === 'error'));
+  }
+
+  async function animateRedeemedPacks(previousPacks) {
+    if (remainingPacks() <= previousPacks || reducedMotion.matches) {
+      displayedPacks = null;
+      updateDailyUI();
+      return;
+    }
+    const source = redeemButton.getBoundingClientRect();
+    const destination = dailyNote.getBoundingClientRect();
+    const startX = source.left + source.width / 2 + window.scrollX;
+    const startY = source.top + source.height / 2 + window.scrollY;
+    const travelX = destination.left + destination.width / 2 + window.scrollX - startX;
+    const travelY = destination.top + destination.height / 2 + window.scrollY - startY;
+    const sparkles = document.createElement('div');
+    sparkles.className = 'gacha-credit-sparkles';
+    sparkles.setAttribute('aria-hidden', 'true');
+    for (let index = 0; index < 12; index += 1) {
+      const sparkle = document.createElement('span');
+      sparkle.textContent = index % 3 === 0 ? '♡' : '✦';
+      sparkle.style.left = `${startX}px`;
+      sparkle.style.top = `${startY}px`;
+      sparkle.style.setProperty('--spark-x', `${travelX}px`);
+      sparkle.style.setProperty('--spark-y', `${travelY}px`);
+      sparkle.style.setProperty('--spark-mid-x', `${travelX * 0.5 + (index - 5.5) * 14}px`);
+      sparkle.style.setProperty('--spark-mid-y', `${travelY * 0.5 - 34}px`);
+      sparkle.style.setProperty('--spark-delay', `${index * 0.025}s`);
+      sparkles.append(sparkle);
+    }
+    document.body.append(sparkles);
+    if (destination.top > window.innerHeight * 0.9 || destination.bottom < 0) {
+      dailyNote.scrollIntoView({behavior:'smooth',block:'center'});
+    }
+    try { await pause(2300); }
+    finally {
+      sparkles.remove();
+      displayedPacks = null;
+      updateDailyUI();
+      dailyNote.classList.add('is-credit-arrival');
+      window.setTimeout(() => dailyNote.classList.remove('is-credit-arrival'), 650);
+    }
   }
 
 
@@ -449,8 +491,12 @@
     showRedeemMessage('');
     busy=true;updateDailyUI();
     try {
+      const previousPacks = remainingPacks();
       await api('redeem',{orderCode});
+      displayedPacks = previousPacks;
       await restoreCredits();
+      showRedeemMessage('¡Pedido canjeado! Tus sobres van camino a la máquina.', 'success');
+      await animateRedeemedPacks(previousPacks);
       showRedeemMessage('¡Pedido canjeado! Tus sobres ya están disponibles.', 'success');
       window.GIMAE_UI.toast({tone:'success',title:'¡Tus sobres están listos!',message:'El pedido quedó canjeado. Ya puedes abrir tus sobres disponibles.'});
       status.textContent='¡Gracias por apoyar a Gimae! Abre tu próximo recuerdo.';
@@ -462,7 +508,7 @@
         : error.message;
       showRedeemMessage(message);
       window.GIMAE_UI.toast({tone:'error',title:'No pudimos canjear el pedido',message});
-    } finally {busy=false;updateDailyUI();}
+    } finally {displayedPacks=null;busy=false;updateDailyUI();}
   });
 
   openButton.addEventListener('click', openPack);

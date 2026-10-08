@@ -9,3 +9,12 @@
 .gacha-redeem-message[data-tone="success"]::before{content:'✦';color:#795a12}
 .gacha-status.is-notice{padding:10px 14px;border:1px solid var(--gyaru-pink);border-radius:14px;background:var(--gyaru-blush);color:#652345;font-weight:700}
 .gacha-status.is-notice::before{content:'♡';margin-right:8px;color:var(--gyaru-pink-dark)}
+.gacha-credit-sparkles{position:absolute;inset:0;z-index:1000;pointer-events:none;overflow:visible}
+.gacha-credit-sparkles span{position:absolute;color:var(--gyaru-pink);font:700 1.3rem var(--display);text-shadow:0 1px white;animation:gacha-credit-flight 2s var(--spark-delay) ease-in-out both}
+.gacha-credit-sparkles span:nth-child(4n+2){color:var(--gyaru-gold)}
+.gacha-credit-sparkles span:nth-child(4n+3){color:#9a6bc8}
+.gacha-credit-sparkles span:nth-child(4n){color:#47a8c8}
+.gacha-daily.is-credit-arrival{animation:gacha-credit-arrival .6s ease-out}
+@keyframes gacha-credit-flight{0%{opacity:0;transform:translate(-50%,-50%) scale(.3)}16%{opacity:1}55%{opacity:1;transform:translate(calc(-50% + var(--spark-mid-x)),calc(-50% + var(--spark-mid-y))) scale(1.15)}100%{opacity:0;transform:translate(calc(-50% + var(--spark-x)),calc(-50% + var(--spark-y))) scale(.25)}}
+@keyframes gacha-credit-arrival{50%{transform:scale(1.12);color:var(--gyaru-pink-dark)}}
+@media(prefers-reduced-motion:reduce){.gacha-credit-sparkles span,.gacha-daily.is-credit-arrival{animation:none}}
