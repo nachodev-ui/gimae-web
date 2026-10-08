@@ -96,6 +96,10 @@
   if (!stage) return;
 
   const openButton = document.querySelector('#gacha-open');
+  const redeemForm = document.querySelector('#gacha-redeem');
+  const codeInput = document.querySelector('#gacha-order-code');
+  const redeemButton = redeemForm.querySelector('button[type="submit"]');
+  const redeemMessage = document.querySelector('#gacha-redeem-message');
   const revealSlot = document.querySelector('#gacha-reveal-slot');
   const confettiHost = document.querySelector('#gacha-confetti');
   const status = document.querySelector('#gacha-status');
@@ -156,9 +160,17 @@
   function updateDailyUI() {
     dailyNote.hidden = false;
     dailyNote.textContent = `Sobres de tus pedidos: ${remainingPacks()}`;
-    openButton.disabled = busy || !serviceReady || (!pendingDraw && remainingPacks() <= 0);
-    document.querySelector('#gacha-redeem button').disabled = busy || !serviceReady;
+    openButton.disabled = busy || !serviceReady;
+    redeemButton.disabled = busy || !serviceReady;
   }
+
+  function showRedeemMessage(message, tone = 'error') {
+    redeemMessage.textContent = message;
+    redeemMessage.dataset.tone = tone;
+    redeemMessage.hidden = !message;
+    codeInput.setAttribute('aria-invalid', String(Boolean(message) && tone === 'error'));
+  }
+
 
   function memberAccent(name) {
     return window.GIMAE?.members?.find(member => member.name === name)?.accent || '#e84694';
@@ -293,11 +305,16 @@
   async function openPack() {
     if (busy) return;
     if (!pendingDraw && remainingPacks() <= 0) {
-      updateDailyUI();
+      const message = vouchers.length ? 'Ya abriste todos los sobres de tus pedidos. Canjea otro pedido para seguir jugando.'
+        : codeInput.value.trim() ? 'Aún no has canjeado tu pedido. Presiona «Canjear mis sobres» antes de abrir uno.'
+          : 'Ingresa y canjea el código de tu pedido para recibir sobres antes de abrir uno.';
+      status.textContent = message;
+      status.classList.add('is-notice');
       return;
     }
 
     busy = true;
+    status.classList.remove('is-notice');
     updateDailyUI();
     clearStage();
     let card;
@@ -415,16 +432,37 @@
     if(!storyFile)return;
     const url=URL.createObjectURL(storyFile),a=document.createElement('a');a.href=url;a.download=storyFile.name;a.click();setTimeout(()=>URL.revokeObjectURL(url),30000);
   });
-  document.querySelector('#gacha-redeem').addEventListener('submit',async event=>{
+  codeInput.addEventListener('input', () => showRedeemMessage(''));
+  redeemForm.addEventListener('submit',async event=>{
     event.preventDefault();if(busy || !serviceReady)return;
+    const orderCode = codeInput.value.trim().toLowerCase();
+    if (!orderCode) {
+      showRedeemMessage('Escribe el código de tu pedido para canjear tus sobres.');
+      codeInput.focus();
+      return;
+    }
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(orderCode)) {
+      showRedeemMessage('Revisa el código: debe tener el formato que aparece en tu comprobante.');
+      codeInput.focus();
+      return;
+    }
+    showRedeemMessage('');
     busy=true;updateDailyUI();
     try {
-      const orderCode=document.querySelector('#gacha-order-code').value.trim().toLowerCase();
-      await api('redeem',{orderCode});await restoreCredits();
+      await api('redeem',{orderCode});
+      await restoreCredits();
+      showRedeemMessage('¡Pedido canjeado! Tus sobres ya están disponibles.', 'success');
       window.GIMAE_UI.toast({tone:'success',title:'¡Tus sobres están listos!',message:'El pedido quedó canjeado. Ya puedes abrir tus sobres disponibles.'});
       status.textContent='¡Gracias por apoyar a Gimae! Abre tu próximo recuerdo.';
-    } catch(error) { window.GIMAE_UI.toast({tone:'error',title:'No pudimos canjear el pedido',message:error.message}); }
-    finally {busy=false;updateDailyUI();}
+      status.classList.remove('is-notice');
+    } catch(error) {
+      const belowMinimum = error.message.includes('Debe estar pagado y cumplir el mínimo');
+      const message = belowMinimum
+        ? `El pedido debe estar pagado y sumar al menos ${money(liveSettings.minimum_clp)} en productos, sin contar el envío.`
+        : error.message;
+      showRedeemMessage(message);
+      window.GIMAE_UI.toast({tone:'error',title:'No pudimos canjear el pedido',message});
+    } finally {busy=false;updateDailyUI();}
   });
 
   openButton.addEventListener('click', openPack);

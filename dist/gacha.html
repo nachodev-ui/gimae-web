@@ -8,10 +8,10 @@
   <link rel="icon" type="image/png" sizes="48x48" href="images/favicon.png">
   <link rel="apple-touch-icon" sizes="180x180" href="images/apple-touch-icon.png">
   <link rel="stylesheet" href="styles.css?v=20260928-supabase">
-  <link rel="stylesheet" href="gacha-rewards.css?v=20261007">
+  <link rel="stylesheet" href="gacha-rewards.css?v=20261008-public-polish">
   <link rel="stylesheet" href="admin/ui-feedback.css?v=20261007">
   <script src="admin/ui-feedback.js?v=20261007" defer></script>
-  <script src="content.js?v=20260921-pastel" defer></script><script src="supabase-config.js" defer></script><script src="backend.js" defer></script><script src="nav.js" defer></script><script src="effects.js" defer></script><script src="gacha.js?v=20261007-rewards" defer></script><script src="avatar.js?v=20260921-pastel" defer></script>
+  <script src="content.js?v=20260921-pastel" defer></script><script src="supabase-config.js" defer></script><script src="backend.js" defer></script><script src="nav.js" defer></script><script src="effects.js" defer></script><script src="gacha.js?v=20261008-public-polish" defer></script><script src="avatar.js?v=20260921-pastel" defer></script>
 </head>
 <body class="tool-page gacha-page">
   <a class="skip" href="#main">Saltar al contenido</a>
@@ -25,9 +25,9 @@
     <section class="gacha-section" id="gacha" aria-labelledby="gacha-title">
       <div class="section-shell">
         <div class="section-heading gacha-heading"><div><p class="eyebrow">GACHA DE PHOTOCARDS</p><h1 id="gacha-title">Abre un sobre.<br><em>Encuentra una estrella.</em></h1></div><p>Colecciona momentos de Suki, Usi, Vewe y Vali.<br>Cada carta vive solo en este dispositivo.</p></div>
-        <form id="gacha-redeem" class="gacha-redeem">
+        <form id="gacha-redeem" class="gacha-redeem" novalidate>
           <div><p class="eyebrow">UN GRACIAS EN CADA SOBRE ♡</p><h2>Tu pedido trae una sorpresa</h2><p id="gacha-redeem-info">Pedidos pagados desde $2.000 en productos: 3 sobres de regalo.</p></div>
-          <div class="gacha-code-entry"><label for="gacha-order-code">Código de pedido</label><input id="gacha-order-code" name="orderCode" placeholder="Pega el código de tu comprobante" required maxlength="36" minlength="36" autocomplete="off" spellcheck="false"><button class="button primary" type="submit" disabled>Canjear mis sobres ♡</button></div>
+          <div class="gacha-code-entry"><label for="gacha-order-code">Código de pedido</label><input id="gacha-order-code" name="orderCode" placeholder="Pega el código de tu comprobante" required maxlength="36" minlength="36" autocomplete="off" spellcheck="false" aria-describedby="gacha-redeem-message"><button class="button primary" type="submit" disabled>Canjear mis sobres ♡</button><p class="gacha-redeem-message" id="gacha-redeem-message" role="status" aria-live="polite" hidden></p></div>
           <p class="gacha-redeem-note">Guarda tu código en privado: quien lo tenga puede canjearlo primero. Las tiradas quedan vinculadas a este navegador; borrar sus datos puede hacerte perder el acceso. No se entregan premios físicos.</p>
         </form>
         <div class="gacha-layout">
