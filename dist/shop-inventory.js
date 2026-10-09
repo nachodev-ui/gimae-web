@@ -36,28 +36,25 @@
     return isStock(product.stock)?product.stock:null;
   }
 
-  function optionStockLabel(stock){
+  function optionStockLabel(product,stock){
     if(stock===null)return 'Disponibilidad por confirmar';
-    if(stock===0)return 'Agotado';
-    if(stock<=5)return `Quedan ${stock}`;
+    if(stock===0){
+      const otherAvailable=optionsFor(product).some(option=>stockFor(product,option.id)>0);
+      return otherAvailable?'Esta opción está agotada':'Agotado por ahora';
+    }
+    if(stock<=3)return 'Últimas unidades';
     return 'Disponible';
   }
 
-  function summaryLabel(product){
-    if(product.inventoryMode!=='variants')return optionStockLabel(stockFor(product,'default'));
-    const summary=product.inventorySummary;
-    if(!summary)return 'Stock administrado por variante';
-    const units=Math.max(0,Number(summary.confirmedUnits)||0);
-    const confirmed=Math.max(0,Number(summary.confirmedVariants)||0);
-    const total=Math.max(0,Number(summary.variantCount)||0);
-    if(summary.allConfirmed){
-      if(units===0)return 'Agotado en todas las variantes';
-      return `${units} ${units===1?'unidad':'unidades'} en total`;
-    }
-    return `${units} ${units===1?'unidad confirmada':'unidades confirmadas'} · ${confirmed}/${total} variantes revisadas`;
+  function showAvailability(target,product,stock){
+    if(!target)return;
+    target.textContent=optionStockLabel(product,stock);
+    target.dataset.state=stock===null?'pending':stock===0?'out':stock<=3?'low':'ok';
+    target.setAttribute('role','status');
+    target.setAttribute('aria-live','polite');
   }
 
-  function patchControls(product,controls){
+  function patchControls(product,controls,availability){
     if(!controls||controls.dataset.inventoryPatched==='true')return;
     controls.dataset.inventoryPatched='true';
     const options=optionsFor(product);
@@ -65,13 +62,6 @@
     const quantity=controls.querySelector('.shop-quantity');
     const button=controls.querySelector('.add-cart');
     if(!quantity||!button||!options.length)return;
-
-    const availability=document.createElement('span');
-    availability.className='shop-option-stock';
-    availability.setAttribute('role','status');
-    availability.setAttribute('aria-live','polite');
-    if(select)select.insertAdjacentElement('afterend',availability);
-    else controls.prepend(availability);
 
     const selectedOption=()=>{
       const id=select?.value||options[0].id;
@@ -81,9 +71,7 @@
     const update=()=>{
       const option=selectedOption();
       const stock=stockFor(product,option.id);
-      const prefix=option.label?`${option.label}: `:'';
-      availability.textContent=`${prefix}${optionStockLabel(stock)}`;
-      availability.dataset.state=stock===null?'pending':stock===0?'out':'ok';
+      showAvailability(availability,product,stock);
 
       const unavailable=stock===null||stock===0;
       quantity.disabled=unavailable;
@@ -102,8 +90,7 @@
   function patchDialog(product){
     if(!dialogContent)return;
     const summary=dialogContent.querySelector('.product-detail-stock');
-    if(summary)summary.textContent=`Inventario total: ${summaryLabel(product)}.`;
-    dialogContent.querySelectorAll('.shop-buy-controls').forEach(controls=>patchControls(product,controls));
+    dialogContent.querySelectorAll('.shop-buy-controls').forEach(controls=>patchControls(product,controls,summary));
   }
 
   function patchCard(card,product){
@@ -111,11 +98,9 @@
     card.dataset.inventoryPatched='true';
     const summary=card.querySelector('.shop-stock');
     if(summary){
-      summary.textContent=summaryLabel(product);
-      summary.classList.add('shop-stock-summary');
-      summary.dataset.mode=product.inventoryMode||'product';
+      summary.classList.add('shop-availability');
     }
-    card.querySelectorAll('.shop-buy-controls').forEach(controls=>patchControls(product,controls));
+    card.querySelectorAll('.shop-buy-controls').forEach(controls=>patchControls(product,controls,summary));
     const detail=card.querySelector('.shop-detail-button');
     detail?.addEventListener('click',()=>queueMicrotask(()=>patchDialog(product)));
   }

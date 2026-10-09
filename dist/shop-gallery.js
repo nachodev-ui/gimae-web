@@ -114,16 +114,19 @@
   }
 
   function stockFor(product, optionId) {
-    const variantStock = product.stockByVariant?.[optionId];
-    if (Number.isInteger(variantStock) && variantStock >= 0) return variantStock;
+    if (product.inventoryMode === 'variants' || product.stockByVariant) {
+      const stock = product.stockByVariant?.[optionId];
+      return Number.isInteger(stock) && stock >= 0 ? stock : null;
+    }
     return Number.isInteger(product.stock) && product.stock >= 0 ? product.stock : null;
   }
 
   function stockLabel(product, optionId) {
     const stock = stockFor(product, optionId);
     if (stock === null) return 'Disponibilidad por confirmar';
-    if (stock === 0) return 'Agotado';
-    return stock <= 5 ? `Quedan ${stock}` : 'Disponible';
+    if (stock === 0) return optionsFor(product).some(option => stockFor(product, option.id) > 0)
+      ? 'Esta opción está agotada' : 'Agotado por ahora';
+    return stock <= 3 ? 'Últimas unidades' : 'Disponible';
   }
 
   function galleryFor(product) {
@@ -396,7 +399,7 @@
       cleanText(product.description || product.note, 500)
     );
     const price = element('strong', 'product-detail-price');
-    const availability = element('p', 'product-detail-stock');
+    const availability = element('p', 'product-detail-stock shop-availability');
     availability.setAttribute('aria-live', 'polite');
     info.append(title, note, description, price, availability);
 
@@ -521,6 +524,7 @@
       if (!option) {
         price.textContent = 'Precio por confirmar';
         availability.textContent = 'Disponibilidad por confirmar';
+        availability.dataset.state = 'pending';
         quantity.max = '1';
         addButton.disabled = true;
         return;
@@ -529,6 +533,7 @@
       price.textContent = money.format(option.price);
       availability.textContent = stockLabel(product, option.id);
       const stock = stockFor(product, option.id);
+      availability.dataset.state = stock === null ? 'pending' : stock === 0 ? 'out' : stock <= 3 ? 'low' : 'ok';
       quantity.max = String(stock ?? 99);
       if (stock === 0) quantity.value = '1';
       else if (Number(quantity.value) > Number(quantity.max)) quantity.value = quantity.max;

@@ -173,8 +173,8 @@
     if (sandboxPreview || webpayPreview) return 'Prueba · sin inventario real';
     const stock = stockFor(product, optionId);
     if (stock === null) return 'Disponibilidad por confirmar';
-    if (stock === 0) return 'Agotado';
-    return stock <= 5 ? `Quedan ${stock}` : 'Disponible';
+    if (stock === 0) return 'Agotado por ahora';
+    return stock <= 3 ? 'Últimas unidades' : 'Disponible';
   }
 
   function cartKey(productId, optionId) {
@@ -301,7 +301,7 @@
     const key = cartKey(productId, optionId);
     const existing = cart.find(entry => cartKey(entry.productId, entry.optionId) === key);
     const next = (existing?.quantity || 0) + amount;
-    if (stock !== null && next > stock) return showToast(`Solo hay ${stock} unidad${stock === 1 ? '' : 'es'} disponible${stock === 1 ? '' : 's'}.`);
+    if (stock !== null && next > stock) return showToast('No hay suficientes unidades para esa cantidad. Reduce la cantidad e inténtalo de nuevo.');
     if (existing) existing.quantity = next;
     else cart.push({ productId: String(productId), optionId, quantity: amount });
     saveCart();
@@ -345,7 +345,7 @@
       const title = element('h3', '', cleanText(product.name, 80));
       const note = element('p', 'product-note', cleanText(product.note, 180));
       const price = element('strong', 'shop-product-price', displayPrice(product));
-      const stock = element('span', 'shop-stock', options.length ? stockLabel(product, options[0].id) : 'Configuración pendiente');
+      const stock = element('span', 'shop-stock shop-availability', options.length ? stockLabel(product, options[0].id) : 'Configuración pendiente');
       const detail = element('button', 'shop-detail-button', 'Ver detalle');
       detail.type = 'button'; detail.setAttribute('aria-haspopup', 'dialog');
       detail.addEventListener('click', () => openProduct(product, detail));
@@ -361,7 +361,7 @@
     const title = element('h2', '', cleanText(product.name, 80)); title.id = 'product-dialog-title';
     const note = element('p', 'product-detail-note', cleanText(product.note, 180));
     const price = element('strong', 'product-detail-price', displayPrice(product));
-    const availability = element('p', 'product-detail-stock', `Stock: ${stockLabel(product, optionsFor(product)[0]?.id || 'default')}.`);
+    const availability = element('p', 'product-detail-stock shop-availability', stockLabel(product, optionsFor(product)[0]?.id || 'default'));
     const honest = element('p', 'product-detail-honesty', 'Si la disponibilidad aparece por confirmar, el equipo debe validarla antes de confirmar el pedido.');
     host.append(title, note, price, availability, honest, purchaseControls(product));
     openDialog(productDialog, opener);

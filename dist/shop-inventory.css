@@ -1,45 +1,67 @@
-.shop-stock-summary{
+/* Un aviso de disponibilidad por opción: una etiqueta de papelería con
+   motivos de sakura discretos y los tonos pastel de cada producto. */
+.shop-availability{
+  --availability-ink:var(--tone, var(--detail-tone, #8f456c));
+  --availability-edge:var(--accent, var(--detail-accent, #e6accb));
+  --availability-wash:var(--tint, var(--detail-tint, #fff0f7));
   display:inline-flex;
   align-items:center;
+  align-self:flex-start;
+  gap:9px;
   width:max-content;
   max-width:100%;
+  min-height:34px;
+  margin:11px 0 0;
+  padding:6px 13px 6px 10px;
+  border:1px solid var(--availability-edge);
+  border-left-width:3px;
+  border-radius:5px 12px 12px 5px;
+  background:
+    radial-gradient(circle at 94% 25%,var(--availability-edge) 0 2px,transparent 2.5px),
+    linear-gradient(100deg,var(--availability-wash),#fffdfd 92%);
+  color:var(--availability-ink);
+  font-size:.78rem;
+  font-weight:750;
   line-height:1.35;
+  text-wrap:balance;
 }
-.shop-option-stock{
-  grid-column:1/-1;
-  display:inline-flex;
-  align-items:center;
-  width:max-content;
-  max-width:100%;
-  margin:.15rem 0 .1rem;
-  padding:.45rem .72rem;
-  border:1px solid rgba(232,70,148,.2);
-  border-radius:999px;
-  background:#fff8fc;
-  color:#6c4f61;
-  font-size:.82rem;
-  font-weight:700;
-  line-height:1.35;
+.shop-availability::before{
+  content:'✿';
+  flex:none;
+  color:var(--availability-ink);
+  font-size:.95rem;
+  line-height:1;
 }
-.shop-option-stock[data-state="ok"]{
-  background:#f2fbf6;
-  border-color:rgba(37,126,82,.2);
-  color:#246f49;
+.shop-availability[data-state="low"]{
+  --availability-ink:#805442;
+  --availability-edge:#dfbda5;
+  --availability-wash:#fff2e8;
 }
-.shop-option-stock[data-state="pending"]{
-  background:#fff9e9;
-  border-color:rgba(187,135,29,.25);
-  color:#8b6305;
+.shop-availability[data-state="pending"]{
+  --availability-ink:#6f5b7c;
+  --availability-edge:#d6c6df;
+  --availability-wash:#f8f2fb;
 }
-.shop-option-stock[data-state="out"]{
-  background:#fff2f5;
-  border-color:rgba(180,61,91,.2);
-  color:#9d3d58;
+.shop-availability[data-state="out"]{
+  --availability-ink:#974762;
+  --availability-edge:#e6b9ca;
+  --availability-wash:#fff0f5;
 }
-.shop-buy-controls .shop-quantity:disabled{
-  opacity:.6;
+.shop-availability[data-state="out"]::before{content:'×';font-size:1.15rem}
+.shop-availability[data-state="pending"]::before{content:'◇'}
+.product-detail-stock.shop-availability{margin-top:12px;font-size:.82rem}
+.shop-buy-controls .shop-quantity:disabled{opacity:.6;cursor:not-allowed}
+.shop-product-card .add-cart:disabled,
+.product-detail-purchase .product-detail-add:disabled{
+  border:1px solid #e5c7d7;
+  background:#f7e8ef;
+  color:#765065;
+  box-shadow:none;
+  opacity:1;
   cursor:not-allowed;
 }
-@media(max-width:640px){
-  .shop-option-stock{width:100%;justify-content:center;text-align:center}
+.shop-product-card .add-cart:disabled:hover,
+.product-detail-purchase .product-detail-add:disabled:hover{
+  transform:none;
+  box-shadow:none;
 }
