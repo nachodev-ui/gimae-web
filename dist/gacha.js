@@ -113,6 +113,11 @@
   const revealSlot = document.querySelector('#gacha-reveal-slot');
   const confettiHost = document.querySelector('#gacha-confetti');
   const status = document.querySelector('#gacha-status');
+  const openNote = document.querySelector('#gacha-open-note');
+  const openNoteIcon = document.querySelector('#gacha-open-note-icon');
+  const openNoteTitle = document.querySelector('#gacha-open-note-title');
+  const openNoteMessage = document.querySelector('#gacha-open-note-message');
+  const openNoteClose = document.querySelector('#gacha-open-note-close');
   const legend = document.querySelector('#rarity-legend');
   const albumGrid = document.querySelector('#gacha-album-grid');
   const progressText = document.querySelector('#gacha-progress-text');
@@ -125,6 +130,7 @@
   const dialogTilt = document.querySelector('#gacha-dialog-tilt');
   const dialogClose = document.querySelector('#gacha-dialog-close');
   let busy = false;
+  let openNoteTimer;
   let displayedPacks = null;
   let viewerOpener = null;
   let storageAvailable = testStorage();
@@ -207,6 +213,33 @@
     redeemMessage.dataset.tone = tone;
     redeemMessage.hidden = !message;
     codeInput.setAttribute('aria-invalid', String(Boolean(message) && tone === 'error'));
+  }
+
+  function closeOpenNote() {
+    window.clearTimeout(openNoteTimer);
+    const focusedInside = openNote.contains(document.activeElement);
+    openNote.hidden = true;
+    status.hidden = false;
+    if (focusedInside) openButton.focus();
+  }
+
+  function showOpenNote(kind) {
+    const notices = {
+      code: {icon:'✧', title:'Un código y empieza la magia', message:'Pega el código de tu pedido y canjéalo para recibir tus sobres.'},
+      redeem: {icon:'♡', title:'Primero, canjea tu pedido', message:'Presiona «Canjear mis sobres» antes de abrir uno.'},
+      empty: {icon:'✦', title:'¡Álbum al día por ahora!', message:'Ya abriste todos tus sobres. Canjea otro pedido para seguir descubriendo cartas.'}
+    };
+    const notice = notices[kind];
+    closeOpenNote();
+    status.textContent = '';
+    status.hidden = true;
+    openNote.hidden = false;
+    openNoteIcon.textContent = notice.icon;
+    openNoteTitle.textContent = notice.title;
+    openNoteMessage.textContent = notice.message;
+    openNoteTimer = window.setTimeout(() => {
+      if (!openNote.contains(document.activeElement)) closeOpenNote();
+    }, 8500);
   }
 
   function renderCodeHistory() {
@@ -466,16 +499,12 @@
   async function openPack() {
     if (busy) return;
     if (!pendingDraw && remainingPacks() <= 0) {
-      const message = vouchers.length ? 'Ya abriste todos los sobres de tus pedidos. Canjea otro pedido para seguir jugando.'
-        : codeInput.value.trim() ? 'Aún no has canjeado tu pedido. Presiona «Canjear mis sobres» antes de abrir uno.'
-          : 'Ingresa y canjea el código de tu pedido para recibir sobres antes de abrir uno.';
-      status.textContent = message;
-      status.classList.add('is-notice');
+      showOpenNote(vouchers.length ? 'empty' : codeInput.value.trim() ? 'redeem' : 'code');
       return;
     }
 
     busy = true;
-    status.classList.remove('is-notice');
+    closeOpenNote();
     updateDailyUI();
     clearStage();
     let card;
@@ -604,6 +633,7 @@
   });
   redeemForm.addEventListener('submit',async event=>{
     event.preventDefault();if(busy || !serviceReady)return;
+    closeOpenNote();
     const orderCode = codeInput.value.trim().toLowerCase();
     if (!orderCode) {
       showRedeemMessage('Escribe el código de tu pedido para canjear tus sobres.');
@@ -642,12 +672,10 @@
       codeInput.value = '';
       displayedPacks = previousPacks;
       await restoreCredits();
-      showRedeemMessage('¡Pedido canjeado! Tus sobres van camino a la máquina.', 'success');
+      status.textContent = '¡Tus sobres van camino a la máquina!';
       await animateRedeemedPacks(previousPacks);
-      showRedeemMessage('¡Pedido canjeado! Tus sobres ya están disponibles.', 'success');
       window.GIMAE_UI.toast({tone:'success',title:'¡Tus sobres están listos!',message:'El pedido quedó canjeado. Ya puedes abrir tus sobres disponibles.'});
       status.textContent='¡Gracias por apoyar a Gimae! Abre tu próximo recuerdo.';
-      status.classList.remove('is-notice');
     } catch(error) {
       if (attemptedRedeem && !redeemed) rememberCodeAttempt(orderCode, 'failed');
       const belowMinimum = error.message.includes('Debe estar pagado y cumplir el mínimo');
@@ -663,6 +691,10 @@
   });
 
   openButton.addEventListener('click', openPack);
+  openNoteClose.addEventListener('click', closeOpenNote);
+  openNote.addEventListener('keydown', event => {
+    if (event.key === 'Escape') closeOpenNote();
+  });
   resetButton.addEventListener('click', resetCollection);
   dialogClose.addEventListener('click', closeViewer);
   dialog.addEventListener('close', () => {

@@ -5,12 +5,17 @@
 .gacha-code-entry input[aria-invalid="true"]{border-color:var(--gyaru-pink-dark);box-shadow:0 0 0 2px var(--gyaru-blush)}
 .gacha-redeem-message{margin:0;padding:11px 13px;border:1px solid var(--gyaru-pink-dark);border-radius:12px;background:var(--gyaru-blush);color:#652345;font-size:.84rem;font-weight:700;line-height:1.45}
 .gacha-redeem-message::before{content:'♡';margin-right:8px;color:var(--gyaru-pink-dark)}
-.gacha-redeem-message[data-tone="success"]{background:var(--gyaru-cream);border-color:var(--gyaru-gold);color:#614718}
-.gacha-redeem-message[data-tone="success"]::before{content:'✦';color:#795a12}
 .gacha-redeem-message[data-tone="warning"]{background:var(--gyaru-blue);border-color:var(--gyaru-pink-dark);color:#432b43}
 .gacha-redeem-message[data-tone="warning"]::before{content:'↺';color:var(--gyaru-pink-dark)}
-.gacha-status.is-notice{padding:10px 14px;border:1px solid var(--gyaru-pink);border-radius:14px;background:var(--gyaru-blush);color:#652345;font-weight:700}
-.gacha-status.is-notice::before{content:'♡';margin-right:8px;color:var(--gyaru-pink-dark)}
+.gacha-status:empty{display:none}
+.gacha-open-note{display:grid;grid-template-columns:42px minmax(0,1fr) 30px;align-items:start;gap:12px;position:relative;max-width:400px;margin:18px auto 15px;padding:14px;border:2px solid var(--gyaru-pink);border-radius:19px 19px 19px 7px;background:radial-gradient(circle,#e8469426 1px,transparent 1.5px) 0 0/18px 18px,linear-gradient(125deg,var(--gyaru-cream),#fff5fb 63%,var(--gyaru-blue));box-shadow:0 6px 0 var(--gyaru-blush),0 13px 26px #a64b7924;color:#432b43;text-align:left;animation:gacha-note-arrive .3s ease-out both}
+.gacha-open-note[hidden]{display:none}
+.gacha-open-note-icon{display:grid;place-items:center;width:42px;height:42px;border:1px solid var(--gyaru-pink);border-radius:50%;background:linear-gradient(145deg,#fff,var(--gyaru-blush));box-shadow:0 3px 0 #f3bad5;color:var(--gyaru-pink-dark);font:700 1.35rem var(--display)}
+.gacha-open-note-copy{display:grid;gap:3px;min-width:0}.gacha-open-note-kicker{color:var(--gyaru-pink-dark);font-size:.57rem;font-weight:800;letter-spacing:.16em}.gacha-open-note-copy strong{color:#432b43;font:600 1.08rem/1.15 var(--display)}.gacha-open-note-copy>span:last-child{color:#684763;font-size:.78rem;line-height:1.45}
+.gacha-open-note-close{display:grid;place-items:center;width:30px;height:30px;padding:0;border:1px solid var(--gyaru-pink);border-radius:50%;background:#fff;color:var(--gyaru-pink-dark);font:600 1.3rem/1 var(--body);cursor:pointer}
+.gacha-open-note-close:hover{background:var(--gyaru-pink-dark);color:#fff}.gacha-open-note-close:active{transform:translateY(1px)}.gacha-open-note-close:focus-visible{outline:3px solid var(--gyaru-pink-dark);outline-offset:3px}
+@keyframes gacha-note-arrive{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@media(prefers-reduced-motion:reduce){.gacha-open-note{animation:none}.gacha-open-note-close:active{transform:none}}
 .gacha-credit-sparkles{position:absolute;inset:0;z-index:1000;pointer-events:none;overflow:visible}
 .gacha-credit-sparkles span{position:absolute;color:var(--gyaru-pink);font:700 1.3rem var(--display);text-shadow:0 1px white;animation:gacha-credit-flight 2s var(--spark-delay) ease-in-out both}
 .gacha-credit-sparkles span:nth-child(4n+2){color:var(--gyaru-gold)}

@@ -8,10 +8,10 @@
   <link rel="icon" type="image/png" sizes="48x48" href="images/favicon.png">
   <link rel="apple-touch-icon" sizes="180x180" href="images/apple-touch-icon.png">
   <link rel="stylesheet" href="styles.css?v=20260928-supabase">
-  <link rel="stylesheet" href="gacha-rewards.css?v=20261008-repeat-code">
+  <link rel="stylesheet" href="gacha-rewards.css?v=20261008-idol-notices">
   <link rel="stylesheet" href="admin/ui-feedback.css?v=20261007">
   <script src="admin/ui-feedback.js?v=20261007" defer></script>
-  <script src="content.js?v=20260921-pastel" defer></script><script src="supabase-config.js" defer></script><script src="backend.js" defer></script><script src="nav.js" defer></script><script src="effects.js" defer></script><script src="gacha.js?v=20261008-repeat-code" defer></script><script src="avatar.js?v=20260921-pastel" defer></script>
+  <script src="content.js?v=20260921-pastel" defer></script><script src="supabase-config.js" defer></script><script src="backend.js" defer></script><script src="nav.js" defer></script><script src="effects.js" defer></script><script src="gacha.js?v=20261008-idol-notices" defer></script><script src="avatar.js?v=20260921-pastel" defer></script>
 </head>
 <body class="tool-page gacha-page">
   <a class="skip" href="#main">Saltar al contenido</a>
@@ -44,6 +44,11 @@
               <div class="gacha-confetti" id="gacha-confetti" aria-hidden="true"></div>
             </div>
             <p class="gacha-status" id="gacha-status" aria-live="polite">Tu próximo recuerdo está dentro del sobre.</p>
+            <div class="gacha-open-note" id="gacha-open-note" role="status" aria-live="polite" hidden>
+              <span class="gacha-open-note-icon" id="gacha-open-note-icon" aria-hidden="true">✦</span>
+              <div class="gacha-open-note-copy"><span class="gacha-open-note-kicker">NOTA DEL GACHA ♡</span><strong id="gacha-open-note-title"></strong><span id="gacha-open-note-message"></span></div>
+              <button class="gacha-open-note-close" id="gacha-open-note-close" type="button" aria-label="Cerrar aviso">×</button>
+            </div>
             <button class="button primary gacha-open" id="gacha-open" type="button">Abrir sobre <span aria-hidden="true">✦</span></button>
             <p class="gacha-daily" id="gacha-daily" hidden></p>
             <p class="gacha-disclaimer">Sobres digitales de regalo por tu compra. Las cartas pueden repetirse; las probabilidades son por categoría y se reparten por igual entre sus cartas activas.</p>
