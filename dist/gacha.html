@@ -8,10 +8,10 @@
   <link rel="icon" type="image/png" sizes="48x48" href="images/favicon.png">
   <link rel="apple-touch-icon" sizes="180x180" href="images/apple-touch-icon.png">
   <link rel="stylesheet" href="styles.css?v=20260928-supabase">
-  <link rel="stylesheet" href="gacha-rewards.css?v=20261008-idol-notices">
+  <link rel="stylesheet" href="gacha-rewards.css?v=20261008-redeem-tickets">
   <link rel="stylesheet" href="admin/ui-feedback.css?v=20261007">
   <script src="admin/ui-feedback.js?v=20261007" defer></script>
-  <script src="content.js?v=20260921-pastel" defer></script><script src="supabase-config.js" defer></script><script src="backend.js" defer></script><script src="nav.js" defer></script><script src="effects.js" defer></script><script src="gacha.js?v=20261008-idol-notices" defer></script><script src="avatar.js?v=20260921-pastel" defer></script>
+  <script src="content.js?v=20260921-pastel" defer></script><script src="supabase-config.js" defer></script><script src="backend.js" defer></script><script src="nav.js" defer></script><script src="effects.js" defer></script><script src="gacha.js?v=20261008-redeem-tickets" defer></script><script src="avatar.js?v=20260921-pastel" defer></script>
 </head>
 <body class="tool-page gacha-page">
   <a class="skip" href="#main">Saltar al contenido</a>
@@ -29,7 +29,8 @@
           <div><p class="eyebrow">UN GRACIAS EN CADA SOBRE ♡</p><h2>Tu pedido trae una sorpresa</h2><p id="gacha-redeem-info">Pedidos pagados desde $2.000 en productos: 3 sobres de regalo.</p></div>
           <div class="gacha-code-entry">
             <div class="gacha-code-heading"><label for="gacha-order-code">Código de pedido</label><button class="gacha-history-toggle" id="gacha-history-toggle" type="button" aria-controls="gacha-code-history" aria-expanded="false" aria-label="Mostrar historial de códigos"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/><path d="M12 7v5l3 2"/></svg><span>Historial</span></button></div>
-            <input id="gacha-order-code" name="orderCode" placeholder="Pega el código de tu comprobante" required maxlength="36" minlength="36" autocomplete="off" spellcheck="false" aria-describedby="gacha-redeem-message"><button class="button primary" type="submit" disabled>Canjear mis sobres ♡</button><p class="gacha-redeem-message" id="gacha-redeem-message" role="status" aria-live="polite" hidden></p>
+            <input id="gacha-order-code" name="orderCode" placeholder="Pega el código de tu comprobante" required maxlength="36" minlength="36" autocomplete="off" spellcheck="false" aria-describedby="gacha-redeem-message-text"><button class="button primary" type="submit" disabled>Canjear mis sobres ♡</button>
+            <div class="gacha-redeem-message" id="gacha-redeem-message" role="status" aria-live="polite" hidden><span class="gacha-redeem-stub" id="gacha-redeem-message-icon" aria-hidden="true">✧</span><div class="gacha-redeem-message-copy"><span class="gacha-redeem-kicker" id="gacha-redeem-message-label"></span><p id="gacha-redeem-message-text"></p></div><button class="gacha-redeem-dismiss" id="gacha-redeem-dismiss" type="button" aria-label="Cerrar aviso del código">×</button></div>
             <section class="gacha-code-history" id="gacha-code-history" aria-labelledby="gacha-history-title" hidden><div class="gacha-history-heading"><strong id="gacha-history-title">Tus códigos</strong><span id="gacha-history-count"></span></div><ol id="gacha-history-list"></ol><p class="gacha-history-empty" id="gacha-history-empty" hidden>Aún no hay códigos registrados en este navegador.</p><p class="gacha-history-note" id="gacha-history-note">Este historial queda solo en este dispositivo y se borra al eliminar sus datos. Guarda tus códigos en privado y compártelos únicamente con soporte si necesitas ayuda.</p><p class="gacha-history-feedback" id="gacha-history-feedback" role="status" aria-live="polite" hidden></p></section>
           </div>
           <p class="gacha-redeem-note">Guarda tu código en privado: quien lo tenga puede canjearlo primero. Las tiradas quedan vinculadas a este navegador; borrar sus datos puede hacerte perder el acceso. No se entregan premios físicos.</p>

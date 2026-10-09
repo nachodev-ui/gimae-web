@@ -103,6 +103,10 @@
   const codeInput = document.querySelector('#gacha-order-code');
   const redeemButton = redeemForm.querySelector('button[type="submit"]');
   const redeemMessage = document.querySelector('#gacha-redeem-message');
+  const redeemMessageText = document.querySelector('#gacha-redeem-message-text');
+  const redeemMessageLabel = document.querySelector('#gacha-redeem-message-label');
+  const redeemMessageIcon = document.querySelector('#gacha-redeem-message-icon');
+  const redeemDismiss = document.querySelector('#gacha-redeem-dismiss');
   const historyToggle = document.querySelector('#gacha-history-toggle');
   const historyPanel = document.querySelector('#gacha-code-history');
   const historyList = document.querySelector('#gacha-history-list');
@@ -131,6 +135,7 @@
   const dialogClose = document.querySelector('#gacha-dialog-close');
   let busy = false;
   let openNoteTimer;
+  let redeemMessageTimer;
   let displayedPacks = null;
   let viewerOpener = null;
   let storageAvailable = testStorage();
@@ -208,11 +213,17 @@
     }
   }
 
-  function showRedeemMessage(message, tone = 'error') {
-    redeemMessage.textContent = message;
-    redeemMessage.dataset.tone = tone;
+  function showRedeemMessage(message, tone = 'error', label = 'UN DETALLE PARA TI') {
+    window.clearTimeout(redeemMessageTimer);
     redeemMessage.hidden = !message;
+    redeemMessageText.textContent = message;
+    redeemMessageLabel.textContent = label;
+    redeemMessageIcon.textContent = tone === 'warning' ? '↺' : '✧';
+    redeemMessage.dataset.tone = tone;
     codeInput.setAttribute('aria-invalid', String(Boolean(message) && tone === 'error'));
+    if (message) redeemMessageTimer = window.setTimeout(() => {
+      if (!redeemMessage.contains(document.activeElement)) showRedeemMessage('');
+    }, 12000);
   }
 
   function closeOpenNote() {
@@ -321,7 +332,7 @@
       saveCodeHistory();
     }
     codeInput.value = '';
-    showRedeemMessage('Este código ya fue canjeado anteriormente. No se añadieron sobres nuevos; puedes consultarlo en Historial.', 'warning');
+    showRedeemMessage('Este código ya fue canjeado anteriormente. No se añadieron sobres nuevos; puedes consultarlo en Historial.', 'warning', 'CÓDIGO YA USADO');
   }
 
   async function animateRedeemedPacks(previousPacks) {
@@ -623,6 +634,10 @@
     const url=URL.createObjectURL(storyFile),a=document.createElement('a');a.href=url;a.download=storyFile.name;a.click();setTimeout(()=>URL.revokeObjectURL(url),30000);
   });
   codeInput.addEventListener('input', () => showRedeemMessage(''));
+  redeemDismiss.addEventListener('click', () => {
+    showRedeemMessage('');
+    codeInput.focus();
+  });
   historyToggle.addEventListener('click', () => {
     historyPanel.hidden = !historyPanel.hidden;
     const expanded = !historyPanel.hidden;
@@ -636,13 +651,13 @@
     closeOpenNote();
     const orderCode = codeInput.value.trim().toLowerCase();
     if (!orderCode) {
-      showRedeemMessage('Escribe el código de tu pedido para canjear tus sobres.');
+      showRedeemMessage('Escribe el código de tu pedido para canjear tus sobres.', 'error', 'UN PASITO MÁS');
       codeInput.focus();
       return;
     }
     if (!orderCodePattern.test(orderCode)) {
       rememberCodeAttempt(orderCode, 'failed');
-      showRedeemMessage('Revisa el código: debe tener el formato que aparece en tu comprobante.');
+      showRedeemMessage('Revisa el código: debe tener el formato que aparece en tu comprobante.', 'error', 'REVISA TU CÓDIGO');
       codeInput.focus();
       return;
     }
@@ -683,7 +698,7 @@
         : belowMinimum ? `El pedido debe estar pagado y sumar al menos ${money(liveSettings.minimum_clp)} en productos, sin contar el envío.`
           : error.message.includes('ya fue canjeado o no pertenece a esta sesión') ? 'Este código ya fue canjeado o pertenece a otra sesión. No se añadieron sobres nuevos.'
             : error.message;
-      showRedeemMessage(message);
+      showRedeemMessage(message, redeemed ? 'warning' : 'error', redeemed ? 'CANJE CONFIRMADO' : 'CANJE EN PAUSA');
       if (redeemed || !error.message.includes('ya fue canjeado o no pertenece a esta sesión')) {
         window.GIMAE_UI.toast({tone:'error',title:redeemed ? 'No pudimos actualizar tus sobres' : 'No pudimos canjear el pedido',message});
       }
