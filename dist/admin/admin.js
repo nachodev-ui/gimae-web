@@ -170,7 +170,12 @@ async function persistImageOrder(images){
 async function renderImages(id){
   try{
     const loadImages=()=>query(client.from('product_images').select('*').eq('product_id',id).order('display_order',{ascending:true}).order('id',{ascending:true}));
+    const memberProduct=items.some(product=>product.id===id&&product.variant_source==='members');
+    const loadMemberVariants=()=>memberProduct
+      ?query(client.from('product_variants').select('id,member_id,image_url,image_alt').eq('product_id',id).order('display_order'))
+      :Promise.resolve([]);
     let images=await loadImages();
+    let memberVariants=await loadMemberVariants();
     const target=$('#image-list');if(!target)return;
     let busy=false;
     target.setAttribute('aria-label','Galería actual del producto. Arrastra una foto para cambiar el orden.');
@@ -178,7 +183,7 @@ async function renderImages(id){
     const setBusy=value=>{
       busy=value;
       target.setAttribute('aria-busy',String(value));
-      target.querySelectorAll('button').forEach(button=>{button.disabled=value});
+      target.querySelectorAll('button,select').forEach(control=>{control.disabled=value});
     };
 
     const reorder=async(from,to,focusId)=>{
@@ -212,6 +217,48 @@ async function renderImages(id){
         const position=document.createElement('span');position.className='merch-image-position';position.textContent=`${index+1} / ${images.length}`;
         const hint=document.createElement('span');hint.className='merch-image-drag-hint';hint.textContent='⠿ Arrastra la foto';
         footer.append(position,hint);
+
+        let association=null;
+        if(memberProduct&&memberVariants.length){
+          association=document.createElement('label');association.className='merch-image-member-field';
+          const label=document.createElement('span');label.textContent='Integrante de esta polera';
+          const picker=document.createElement('select');picker.setAttribute('aria-label',`Integrante de imagen ${index+1}`);
+          const unassigned=document.createElement('option');unassigned.value='';unassigned.textContent='Sin asociar';picker.append(unassigned);
+          memberVariants.forEach(variant=>{
+            const member=members.find(person=>person.id===variant.member_id);if(!member)return;
+            const choice=document.createElement('option');choice.value=variant.id;
+            choice.textContent=`${member.name} · ${member.color_label}`;picker.append(choice);
+          });
+          picker.value=memberVariants.find(variant=>variant.image_url===img.url)?.id||'';
+          picker.addEventListener('change',async()=>{
+            if(busy)return;
+            const current=memberVariants.find(variant=>variant.image_url===img.url);
+            const chosen=memberVariants.find(variant=>variant.id===picker.value);
+            if(chosen&&current&&chosen.id!==current.id){
+              picker.value=current.id;
+              toast('warning','Imagen ya asociada','Primero deja esta foto sin asociar para asignarla a otra integrante.');return;
+            }
+            if(chosen&&chosen.image_url&&chosen.image_url!==img.url){
+              picker.value=current?.id||'';
+              toast('warning','La integrante ya tiene foto','Quita la asociación de su foto anterior antes de elegir esta.');return;
+            }
+            const variant=chosen||current;
+            if(!variant)return;
+            const member=members.find(person=>person.id===variant.member_id);
+            setBusy(true);
+            try{
+              const alt=chosen?`Polera estampada de ${member?.name||'Gimae'} · ${member?.color_label||'color de integrante'}`:'';
+              const saved=await query(client.from('product_variants').update({image_url:chosen?img.url:null,image_alt:alt})
+                .eq('id',variant.id).eq('product_id',id).select('id,image_url'));
+              if(saved.length!==1||saved[0].image_url!==(chosen?img.url:null))throw new Error('No se confirmó la asociación en la base de datos.');
+              memberVariants=await loadMemberVariants();paint();
+              notice(chosen?`Imagen asociada con ${member?.name}.`:'Imagen sin integrante asociada.');
+              toast('success','Asociación guardada',chosen?`Esta foto elegirá la polera de ${member?.name} en la tienda.`:'La foto ya no elegirá una variante.');
+            }catch(error){memberVariants=await loadMemberVariants();paint();notice(error.message);toast('error','No se pudo asociar la imagen',error.message)}
+            finally{if(target.isConnected)setBusy(false)}
+          });
+          association.append(label,picker);
+        }
 
         let drag=null;
         const findDrop=(x,y)=>[...target.querySelectorAll('.merch-current-image-card')].find(card=>{
@@ -266,6 +313,13 @@ async function renderImages(id){
           const ok=await ask({tone:'danger',title:'¿Quitar esta imagen?',message:`Vas a quitar ${role.toLowerCase()} de la galería del producto.`,detail,image:{src:img.url,alt:`Vista previa de ${description}`,caption:role},confirmText:'Sí, quitar imagen'});if(!ok)return;
           setBusy(true);
           try{
+            const linked=memberVariants.find(variant=>variant.image_url===img.url);
+            if(linked){
+              const unlinked=await query(client.from('product_variants').update({image_url:null,image_alt:''})
+                .eq('id',linked.id).eq('product_id',id).select('id,image_url'));
+              if(unlinked.length!==1||unlinked[0].image_url!==null)throw new Error('No se pudo desvincular la variante de esta foto.');
+              memberVariants=await loadMemberVariants();
+            }
             await removeStorage(img.url);
             await query(client.from('product_images').delete().eq('id',img.id));
             images=images.filter(image=>image.id!==img.id);
@@ -277,7 +331,9 @@ async function renderImages(id){
           }finally{if(target.isConnected)setBusy(false)}
         });
 
-        wrap.append(head,stage,footer);target.append(wrap);
+        wrap.append(head,stage,footer);
+        if(association)wrap.append(association);
+        target.append(wrap);
       });
       if(!images.length){
         const empty=document.createElement('p');empty.className='merch-current-empty';empty.textContent='Este producto todavía no tiene imágenes guardadas.';target.append(empty);

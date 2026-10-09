@@ -78,7 +78,7 @@ function buildImageManager(form,fieldset,cleanup){
   let pendingFiles=[];let pickerMode='add';const objectUrls=new Set();
 
   const intro=el('div','merch-media-head');
-  const introCopy=el('div');introCopy.append(el('span','merch-mini-kicker','GALERÍA DEL PRODUCTO'),el('h4','','Imágenes del producto'),el('p','','La primera imagen funciona como referencia principal en la tienda. Puedes añadir, quitar y cambiar el orden de las fotos cuando quieras.'));
+  const introCopy=el('div');introCopy.append(el('span','merch-mini-kicker','GALERÍA DEL PRODUCTO'),el('h4','','Imágenes del producto'),el('p','',form.elements.variant_source?.value==='members'?'Asocia cada foto con su integrante. Puedes cambiar el orden libremente: la asociación determina qué variante se añade al carrito.':'La primera imagen funciona como referencia principal en la tienda. Puedes añadir, quitar y cambiar el orden de las fotos cuando quieras.'));
   intro.append(introCopy,el('span','merch-media-spec','PNG · JPG · WebP · máx. 8 MB'));
 
   const drop=el('div','merch-image-drop');drop.tabIndex=0;drop.setAttribute('role','button');drop.setAttribute('aria-label','Añadir imágenes al producto');
