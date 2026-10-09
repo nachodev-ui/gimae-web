@@ -4,11 +4,14 @@
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#fff0f8">
   <title>Gacha de Photocards — Gimae!</title>
-  <meta name="description" content="Abre sobres digitales gratuitos y completa tu álbum de photocards de Gimae.">
+  <meta name="description" content="Canjea tus pedidos pagados por sobres digitales y completa tu álbum de photocards de Gimae.">
   <link rel="icon" type="image/png" sizes="48x48" href="images/favicon.png">
   <link rel="apple-touch-icon" sizes="180x180" href="images/apple-touch-icon.png">
   <link rel="stylesheet" href="styles.css?v=20260928-supabase">
-  <script src="content.js?v=20260921-pastel" defer></script><script src="supabase-config.js" defer></script><script src="backend.js" defer></script><script src="nav.js" defer></script><script src="effects.js" defer></script><script src="gacha.js?v=20260928-supabase" defer></script><script src="avatar.js?v=20260921-pastel" defer></script>
+  <link rel="stylesheet" href="gacha-rewards.css?v=20261008-redeem-tickets">
+  <link rel="stylesheet" href="admin/ui-feedback.css?v=20261007">
+  <script src="admin/ui-feedback.js?v=20261007" defer></script>
+  <script src="content.js?v=20260921-pastel" defer></script><script src="supabase-config.js" defer></script><script src="backend.js" defer></script><script src="nav.js" defer></script><script src="effects.js" defer></script><script src="gacha.js?v=20261008-redeem-tickets" defer></script><script src="avatar.js?v=20260921-pastel" defer></script>
 </head>
 <body class="tool-page gacha-page">
   <a class="skip" href="#main">Saltar al contenido</a>
@@ -22,6 +25,16 @@
     <section class="gacha-section" id="gacha" aria-labelledby="gacha-title">
       <div class="section-shell">
         <div class="section-heading gacha-heading"><div><p class="eyebrow">GACHA DE PHOTOCARDS</p><h1 id="gacha-title">Abre un sobre.<br><em>Encuentra una estrella.</em></h1></div><p>Colecciona momentos de Suki, Usi, Vewe y Vali.<br>Cada carta vive solo en este dispositivo.</p></div>
+        <form id="gacha-redeem" class="gacha-redeem" novalidate>
+          <div><p class="eyebrow">UN GRACIAS EN CADA SOBRE ♡</p><h2>Tu pedido trae una sorpresa</h2><p id="gacha-redeem-info">Pedidos pagados desde $2.000 en productos: 3 sobres de regalo.</p></div>
+          <div class="gacha-code-entry">
+            <div class="gacha-code-heading"><label for="gacha-order-code">Código de pedido</label><button class="gacha-history-toggle" id="gacha-history-toggle" type="button" aria-controls="gacha-code-history" aria-expanded="false" aria-label="Mostrar historial de códigos"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/><path d="M12 7v5l3 2"/></svg><span>Historial</span></button></div>
+            <input id="gacha-order-code" name="orderCode" placeholder="Pega el código de tu comprobante" required maxlength="36" minlength="36" autocomplete="off" spellcheck="false" aria-describedby="gacha-redeem-message-text"><button class="button primary" type="submit" disabled>Canjear mis sobres ♡</button>
+            <div class="gacha-redeem-message" id="gacha-redeem-message" role="status" aria-live="polite" hidden><span class="gacha-redeem-stub" id="gacha-redeem-message-icon" aria-hidden="true">✧</span><div class="gacha-redeem-message-copy"><span class="gacha-redeem-kicker" id="gacha-redeem-message-label"></span><p id="gacha-redeem-message-text"></p></div><button class="gacha-redeem-dismiss" id="gacha-redeem-dismiss" type="button" aria-label="Cerrar aviso del código">×</button></div>
+            <section class="gacha-code-history" id="gacha-code-history" aria-labelledby="gacha-history-title" hidden><div class="gacha-history-heading"><strong id="gacha-history-title">Tus códigos</strong><span id="gacha-history-count"></span></div><ol id="gacha-history-list"></ol><p class="gacha-history-empty" id="gacha-history-empty" hidden>Aún no hay códigos registrados en este navegador.</p><p class="gacha-history-note" id="gacha-history-note">Este historial queda solo en este dispositivo y se borra al eliminar sus datos. Guarda tus códigos en privado y compártelos únicamente con soporte si necesitas ayuda.</p><p class="gacha-history-feedback" id="gacha-history-feedback" role="status" aria-live="polite" hidden></p></section>
+          </div>
+          <p class="gacha-redeem-note">Guarda tu código en privado: quien lo tenga puede canjearlo primero. Las tiradas quedan vinculadas a este navegador; borrar sus datos puede hacerte perder el acceso. No se entregan premios físicos.</p>
+        </form>
         <div class="gacha-layout">
           <div class="gacha-machine">
             <div class="rarity-legend" id="rarity-legend" aria-label="Probabilidades de rareza"></div>
@@ -32,23 +45,28 @@
               <div class="gacha-confetti" id="gacha-confetti" aria-hidden="true"></div>
             </div>
             <p class="gacha-status" id="gacha-status" aria-live="polite">Tu próximo recuerdo está dentro del sobre.</p>
+            <div class="gacha-open-note" id="gacha-open-note" role="status" aria-live="polite" hidden>
+              <span class="gacha-open-note-icon" id="gacha-open-note-icon" aria-hidden="true">✦</span>
+              <div class="gacha-open-note-copy"><span class="gacha-open-note-kicker">NOTA DEL GACHA ♡</span><strong id="gacha-open-note-title"></strong><span id="gacha-open-note-message"></span></div>
+              <button class="gacha-open-note-close" id="gacha-open-note-close" type="button" aria-label="Cerrar aviso">×</button>
+            </div>
             <button class="button primary gacha-open" id="gacha-open" type="button">Abrir sobre <span aria-hidden="true">✦</span></button>
             <p class="gacha-daily" id="gacha-daily" hidden></p>
-            <p class="gacha-disclaimer">Juego digital gratuito: no usa dinero, no entrega productos físicos y no representa stock de merch.</p>
+            <p class="gacha-disclaimer">Sobres digitales de regalo por tu compra. Las cartas pueden repetirse; las probabilidades son por categoría y se reparten por igual entre sus cartas activas.</p>
           </div>
           <div class="gacha-album">
             <div class="album-top"><div><p class="eyebrow">TU ÁLBUM</p><h2>Photocards encontradas</h2></div><strong id="gacha-progress-text">0/12</strong></div>
             <progress id="gacha-progress" value="0" max="12" aria-label="Progreso de la colección"></progress>
             <p class="gacha-storage-note" id="gacha-storage-note" hidden>Tu navegador no permite guardar la colección. Podrás jugar, pero el progreso se perderá al cerrar la página.</p>
             <div class="gacha-album-grid" id="gacha-album-grid"></div>
-            <button class="gacha-reset" id="gacha-reset" type="button">Reiniciar colección</button>
+            <button class="gacha-reset" id="gacha-reset" type="button">Sincronizar colección</button>
           </div>
         </div>
       </div>
     </section>
   </main>
   <footer class="footer section-shell"><a class="brand footer-brand" href="index.html" aria-label="Gimae, inicio"><img class="wordmark" src="images/logo-wordmark.webp" alt="Gimae!" width="220" height="88"></a><p>Hecho de música, sueños y mucho amor.<br><span>© <span id="year">2026</span> Gimae · Chile</span></p><a class="back-top" href="index.html">Volver al inicio <span aria-hidden="true">↗</span></a></footer>
-  <dialog id="gacha-dialog" aria-labelledby="gacha-dialog-title"><button id="gacha-dialog-close" class="dialog-close" aria-label="Cerrar carta">×</button><p class="eyebrow">TU PHOTOCARD</p><h2 id="gacha-dialog-title">Una estrella en tu colección.</h2><div class="gacha-dialog-tilt" id="gacha-dialog-tilt"><div id="gacha-dialog-card"></div></div><p class="gacha-dialog-hint">Mueve el cursor o tu dedo sobre la carta para verla brillar.</p></dialog>
+  <dialog id="gacha-dialog" aria-labelledby="gacha-dialog-title"><button id="gacha-dialog-close" class="dialog-close" aria-label="Cerrar carta">×</button><p class="eyebrow">TU PHOTOCARD</p><h2 id="gacha-dialog-title">Una estrella en tu colección.</h2><div class="gacha-dialog-tilt" id="gacha-dialog-tilt"><div id="gacha-dialog-card"></div></div><p class="gacha-dialog-hint">Mueve el cursor o tu dedo sobre la carta para verla brillar.</p><div class="gacha-story-actions"><button class="button primary" id="gacha-story-share" type="button" disabled>Compartir imagen ♡</button><button class="button" id="gacha-story-download" type="button" disabled>Descargar para Stories</button></div><p id="gacha-story-status" role="status"></p></dialog>
   <noscript><p class="noscript-note">Activa JavaScript para abrir sobres y guardar tu álbum de photocards.</p></noscript>
 </body>
 </html>

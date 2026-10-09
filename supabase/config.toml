@@ -33,3 +33,8 @@ verify_jwt = false
 # Cron only: random credential in Vault, checked against a hash in Postgres.
 [functions.webpay-reconcile]
 verify_jwt = false
+
+# Customers have no account. Body validates a random bearer token; orders are checked
+# server-side, with IP/global rate limiting and service-only atomic RPC.
+[functions.gacha]
+verify_jwt = false

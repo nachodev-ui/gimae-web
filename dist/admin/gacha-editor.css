@@ -1,0 +1,91 @@
+.gacha-admin-heading{display:flex;gap:20px;justify-content:space-between;align-items:center;flex-wrap:wrap;margin-bottom:24px}
+.gacha-admin-heading h2{margin:6px 0 12px}
+.gacha-admin-heading p{max-width:590px;line-height:1.65}
+.gacha-admin-settings{padding:26px;border-radius:24px;background:linear-gradient(130deg,#fff6fb,#f0f8ff);border:1px solid #efcddd;margin:24px 0 32px}
+.gacha-admin-settings h3{margin:0 0 12px}
+.gacha-tier-settings{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:20px 0}
+.gacha-tier-settings fieldset{min-width:0;padding:18px;border:1px solid #eac6da;border-radius:18px;background:#ffffffb0}
+.gacha-tier-settings legend{font-weight:700;color:#925576;padding:0 8px}
+.gacha-tier-settings label,.gacha-card-form>label,.gacha-bonus-settings label{display:grid;gap:8px;margin-bottom:14px}
+.gacha-bonus-settings{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:16px}
+.gacha-admin-note{font-size:.85rem;line-height:1.6;color:#796173}
+.gacha-admin-settings input,.gacha-card-form input,.gacha-card-form select,.gacha-admin-settings select,.gacha-card-form textarea{max-width:100%}
+.gacha-admin-settings .admin-check,.gacha-card-form .admin-check{display:flex;align-items:center;gap:10px}
+.gacha-admin-settings .admin-check input,.gacha-card-form .admin-check input{width:18px;height:18px;flex:0 0 18px}
+.admin-records-card:has(#gacha-settings-form){display:block;min-height:0}
+.admin-records-card:has(#gacha-settings-form) .gacha-admin-heading h2{margin:6px 0 12px}
+
+.gacha-weight-status{--gacha-accent:#826623;position:relative;display:grid;grid-template-columns:46px minmax(0,1fr);gap:13px;overflow:hidden;margin:12px 0 20px;padding:18px 22px;border:1px solid color-mix(in srgb,var(--gacha-accent) 36%,#ecd8e2);border-radius:23px;background:radial-gradient(circle at 18px 18px,color-mix(in srgb,var(--gacha-accent) 12%,transparent) 2px,transparent 2.7px) 0 0/28px 28px,linear-gradient(135deg,#fff 0%,#fffafd 62%,color-mix(in srgb,var(--gacha-accent) 9%,#fff) 100%);color:var(--ink);box-shadow:0 6px 0 color-mix(in srgb,var(--gacha-accent) 15%,#fff)}
+.gacha-weight-status[data-state="exact"]{--gacha-accent:var(--admin-pink-dark)}
+.gacha-weight-status[data-state="exceeded"],.gacha-weight-status[data-state="invalid"]{--gacha-accent:#765596}
+.gacha-weight-icon{display:grid;place-items:center;align-self:start;width:43px;height:43px;border:3px solid #fff;border-radius:14px;background:var(--gacha-accent);color:#fff;font:900 1.35rem/1 var(--display);box-shadow:0 0 0 1px color-mix(in srgb,var(--gacha-accent) 42%,#e9d7e2),0 4px 0 color-mix(in srgb,var(--gacha-accent) 18%,#fff);transform:rotate(-7deg)}
+.gacha-weight-status[data-state="exact"] .gacha-weight-icon{border-radius:50%;transform:rotate(7deg)}
+.gacha-weight-status[data-state="exceeded"] .gacha-weight-icon{transform:rotate(7deg)}
+.gacha-weight-copy{position:relative;z-index:1;display:grid;gap:5px;min-width:0;width:100%;padding-right:28px}
+.gacha-weight-kicker{color:var(--gacha-accent);font-size:.65rem;font-weight:900;letter-spacing:.16em}
+.gacha-weight-heading{justify-self:start;padding:5px 11px;border:1px solid color-mix(in srgb,var(--gacha-accent) 25%,#ead3df);border-radius:999px;background:#fff;color:var(--gacha-accent);font:700 clamp(1.2rem,2.5vw,1.65rem)/1.12 var(--display);box-shadow:0 3px 0 color-mix(in srgb,var(--gacha-accent) 11%,#fff)}
+.gacha-weight-detail{color:#493543;font-size:.83rem;line-height:1.4;font-weight:750}
+.gacha-weight-track{height:16px;overflow:hidden;margin-top:8px;border:1px solid color-mix(in srgb,var(--gacha-accent) 38%,#ead3df);border-radius:99px;background:#fff;box-shadow:inset 0 2px 4px color-mix(in srgb,var(--gacha-accent) 12%,transparent)}
+.gacha-weight-fill{position:relative;display:block;width:0;height:100%;border-radius:99px;background:linear-gradient(90deg,color-mix(in srgb,var(--gacha-accent) 68%,#fff),var(--gacha-accent));transition:width .2s ease}
+.gacha-weight-fill::after{content:'';position:absolute;inset:2px 3px 48%;border-radius:99px;background:rgba(255,255,255,.5)}
+.gacha-weight-decoration{position:absolute;right:18px;top:10px;color:color-mix(in srgb,var(--gacha-accent) 35%,transparent);font:700 2.5rem/1 var(--display);transform:rotate(12deg);pointer-events:none}
+.gacha-save-help{margin:9px 0 0;color:#693c55;font-size:.78rem;font-weight:750;line-height:1.45}
+
+.gacha-album-heading{align-items:flex-end;margin-top:38px}
+.gacha-album-heading h3{margin:0 0 7px}
+.gacha-album-heading p{margin:0;color:#765d6c;font-size:.82rem}
+.admin-page #gacha-shuffle{min-height:41px;padding:9px 15px}
+.gacha-admin-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:18px;align-items:start}
+.gacha-admin-card{min-width:0;overflow:hidden;border:1px solid #edc9da;border-radius:20px;background:#fffbfd;box-shadow:0 5px 0 #f8eaf0;cursor:grab;transition:border-color .16s ease,box-shadow .16s ease}
+.gacha-admin-card:focus-visible{outline:3px solid #9d3970;outline-offset:3px}
+.gacha-admin-card.is-dragging{opacity:.48;cursor:grabbing}
+.gacha-card-head{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:56px;padding:10px 12px}
+.gacha-card-badges{display:flex;align-items:center;gap:5px;flex-wrap:wrap;min-width:0}
+.gacha-card-rarity,.gacha-card-state{padding:5px 8px;border:1px solid #efd2e0;border-radius:99px;background:#fff;color:#793a5c;font-size:.67rem;font-weight:850;line-height:1.25}
+.gacha-card-state.is-active{border-color:#cbe9d8;background:#ecfbf3;color:#28714c}
+.gacha-card-state.is-hidden{border-color:#efcbd0;background:#fff4f5;color:#8f4051}
+.gacha-card-secondary{display:flex;align-items:center;flex:none}
+.admin-page .gacha-card-secondary button{display:grid;place-items:center;width:38px;height:38px;min-height:38px;padding:0;border-radius:50%;font-size:1.2rem;line-height:1}
+.gacha-card-photo{height:230px;margin:0 12px;overflow:hidden;border:1px solid #f0dce6;border-radius:12px;background:#fff5fa}
+.gacha-card-photo img{display:block;width:100%;height:100%;object-fit:cover;pointer-events:none;user-select:none}
+.gacha-card-body{display:grid;gap:8px;padding:14px 13px 13px}
+.gacha-card-body h4{margin:0;color:#4e3545;font-size:.95rem}
+.gacha-card-body p{min-height:2.6em;margin:0;color:#765d6c;font-size:.78rem;line-height:1.4}
+.admin-page .gacha-card-edit{width:100%;min-height:39px;margin-top:3px}
+
+.gacha-card-form{width:100%;max-width:none}
+.gacha-visual-layout{margin:0 0 18px}
+.gacha-preview-box{align-self:start;min-width:0}
+.gacha-preview-frame{width:100%;min-height:0;aspect-ratio:2.55/3.65;background:linear-gradient(145deg,#fff8fc,#fff)}
+.gacha-preview-frame img{width:100%;height:100%;min-height:0;max-height:none;object-fit:contain;object-position:center}
+.gacha-preview-fallback{align-self:center}
+.gacha-visual-controls{min-width:0}
+.gacha-media-manager{margin:0;padding:18px;border:1px solid #ead3df;border-radius:19px;background:linear-gradient(180deg,#fff,#fffafd)}
+.gacha-media-manager .merch-media-head{margin-bottom:13px}
+.gacha-image-drop{position:relative}
+.gacha-image-drop:focus-within{border-color:#d64b8d;box-shadow:0 0 0 4px #f9e3ed}
+.gacha-visually-hidden,.gacha-file-input{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
+.gacha-media-manager .merch-image-actions{margin:12px 0}
+#gacha-upload-status{min-height:1.3em;margin:9px 0 0;color:#604457;font-size:.76rem;font-weight:700}
+#gacha-upload-status[data-tone="error"]{color:#a12e48}
+.gacha-card-details{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:18px;border:1px solid #ead3df;border-radius:19px;background:#fff}
+.gacha-card-details>label{display:grid;gap:7px;min-width:0;margin:0}
+.gacha-card-details>.is-wide,.gacha-card-details>.gacha-bonus-settings,.gacha-card-details>.admin-check{grid-column:1/-1}
+.gacha-card-details .gacha-bonus-settings label{margin:0}
+.gacha-card-form-actions{display:flex;gap:9px;flex-wrap:wrap}
+.admin-page .gacha-button{border:1px solid color-mix(in srgb,var(--admin-pink-dark) 40%,#fff);border-radius:11px;background:#fff;color:var(--admin-pink-dark);box-shadow:none;font-weight:850}
+.admin-page .gacha-button:hover{border-color:var(--admin-pink-dark);background:var(--admin-pink-soft);color:var(--ink);transform:translateY(-1px)}
+.admin-page .gacha-button:focus-visible{outline:3px solid #96306c;outline-offset:3px}
+.admin-page .gacha-button:active{border-color:var(--admin-pink-dark);background:color-mix(in srgb,var(--admin-pink) 24%,#fff);color:var(--ink);transform:translateY(1px);box-shadow:none}
+.admin-page .gacha-button.is-primary{border-color:var(--admin-pink-dark);background:var(--admin-pink-dark);color:#fff;box-shadow:0 4px 0 color-mix(in srgb,var(--admin-pink-dark) 25%,#fff)}
+.admin-page .gacha-button.is-primary:hover{border-color:color-mix(in srgb,var(--admin-pink-dark) 78%,var(--ink));background:color-mix(in srgb,var(--admin-pink-dark) 78%,var(--ink));color:#fff;box-shadow:0 6px 0 color-mix(in srgb,var(--admin-pink-dark) 25%,#fff)}
+.admin-page .gacha-button.is-primary:active{border-color:color-mix(in srgb,var(--admin-pink-dark) 60%,var(--ink));background:color-mix(in srgb,var(--admin-pink-dark) 60%,var(--ink));color:#fff;box-shadow:0 2px 0 color-mix(in srgb,var(--admin-pink-dark) 25%,#fff)}
+.admin-page .gacha-button:disabled,.admin-page .gacha-button.is-primary:disabled{border-color:#d9c7d1;background:#e9dce3;color:#604457;box-shadow:none;opacity:1;cursor:not-allowed;transform:none}
+.admin-page .gacha-button.is-icon{border-radius:50%;background:#fff;color:#8f2f64}
+.admin-page .gacha-button.is-icon:hover{background:var(--admin-pink-soft);color:var(--ink)}
+.admin-page .gacha-button.is-icon:active{background:color-mix(in srgb,var(--admin-pink) 24%,#fff);color:var(--ink)}
+
+@media(max-width:720px){.gacha-tier-settings{grid-template-columns:1fr}.gacha-admin-settings{padding:18px}.gacha-admin-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.gacha-card-photo{height:190px}.gacha-album-heading{align-items:stretch}.gacha-album-heading>button{width:100%}}
+@media(max-width:900px){.gacha-visual-layout{grid-template-columns:minmax(0,1fr)}.gacha-preview-frame{max-width:360px;margin:auto}}
+@media(max-width:480px){.gacha-admin-grid{grid-template-columns:1fr}.gacha-media-manager{padding:14px}.gacha-media-manager .merch-image-actions{display:grid;grid-template-columns:1fr}.gacha-media-manager .merch-image-actions button{width:100%}.gacha-card-details{grid-template-columns:minmax(0,1fr);padding:14px}.gacha-card-details>label{grid-column:1}}
+@media(prefers-reduced-motion:reduce){.gacha-admin-card,.gacha-weight-fill,.admin-page .gacha-button{transition:none}}
