@@ -20,12 +20,12 @@ Los archivos de `dist/images/merch/` son referencias estáticas de la tienda. La
 
 ## Estado del legado y transición
 
-Inventario del proyecto `hvaonobbpzbupanuymkh` al 10 de octubre de 2026:
+Inventario del proyecto `hvaonobbpzbupanuymkh` al 10 de octubre de 2026, después de la limpieza autorizada:
 
-- `gimae-products/images/`: 31 copias antiguas de recursos estáticos, 9.898.765 bytes. Se conservan como legado para evitar una eliminación destructiva. La migración `canonical_image_sources` cambia las 13 referencias activas de retratos, galería y variantes que apuntaban a ese prefijo hacia GitHub Pages.
-- `gimae-products/products/`: 47 objetos, 16.624.849 bytes. Incluye fotografías de poleras y postales de tienda. Hay un duplicado histórico en `products/postales/postal_antigua_01-600.webp`; el código actual utiliza `products/postales/optimizadas/`.
+- `gimae-products/images/`: vacío. Se borraron sus 31 copias antiguas después de trasladar las 13 referencias activas a GitHub Pages mediante la migración `canonical_image_sources`.
+- `gimae-products/products/`: 46 objetos, 16.584.361 bytes. Incluye fotografías de poleras y postales de tienda. Se borró el duplicado histórico `products/postales/postal_antigua_01-600.webp`; el código utiliza `products/postales/optimizadas/`.
 
-No se debe borrar un objeto solo porque parezca duplicado: primero comprobar referencias en `members.photo_url`, `product_images.url`, `product_variants.image_url`, posts y código. La limpieza de `images/` y del duplicado histórico requiere una decisión aparte, según la regla de operaciones destructivas de `AGENTS.md`.
+Los 32 objetos se borraron con `supabase storage rm` en el proyecto vinculado, no mediante SQL sobre `storage.objects`. Antes del borrado se comprobaron las referencias en `members.photo_url`, `product_images.url`, `product_variants.image_url`, posts, cartas y código; después, Storage confirmó cero objetos en ambas rutas. Para futuras limpiezas, no se debe borrar un objeto solo porque parezca duplicado: primero comprobar referencias y seguir la regla de operaciones destructivas de `AGENTS.md`.
 
 ## Al añadir o cambiar una imagen
 
