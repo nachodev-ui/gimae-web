@@ -153,7 +153,7 @@ function enhanceVariantRows(list){
   if(!list)return;
   [...list.children].forEach(row=>{
     if(row.dataset.merchVariantRow)return;row.dataset.merchVariantRow='true';row.classList.add('merch-variant-card');
-    const name=row.querySelector('strong');const numbers=[...row.querySelectorAll('input[type="number"]')];const price=numbers[0],stock=numbers[1];const confirmed=row.querySelector('input[type="checkbox"]');const save=row.querySelector('button');
+    const name=row.querySelector('strong');const numbers=[...row.querySelectorAll('input[type="number"]')];const price=numbers[0],stock=numbers[1];const confirmed=row.querySelector('input[type="checkbox"]');const save=row.querySelector('button');const remove=row.querySelector('.merch-delete-variant');
     if(!name||!price||!stock||!confirmed||!save)return;
     const title=name.textContent.trim();row.replaceChildren();
     const head=el('div','merch-variant-head');const identity=el('div');identity.append(el('span','merch-variant-kicker','VARIANTE'),name);const state=el('span','merch-variant-state');head.append(identity,state);
@@ -161,7 +161,7 @@ function enhanceVariantRows(list){
     const priceLabel=el('label','merch-variant-field');priceLabel.append(el('span','','Precio'),price,el('small','',`Precio actual: ${money(price.value)}`));
     const stockLabel=el('label','merch-variant-field');stockLabel.append(el('span','','Stock disponible'),stock,el('small','','Unidades listas para vender'));
     const confirmLabel=el('label','merch-variant-confirm');confirmLabel.append(confirmed);const confirmCopy=el('span');confirmCopy.append(el('strong','','Stock confirmado'),el('small','','Actívalo solo después de revisar físicamente las unidades.'));confirmLabel.append(el('span','merch-check-visual'),confirmCopy);
-    save.classList.add('merch-save-variant');save.textContent='Guardar cambios';fields.append(priceLabel,stockLabel,confirmLabel,save);row.append(head,fields);
+    save.classList.add('merch-save-variant');save.textContent='Guardar cambios';fields.append(priceLabel,stockLabel,confirmLabel,save);if(remove)fields.append(remove);row.append(head,fields);
     const updateState=()=>{const value=Number(stock.value)||0;if(!confirmed.checked){state.className='merch-variant-state is-pending';state.textContent='Stock por confirmar'}else if(value<=0){state.className='merch-variant-state is-out';state.textContent='Agotado'}else{state.className='merch-variant-state is-ok';state.textContent=`${value} uds. disponibles`}priceLabel.querySelector('small').textContent=`Precio actual: ${money(price.value)}`};
     price.addEventListener('input',updateState);stock.addEventListener('input',updateState);confirmed.addEventListener('change',updateState);updateState();
   });
