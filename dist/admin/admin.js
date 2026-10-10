@@ -176,15 +176,29 @@ async function persistImageOrder(images){
 async function renderImages(id){
   try{
     const loadImages=()=>query(client.from('product_images').select('*').eq('product_id',id).order('display_order',{ascending:true}).order('id',{ascending:true}));
-    const memberProduct=items.some(product=>product.id===id&&product.variant_source==='members');
-    const loadMemberVariants=()=>memberProduct
-      ?query(client.from('product_variants').select('id,member_id,image_url,image_alt').eq('product_id',id).order('display_order'))
+    const product=items.find(entry=>entry.id===id);
+    const memberProduct=product?.variant_source==='members';
+    const postalProduct=/^postales\b/i.test(product?.name||'');
+    const imageVariantProduct=memberProduct||postalProduct;
+    const loadMemberVariants=()=>imageVariantProduct
+      ?query(client.from('product_variants').select('id,member_id,label,image_url,image_alt').eq('product_id',id).order('display_order'))
       :Promise.resolve([]);
     let images=await loadImages();
     let memberVariants=await loadMemberVariants();
     const target=$('#image-list');if(!target)return;
     let busy=false;
     target.setAttribute('aria-label','Galería actual del producto. Arrastra una foto para cambiar el orden.');
+    const syncPostalVariantPhoto=(variantId,url)=>{
+      if(id!=='05')return;
+      const line=[...($('#variant-list')?.children||[])].find(row=>row.dataset.postalVariantId===variantId);
+      if(!line)return;
+      line.dataset.postalImage=url||'';
+      const identity=line.querySelector('.merch-variant-head>div');
+      const thumb=identity?.querySelector('.postal-variant-thumb');
+      if(!url){thumb?.remove();return}
+      if(thumb)thumb.src=url;
+      else if(identity){const photo=document.createElement('img');photo.className='postal-variant-thumb';photo.src=url;photo.alt=`Imagen de ${line.querySelector('strong')?.textContent||'postal'}`;identity.prepend(photo)}
+    };
 
     const setBusy=value=>{
       busy=value;
@@ -213,6 +227,7 @@ async function renderImages(id){
         const role=index===0?'Imagen principal':`Imagen ${index+1}`;
         const description=img.alt||role;
         const wrap=document.createElement('article');wrap.className='merch-current-image-card';wrap.dataset.merchImageCard='true';wrap.dataset.imageId=img.id;
+        if(id==='05')wrap.dataset.postalCollection=memberVariants.find(variant=>variant.image_url===img.url)?.label.split(' · ')[0]||'sin-asociar';
         const badge=document.createElement('span');badge.className='merch-image-role';badge.textContent=role;
         const removeButton=document.createElement('button');removeButton.type='button';removeButton.className='merch-image-delete';removeButton.textContent='×';removeButton.setAttribute('aria-label',`Quitar ${role.toLowerCase()} de la galería`);removeButton.title='Quitar imagen';
         const head=document.createElement('div');head.className='merch-image-card-head';head.append(badge,removeButton);
@@ -225,15 +240,15 @@ async function renderImages(id){
         footer.append(position,hint);
 
         let association=null;
-        if(memberProduct&&memberVariants.length){
+        if(imageVariantProduct&&memberVariants.length){
           association=document.createElement('label');association.className='merch-image-member-field';
-          const label=document.createElement('span');label.textContent='Integrante de esta polera';
-          const picker=document.createElement('select');picker.setAttribute('aria-label',`Integrante de imagen ${index+1}`);
+          const label=document.createElement('span');label.textContent=postalProduct?'Postal de esta imagen':'Integrante de esta polera';
+          const picker=document.createElement('select');picker.setAttribute('aria-label',`${postalProduct?'Postal':'Integrante'} de imagen ${index+1}`);
           const unassigned=document.createElement('option');unassigned.value='';unassigned.textContent='Sin asociar';picker.append(unassigned);
           memberVariants.forEach(variant=>{
-            const member=members.find(person=>person.id===variant.member_id);if(!member)return;
+            const member=members.find(person=>person.id===variant.member_id);if(memberProduct&&!member)return;
             const choice=document.createElement('option');choice.value=variant.id;
-            choice.textContent=`${member.name} · ${member.color_label}`;picker.append(choice);
+            choice.textContent=memberProduct?`${member.name} · ${member.color_label}`:variant.label;picker.append(choice);
           });
           picker.value=memberVariants.find(variant=>variant.image_url===img.url)?.id||'';
           picker.addEventListener('change',async()=>{
@@ -242,24 +257,24 @@ async function renderImages(id){
             const chosen=memberVariants.find(variant=>variant.id===picker.value);
             if(chosen&&current&&chosen.id!==current.id){
               picker.value=current.id;
-              toast('warning','Imagen ya asociada','Primero deja esta foto sin asociar para asignarla a otra integrante.');return;
+              toast('warning','Imagen ya asociada','Primero deja esta foto sin asociar para asignarla a otra variante.');return;
             }
             if(chosen&&chosen.image_url&&chosen.image_url!==img.url){
               picker.value=current?.id||'';
-              toast('warning','La integrante ya tiene foto','Quita la asociación de su foto anterior antes de elegir esta.');return;
+              toast('warning','La variante ya tiene foto','Quita la asociación de su foto anterior antes de elegir esta.');return;
             }
             const variant=chosen||current;
             if(!variant)return;
             const member=members.find(person=>person.id===variant.member_id);
             setBusy(true);
             try{
-              const alt=chosen?`Polera estampada de ${member?.name||'Gimae'} · ${member?.color_label||'color de integrante'}`:'';
+              const alt=chosen?(postalProduct?`Postal ${product.id==='05'?chosen.label:`${product.name.replace(/^Postales\s*/i,'')} · ${chosen.label}`} de Gimae`:`Polera estampada de ${member?.name||'Gimae'} · ${member?.color_label||'color de integrante'}`):'';
               const saved=await query(client.from('product_variants').update({image_url:chosen?img.url:null,image_alt:alt})
                 .eq('id',variant.id).eq('product_id',id).select('id,image_url'));
               if(saved.length!==1||saved[0].image_url!==(chosen?img.url:null))throw new Error('No se confirmó la asociación en la base de datos.');
-              memberVariants=await loadMemberVariants();paint();
-              notice(chosen?`Imagen asociada con ${member?.name}.`:'Imagen sin integrante asociada.');
-              toast('success','Asociación guardada',chosen?`Esta foto elegirá la polera de ${member?.name} en la tienda.`:'La foto ya no elegirá una variante.');
+              memberVariants=await loadMemberVariants();syncPostalVariantPhoto(variant.id,chosen?img.url:null);paint();
+              notice(chosen?`Imagen asociada con ${postalProduct?chosen.label:member?.name}.`:'Imagen sin variante asociada.');
+              toast('success','Asociación guardada',chosen?`Esta foto mostrará ${postalProduct?`la postal ${chosen.label}`:`la polera de ${member?.name}`} en la tienda.`:'La foto ya no elegirá una variante.');
             }catch(error){memberVariants=await loadMemberVariants();paint();notice(error.message);toast('error','No se pudo asociar la imagen',error.message)}
             finally{if(target.isConnected)setBusy(false)}
           });
@@ -267,7 +282,7 @@ async function renderImages(id){
         }
 
         let drag=null;
-        const findDrop=(x,y)=>[...target.querySelectorAll('.merch-current-image-card')].find(card=>{
+        const findDrop=(x,y)=>[...target.querySelectorAll('.merch-current-image-card:not([hidden])')].find(card=>{
           if(card===wrap)return false;
           const rect=card.getBoundingClientRect();return x>=rect.left-6&&x<=rect.right+6&&y>=rect.top-6&&y<=rect.bottom+6;
         });
@@ -307,7 +322,13 @@ async function renderImages(id){
         stage.addEventListener('pointerup',finishDrag);stage.addEventListener('pointercancel',finishDrag);
         stage.addEventListener('keydown',event=>{
           if(event.key!=='ArrowLeft'&&event.key!=='ArrowRight')return;
-          event.preventDefault();reorder(index,index+(event.key==='ArrowLeft'?-1:1),img.id);
+          event.preventDefault();
+          if(id==='05'){
+            const visible=[...target.querySelectorAll('.merch-current-image-card:not([hidden])')];
+            const position=visible.findIndex(card=>card.dataset.imageId===img.id);
+            const neighbor=visible[position+(event.key==='ArrowLeft'?-1:1)];
+            if(neighbor)reorder(index,images.findIndex(image=>image.id===neighbor.dataset.imageId),img.id);
+          }else reorder(index,index+(event.key==='ArrowLeft'?-1:1),img.id);
         });
 
         removeButton.addEventListener('click',async()=>{
@@ -325,6 +346,7 @@ async function renderImages(id){
                 .eq('id',linked.id).eq('product_id',id).select('id,image_url'));
               if(unlinked.length!==1||unlinked[0].image_url!==null)throw new Error('No se pudo desvincular la variante de esta foto.');
               memberVariants=await loadMemberVariants();
+              syncPostalVariantPhoto(linked.id,null);
             }
             await removeStorage(img.url);
             await query(client.from('product_images').delete().eq('id',img.id));
@@ -371,16 +393,41 @@ async function renderPostImages(id){
 async function renderVariants(id){
   try{
     const variants=await query(client.from('product_variants').select('*').eq('product_id',id).order('display_order'));const target=$('#variant-list');target.replaceChildren();
+    const postalProduct=/^postales\b/i.test(items.find(product=>product.id===id)?.name||'');
     for(const v of variants){
-      const line=document.createElement('div');line.className='admin-row';const label=document.createElement('strong');label.textContent=v.label;const price=document.createElement('input');price.type='number';price.min='0';price.value=v.price_clp;price.setAttribute('aria-label',`Precio CLP de ${v.label}`);const stock=document.createElement('input');stock.type='number';stock.min='0';stock.value=v.stock;stock.setAttribute('aria-label',`Stock de ${v.label}`);const confirmStock=document.createElement('input');confirmStock.type='checkbox';confirmStock.checked=v.stock_confirmed;confirmStock.setAttribute('aria-label',`Stock confirmado de ${v.label}`);const save=document.createElement('button');save.textContent='Guardar variante';save.type='button';
+      const line=document.createElement('div');line.className='admin-row';if(id==='05'){line.dataset.postalVariantId=v.id;line.dataset.postalCollection=v.label.split(' · ')[0];line.dataset.postalImage=v.image_url||''}const label=document.createElement('strong');label.textContent=v.label;const price=document.createElement('input');price.type='number';price.min='0';price.value=v.price_clp;price.setAttribute('aria-label',`Precio CLP de ${v.label}`);const stock=document.createElement('input');stock.type='number';stock.min='0';stock.value=v.stock;stock.setAttribute('aria-label',`Stock de ${v.label}`);const confirmStock=document.createElement('input');confirmStock.type='checkbox';confirmStock.checked=v.stock_confirmed;confirmStock.setAttribute('aria-label',`Stock confirmado de ${v.label}`);const save=document.createElement('button');save.textContent='Guardar variante';save.type='button';
       save.addEventListener('click',async()=>{const original=save.textContent;save.disabled=true;save.textContent='Guardando…';try{await query(client.from('product_variants').update({price_clp:Number(price.value),stock:Number(stock.value),stock_confirmed:confirmStock.checked}).eq('id',v.id));notice('Variante guardada.');toast('success','Variante actualizada',`Se guardaron precio y stock de “${v.label}”.`)}catch(error){notice(error.message);toast('error','No se pudo guardar la variante',error.message)}finally{save.disabled=false;save.textContent=original}});
-      line.append(label,price,stock,confirmStock,save);target.append(line)
+      line.append(label,price,stock,confirmStock,save);
+      if(postalProduct){
+        const removeVariant=document.createElement('button');removeVariant.type='button';removeVariant.className='merch-delete-variant';removeVariant.textContent='Eliminar variante';
+        removeVariant.setAttribute('aria-label',`Eliminar variante ${v.label}`);
+        removeVariant.addEventListener('click',async()=>{
+          const ok=await ask({tone:'danger',title:'¿Eliminar esta variante?',message:`Vas a eliminar “${v.label}” de este producto.`,detail:'Esta acción no se puede deshacer. Su imagen seguirá en la galería hasta que la quites por separado.',confirmText:'Eliminar variante'});if(!ok)return;
+          removeVariant.disabled=true;
+          try{
+            const removed=await query(client.from('product_variants').delete().eq('id',v.id).eq('product_id',id).select('id'));
+            if(removed.length!==1)throw new Error('No se confirmó la eliminación de la variante.');
+            await renderVariants(id);await renderImages(id);
+            notice('Variante eliminada.');toast('success','Variante eliminada',`“${v.label}” ya no está disponible.`)
+          }catch(error){removeVariant.disabled=false;notice(error.message);toast('error','No se pudo eliminar la variante',error.message)}
+        });
+        line.append(removeVariant);
+      }
+      target.append(line)
     }
   }catch(error){notice(error.message);toast('error','No se pudieron cargar las variantes',error.message)}
 }
 async function addVariant(id){
   const f=$('#record-form'),label=word(new FormData(f).get('new_variant'));if(!label){notice('Escribe el nombre de la variante.');toast('warning','Falta el nombre de la variante','Escribe un nombre antes de añadirla.');return}
-  try{await query(client.from('product_variants').insert({id:`${id}-${crypto.randomUUID()}`,product_id:id,label,price_clp:Number(new FormData(f).get('new_price'))||0}));await renderVariants(id);notice('Variante creada con inventario sin confirmar.');toast('success','Variante creada',`“${label}” ya forma parte del producto.`)}catch(error){notice(error.message);toast('error','No se pudo crear la variante',error.message)}
+  if(id==='05'&&f.dataset.postalCollection&&label.split(/\s*·\s*/)[0].trim().toLowerCase()!==f.dataset.postalCollection.toLowerCase()){
+    notice(`Estás editando Postales ${f.dataset.postalCollection}.`);toast('warning','Revisa la colección',`Usa “${f.dataset.postalCollection} · Diseño” para añadir la postal aquí.`);return;
+  }
+  if(id==='05'&&!/^(Antigua|Halloween|Traje|Verano)\s*·\s*\S+/i.test(label)){
+    notice('Escribe la colección y el diseño, por ejemplo “Verano · Suki”.');
+    toast('warning','Falta la colección','Usa “Colección · Diseño”, por ejemplo “Verano · Suki”.');
+    return;
+  }
+  try{await query(client.from('product_variants').insert({id:`${id}-${crypto.randomUUID()}`,product_id:id,label,price_clp:Number(new FormData(f).get('new_price'))||0}));await renderVariants(id);f.elements.new_variant.value=f.dataset.postalCollection?`${f.dataset.postalCollection} · `:'';notice('Variante creada con inventario sin confirmar.');toast('success','Variante creada',`“${label}” ya forma parte del producto.`)}catch(error){notice(error.message);toast('error','No se pudo crear la variante',error.message)}
 }
 async function remove(row,button){
   const label=row.title||row.name||row.id||singular[tab];
