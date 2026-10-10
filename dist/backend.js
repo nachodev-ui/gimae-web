@@ -43,6 +43,9 @@ window.GIMAE_READY=(async()=>{
         .map(x=>[x.member_id,{src:x.image_url,alt:x.image_alt||''}]));
       if(p.id==='04')product.prices=v.map(x=>({id:x.id,label:x.label,value:x.price_clp,image:x.image_url,imageAlt:x.image_alt,
         memberId:x.member_id||'',memberLabel:members.find(m=>m.id===x.member_id)?.name||'',typeId:x.id==='group'?'group':'individual',typeLabel:x.id==='group'?'Grupal':'Individual'}));
+      else if(hasVariants&&p.variant_source!=='members')product.prices=v.map(x=>({
+        id:x.id,label:x.label,value:x.price_clp,image:x.image_url,imageAlt:x.image_alt
+      }));
       if(hasVariants)product.stockByVariant=Object.fromEntries(v.map(x=>[p.id==='04'?x.id:(x.member_id||x.id),x.stock_confirmed?x.stock:null]));
       return product;
     });
