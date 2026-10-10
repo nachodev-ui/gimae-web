@@ -1,6 +1,9 @@
--- Ejecutar como propietaria en SQL Editor DESPUÉS de aplicar la migración 0010.
--- El error AUDIT_RESULT es intencional: aborta la sentencia completa y revierte
--- usuarios, perfiles, posts, imágenes, objetos, productos y eventos de prueba.
+-- Ejecutar como propietaria en un entorno aislado DESPUÉS de aplicar la migración
+-- 20261001165222_paypal_public_hardening.sql y las posteriores.
+-- La transacción revierte usuarios, perfiles, posts, imágenes, objetos,
+-- productos y eventos de prueba aunque la auditoría resulte satisfactoria.
+BEGIN;
+
 DO $audit$
 DECLARE
   admin_a uuid := 'a1000000-0000-4000-8000-000000000001';
@@ -70,7 +73,7 @@ BEGIN
   PERFORM set_config('request.jwt.claim.sub',outsider::text,true);
   EXECUTE 'SET LOCAL ROLE authenticated';
   results := results || jsonb_build_object('outsider',jsonb_build_object(
-    'is_admin',public.is_admin(),
+    'is_admin',private.is_admin(),
     'posts',(SELECT count(*) FROM public.posts),
     'blog_objects',(SELECT count(*) FROM storage.objects WHERE bucket_id='gimae-blog'),
     'profile_rows',(SELECT count(*) FROM public.profiles)
@@ -87,7 +90,7 @@ BEGIN
   PERFORM set_config('request.jwt.claim.sub',admin_a::text,true);
   EXECUTE 'SET LOCAL ROLE authenticated';
   results := results || jsonb_build_object('admin_a',jsonb_build_object(
-    'is_admin',public.is_admin(),
+    'is_admin',private.is_admin(),
     'posts',(SELECT count(*) FROM public.posts),
     'post_images',(SELECT count(*) FROM public.post_images),
     'blog_objects',(SELECT count(*) FROM storage.objects WHERE bucket_id='gimae-blog'),
@@ -106,7 +109,7 @@ BEGIN
   PERFORM set_config('request.jwt.claim.sub',admin_b::text,true);
   EXECUTE 'SET LOCAL ROLE authenticated';
   results := results || jsonb_build_object('admin_b',jsonb_build_object(
-    'is_admin',public.is_admin(),
+    'is_admin',private.is_admin(),
     'posts',(SELECT count(*) FROM public.posts),
     'private_post',(SELECT count(*) FROM public.posts WHERE id=b_private),
     'profiles',(SELECT count(*) FROM public.profiles)
@@ -118,6 +121,8 @@ BEGIN
 
   -- Esperado: outsider_*_updates=0; ambos cross_post_updates=1;
   -- admin_a/admin_b is_admin=true; anon no ve privados ni producto oculto.
-  RAISE EXCEPTION 'AUDIT_RESULT %', results;
+  RAISE NOTICE 'AUDIT_RESULT %', results;
 END
 $audit$;
+
+ROLLBACK;
