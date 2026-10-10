@@ -256,7 +256,7 @@ async function renderImages(id){
             const member=members.find(person=>person.id===variant.member_id);
             setBusy(true);
             try{
-              const alt=chosen?(postalProduct?`Postal ${product.name.replace(/^Postales\s*/i,'')} · ${chosen.label}`:`Polera estampada de ${member?.name||'Gimae'} · ${member?.color_label||'color de integrante'}`):'';
+              const alt=chosen?(postalProduct?`Postal ${product.id==='05'?chosen.label:`${product.name.replace(/^Postales\s*/i,'')} · ${chosen.label}`} de Gimae`:`Polera estampada de ${member?.name||'Gimae'} · ${member?.color_label||'color de integrante'}`):'';
               const saved=await query(client.from('product_variants').update({image_url:chosen?img.url:null,image_alt:alt})
                 .eq('id',variant.id).eq('product_id',id).select('id,image_url'));
               if(saved.length!==1||saved[0].image_url!==(chosen?img.url:null))throw new Error('No se confirmó la asociación en la base de datos.');
@@ -400,6 +400,11 @@ async function renderVariants(id){
 }
 async function addVariant(id){
   const f=$('#record-form'),label=word(new FormData(f).get('new_variant'));if(!label){notice('Escribe el nombre de la variante.');toast('warning','Falta el nombre de la variante','Escribe un nombre antes de añadirla.');return}
+  if(id==='05'&&!/^(Antigua|Halloween|Traje|Verano)\s*·\s*\S+/i.test(label)){
+    notice('Escribe la colección y el diseño, por ejemplo “Verano · Suki”.');
+    toast('warning','Falta la colección','Usa “Colección · Diseño”, por ejemplo “Verano · Suki”.');
+    return;
+  }
   try{await query(client.from('product_variants').insert({id:`${id}-${crypto.randomUUID()}`,product_id:id,label,price_clp:Number(new FormData(f).get('new_price'))||0}));await renderVariants(id);notice('Variante creada con inventario sin confirmar.');toast('success','Variante creada',`“${label}” ya forma parte del producto.`)}catch(error){notice(error.message);toast('error','No se pudo crear la variante',error.message)}
 }
 async function remove(row,button){

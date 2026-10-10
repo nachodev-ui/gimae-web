@@ -173,7 +173,7 @@ function buildVariantsManager(form,fieldset,cleanup){
   const info=el('div','merch-variants-intro');const infoIcon=el('span','','✦');infoIcon.setAttribute('aria-hidden','true');const copy=el('div');copy.append(el('strong','','¿Qué es una variante?'),el('p','','Es una opción del mismo producto —por ejemplo una integrante, color o talla— que puede tener su propio precio y stock. Actualiza una fila y pulsa “Guardar cambios”.'));info.append(infoIcon,copy);fieldset.prepend(info);
   if(list){const observer=new MutationObserver(()=>enhanceVariantRows(list));observer.observe(list,{childList:true});enhanceVariantRows(list);cleanup.push(()=>observer.disconnect())}
   const newVariant=form.elements.new_variant?.closest('label');const newPrice=form.elements.new_price?.closest('label');const add=form.querySelector('#add-variant');const row=newVariant?.parentElement;
-  if(row){row.classList.add('merch-new-variant-fields');decorateField(form,'new_variant','Nombre de la nueva variante','Ej.: Suki · Rosado, Talla M o Edición especial.');decorateField(form,'new_price','Precio de esta variante','Puedes usar el precio general o definir uno distinto.');}
+  if(row){row.classList.add('merch-new-variant-fields');const isPostales=form.elements.id?.value==='05';decorateField(form,'new_variant','Nombre de la nueva variante',isPostales?'Usa Colección · Diseño, por ejemplo Verano · Suki.':'Ej.: Suki · Rosado, Talla M o Edición especial.');decorateField(form,'new_price','Precio de esta variante','Puedes usar el precio general o definir uno distinto.');}
   if(add){add.classList.add('merch-add-variant');add.textContent='＋ Añadir nueva variante'}
 }
 

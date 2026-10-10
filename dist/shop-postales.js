@@ -46,14 +46,23 @@
   const imageUrl = (item, size) => `${base}${item.slug}-${size}.webp`;
   const title = item => `${item.collection} · ${item.variant === '01' || item.variant === '02' || item.variant === '03' ? `N.º ${item.variant}` : item.variant}`;
   const collectionProduct = collection => catalog.find(product => normalized(product.name) === `postales ${normalized(collection)}`);
-  const items = collections.flatMap(collection => {
-    const product = collectionProduct(collection);
-    if (!product?.prices?.length) return product ? [] : fallbackItems.filter(item => item.collection === collection);
-    return product.prices.map(option => {
-      const variant = String(option.label).match(/(?:n[.º°o]*\s*)?(0[1-9])\b/i)?.[1] || String(option.label).trim();
-      return { collection, variant, slug: `postal_${normalized(collection)}_${normalized(variant).replace(/[^a-z0-9]+/g, '_')}`, product, option };
+  const unifiedProduct = catalog.find(product => product.id === '05' && normalized(product.name) === 'postales');
+  const items = unifiedProduct?.prices?.length
+    ? unifiedProduct.prices.flatMap(option => {
+      const [collectionName, ...variantParts] = String(option.label || '').split(/\s*[·|]\s*/);
+      const collection = collections.find(value => normalized(value) === normalized(collectionName));
+      const variant = variantParts.join(' · ').trim();
+      if (!collection || !variant) return [];
+      return [{ collection, variant, slug: `postal_${normalized(collection)}_${normalized(variant).replace(/[^a-z0-9]+/g, '_')}`, product: unifiedProduct, option }];
+    })
+    : collections.flatMap(collection => {
+      const product = collectionProduct(collection);
+      if (!product?.prices?.length) return product ? [] : fallbackItems.filter(item => item.collection === collection);
+      return product.prices.map(option => {
+        const variant = String(option.label).match(/(?:n[.º°o]*\s*)?(0[1-9])\b/i)?.[1] || String(option.label).trim();
+        return { collection, variant, slug: `postal_${normalized(collection)}_${normalized(variant).replace(/[^a-z0-9]+/g, '_')}`, product, option };
+      });
     });
-  });
 
   function liveOption(item) {
     if (item.product && item.option) {
