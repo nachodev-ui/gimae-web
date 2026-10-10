@@ -15,22 +15,28 @@
 .postales-clear{border:0;border-bottom:2px solid var(--pink);padding:7px 0;background:transparent;color:var(--pink-dark)}
 .postales-clear:hover{transform:translateY(-2px)}
 .postales-clear:disabled{opacity:.55;cursor:default;border-color:transparent;transform:none}
-.postales-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,225px),1fr));gap:27px 23px;align-items:start}
+.postales-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,270px));justify-content:center;gap:27px 23px;align-items:start;min-width:0}
 .postal-card{min-width:0;transform:rotate(var(--tilt,0deg));transition:transform .25s}
 .postal-card:hover,.postal-card:focus-within{transform:rotate(0) translateY(-5px)}
 .postal-card__open{position:relative;display:flex;flex-direction:column;width:100%;min-height:100%;border:1px solid #f3ccdf;border-radius:4px;padding:11px 11px 17px;background:white;color:var(--ink);text-align:left;box-shadow:0 9px 22px #8d48602a,0 4px 0 #f7d5e6;font:inherit}
 .postal-card__picture{display:grid;place-items:center;width:100%;aspect-ratio:4/5;overflow:hidden;background:linear-gradient(145deg,#fff3f8,#f4f8ff);border:1px solid #f8e5ed}
 .postal-card__picture img{width:100%;height:100%;object-fit:contain}
+.postal-card__missing{max-width:12ch;color:var(--pink-dark);text-align:center;font-weight:800;line-height:1.4}
 .postal-card__stamp{position:absolute;top:20px;right:20px;display:grid;place-items:center;width:50px;height:50px;padding:4px;border:2px dashed #ad3672;border-radius:4px;background:#fff7fbdd;color:#8d2f65;text-align:center;white-space:pre-line;font:800 .52rem/1.25 var(--body);transform:rotate(9deg)}
 .postal-card__label{margin:13px 0 3px;color:var(--pink-dark);font-size:.67rem;font-weight:800;letter-spacing:.18em}
 .postal-card__name{font:600 1.2rem var(--display)}
 .postal-card__foot{display:block;margin-top:auto;padding-top:11px;color:#80576e;font-size:.75rem;font-weight:700}
 .postales-empty{border:2px dashed #edb6d4;border-radius:25px;padding:36px 22px;background:#fff5fa;color:var(--ink);text-align:center;font-weight:700}
-.postales-dialog{width:min(920px,calc(100% - 30px));max-width:920px}
-.postal-detail{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:30px;align-items:center;padding:20px}
-.postal-detail__media{position:relative;display:grid;place-items:center;min-width:0;aspect-ratio:4/5;padding:18px;border:1px solid #f1c1db;border-radius:20px;background:radial-gradient(circle at 20% 20%,#fff8fb,#ffe9f3 58%,#edf8ff);overflow:hidden}
-.postal-detail__media img{width:100%;height:100%;object-fit:contain}
-.postal-detail__media-note{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);white-space:nowrap;border-radius:30px;padding:4px 12px;background:#fffafdde;color:var(--pink-dark);font-size:.66rem;font-weight:800;letter-spacing:.1em}
+.postales-dialog{width:min(1060px,calc(100% - 30px));max-width:1060px;overflow:auto}
+.postal-detail{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,.7fr);gap:30px;align-items:center;padding:20px}
+.postal-detail__media{position:relative;min-width:0;aspect-ratio:4/5;padding:18px;border:1px solid #f1c1db;border-radius:20px;background:radial-gradient(circle at 20% 20%,#fff8fb,#ffe9f3 58%,#edf8ff);overflow:hidden}
+.postal-detail__media img{position:absolute;inset:18px;display:block;width:calc(100% - 36px);height:calc(100% - 36px);object-fit:contain}
+.postal-detail__media.has-no-image::before{content:'Imagen por agregar ♡';color:var(--pink-dark);font-weight:800}
+.postal-detail__media.has-no-image img{display:none}
+.postal-detail__zoom{position:absolute;right:14px;bottom:14px;min-height:38px;border:1px solid #b73d7b;border-radius:999px;padding:7px 14px;background:#fffafd;color:#832c5e;font:800 .78rem var(--body);box-shadow:0 3px 0 #eeb9d4;cursor:pointer}
+.postal-detail__zoom:hover,.postal-detail__zoom:active{background:#832c5e;color:#fff}
+.postal-detail__zoom:disabled{display:none}
+.postal-detail__media-note{position:absolute;top:12px;left:50%;transform:translateX(-50%);white-space:nowrap;border-radius:30px;padding:4px 12px;background:#fffafdde;color:var(--pink-dark);font-size:.66rem;font-weight:800;letter-spacing:.1em}
 .postal-detail__info{min-width:0}.postal-detail__info h2{margin:7px 0 14px}
 .postal-detail__price{display:block;margin-bottom:22px;color:var(--pink-dark);font:600 1.65rem var(--display)}
 .postal-detail__label{display:grid;gap:8px;font-weight:800;font-size:.85rem}
@@ -38,6 +44,15 @@
 .postal-detail__availability{min-height:2.8em;margin:14px 0;color:var(--ink);font-size:.85rem;font-weight:700}
 .postal-detail__add{width:100%;border:0}.postal-detail__add:disabled{background:#e9dbe4;color:#5f5260;box-shadow:none;cursor:not-allowed;transform:none}
 .postal-detail__note{margin-top:16px;color:var(--muted);font-size:.78rem;line-height:1.5}
-@media(max-width:680px){.postales-section{padding-block:65px 75px}.postales-section::before{display:none}.postales-filters{padding:17px}.postales-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:19px 13px}.postal-card__open{padding:7px 7px 13px}.postal-card__stamp{top:14px;right:14px;width:40px;height:40px;font-size:.42rem}.postal-card__name{font-size:1rem}.postal-card__foot{font-size:.66rem}.postal-detail{grid-template-columns:1fr;gap:19px;padding:11px}.postal-detail__media{aspect-ratio:5/4;max-height:46vh}.postal-detail__info h2{font-size:1.6rem}.postal-detail__price{margin-bottom:10px}.postales-dialog{max-height:calc(100dvh - 30px);overflow:auto}}
+.postales-zoom{width:min(98vw,1500px);max-width:1500px;max-height:96dvh;padding:48px 16px 16px;overflow:hidden}
+.postales-zoom__head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:0 48px 12px 3px;color:var(--ink);font-size:.85rem;font-weight:800}
+.postales-zoom__head button{border:1px solid #b73d7b;border-radius:999px;padding:8px 14px;background:#fff3fa;color:#832c5e;font:800 .78rem var(--body);cursor:pointer}
+.postales-zoom__head button:hover,.postales-zoom__head button:active{background:#832c5e;color:#fff}
+.postales-zoom__stage{display:flex;align-items:center;justify-content:center;width:100%;height:min(82dvh,900px);overflow:auto;border:1px solid #f0c4dc;border-radius:16px;background:linear-gradient(135deg,#fff4fa,#f2f9ff)}
+.postales-zoom__stage img{display:block;max-width:100%;max-height:min(82dvh,900px);width:auto;height:auto;object-fit:contain}
+.postales-zoom.is-actual-size .postales-zoom__stage{display:block;text-align:center}
+.postales-zoom.is-actual-size .postales-zoom__stage img{max-width:none;max-height:none;margin:auto}
+.postal-detail__zoom:focus-visible,.postales-zoom button:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
+@media(max-width:680px){.postales-section{padding-block:65px 75px}.postales-section::before{display:none}.postales-filters{padding:17px}.postales-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:19px 13px}.postal-card__open{padding:7px 7px 13px}.postal-card__stamp{top:14px;right:14px;width:40px;height:40px;font-size:.42rem}.postal-card__name{font-size:1rem}.postal-card__foot{font-size:.66rem}.postal-detail{grid-template-columns:1fr;gap:19px;padding:11px}.postal-detail__media{aspect-ratio:5/4;max-height:46vh}.postal-detail__media.is-portrait{aspect-ratio:2/3;max-height:55vh}.postal-detail__info h2{font-size:1.6rem}.postal-detail__price{margin-bottom:10px}.postales-dialog{max-height:calc(100dvh - 30px);overflow:auto}.postales-zoom__head{align-items:flex-start;flex-direction:column;margin-right:35px}.postales-zoom__stage{height:74dvh}}
 @media(max-width:380px){.postales-grid{grid-template-columns:1fr 1fr}.postales-results{align-items:flex-start}.postales-clear{white-space:nowrap}}
 @media(prefers-reduced-motion:reduce){.postal-card,.postales-chip,.postales-clear{transition:none}.postal-card,.postal-card:hover,.postal-card:focus-within{transform:none}}
