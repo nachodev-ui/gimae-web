@@ -80,8 +80,8 @@ window.GIMAE = {
         "id": "welcome",
         "expression": "happy",
         "text": [
-          "COMPLETAR: ¡Hola! Soy el avatar animado de Suki. Elige una opción para recorrer el sitio.",
-          "COMPLETAR: ¡Bienvenido al rincón de Gimae! ¿Qué parte del sitio quieres conocer?"
+          "¡Hola! Soy el avatar animado de Suki. Elige una opción para recorrer el sitio.",
+          "¡Bienvenido al rincón de Gimae! ¿Qué parte del sitio quieres conocer?"
         ],
         "options": [
           { "label": "Sobre el grupo", "target": "group" },
@@ -98,12 +98,12 @@ window.GIMAE = {
         "expression": "excited",
         "text": [
           [
-            "COMPLETAR: Las integrantes publicadas en el sitio son {{members}}.",
-            "COMPLETAR: Puedes visitar la sección Members para conocer sus perfiles y redes oficiales."
+            "Las integrantes publicadas en el sitio son {{members}}.",
+            "Puedes visitar la sección Members para conocer sus perfiles, redes oficiales y mucho más de ellas."
           ],
           [
-            "COMPLETAR: Gimae reúne a {{members}}.",
-            "COMPLETAR: Revisa sus tarjetas en la página principal para conocer la información oficial disponible."
+            "Gimae reúne a {{members}}.",
+            "Revisa sus tarjetas en la página principal para conocer la información oficial disponible."
           ]
         ],
         "options": [
@@ -116,8 +116,8 @@ window.GIMAE = {
         "expression": "thinking",
         "text": [
           [
-            "COMPLETAR: {{events}}",
-            "COMPLETAR: Para comprobar novedades también puedes visitar {{instagram}}."
+            "{{events}}",
+            "Para comprobar novedades también puedes visitar {{instagram}}."
           ]
         ],
         "options": [
@@ -130,12 +130,12 @@ window.GIMAE = {
         "expression": "happy",
         "text": [
           [
-            "COMPLETAR: El catálogo configurado actualmente incluye {{merch}}.",
-            "COMPLETAR: La disponibilidad debe confirmarse mediante los canales oficiales antes de completar una compra."
+            "El catálogo configurado actualmente incluye {{merch}}.",
+            "La disponibilidad debe confirmarse mediante los canales oficiales antes de completar una compra."
           ],
           [
-            "COMPLETAR: Estos son los productos publicados en content.js: {{merch}}.",
-            "COMPLETAR: Si necesitas confirmar stock, revisa {{instagram}}."
+            "Estos son los productos publicados en content.js: {{merch}}.",
+            "Si necesitas confirmar stock, revisa {{instagram}}."
           ]
         ],
         "options": [
@@ -147,8 +147,8 @@ window.GIMAE = {
         "id": "cheki",
         "expression": "wink",
         "text": [
-          "COMPLETAR: En Crea tu cheki puedes preparar una imagen desde tu navegador. La fotografía se procesa localmente y no se envía al sitio.",
-          "COMPLETAR: El estudio de chekis funciona directamente en tu dispositivo y permite descargar el resultado cuando esté listo."
+          "En Crea tu cheki puedes preparar una imagen desde tu navegador. La fotografía se procesa localmente y no se envía al sitio.",
+          "El estudio de chekis funciona directamente en tu dispositivo y permite descargar el resultado cuando esté listo."
         ],
         "options": [
           { "label": "Volver al menú", "target": "welcome" },
@@ -159,8 +159,8 @@ window.GIMAE = {
         "id": "gacha",
         "expression": "excited",
         "text": [
-          "COMPLETAR: El gacha del sitio es gratuito y guarda la colección únicamente en este dispositivo.",
-          "COMPLETAR: Puedes abrir sobres digitales y revisar el álbum local desde la página Gacha."
+          "El gacha del sitio funciona mediante una compra mínima de 2.000 CLP. El álbum se guarda únicamente en este dispositivo.",
+          "Puedes abrir sobres digitales y revisar el álbum local desde la página Gacha."
         ],
         "options": [
           { "label": "Volver al menú", "target": "welcome" },
@@ -172,8 +172,8 @@ window.GIMAE = {
         "expression": "happy",
         "text": [
           [
-            "COMPLETAR: Las redes oficiales configuradas son {{socials}}.",
-            "COMPLETAR: Para novedades que todavía no aparezcan en el sitio, revisa {{instagram}}."
+            "Las redes oficiales de Gimae son {{socials}}.",
+            "Para novedades que todavía no aparezcan en el sitio, puedes revisar nuestras redes sociales en {{instagram}}."
           ]
         ],
         "options": [
@@ -185,8 +185,8 @@ window.GIMAE = {
         "id": "farewell",
         "expression": "shy",
         "text": [
-          "COMPLETAR: ¡Gracias por visitar el sitio! Puedes minimizarme o cerrar la ventana cuando quieras.",
-          "COMPLETAR: ¡Nos vemos! Gracias por recorrer este pequeño rincón de Gimae."
+          "¡Gracias por visitar el sitio! Puedes minimizarme o cerrar la ventana cuando quieras.",
+          "¡Nos vemos! Gracias por recorrer este pequeño rincón de Gimae."
         ],
         "options": [
           { "label": "Volver a conversar", "target": "welcome" }
