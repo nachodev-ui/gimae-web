@@ -340,6 +340,10 @@
     catalog.forEach(product => {
       const options = optionsFor(product);
       const card = element('article', `shop-product-card ${cleanText(product.color, 20)}`);
+      if (document.querySelector('#postales-grid') && (String(product.id) === '05' || /^postales\b/i.test(product.name))) {
+        card.classList.add('shop-product-card--postales');
+        card.hidden = true;
+      }
       const top = element('div', 'product-top');
       top.append(element('span', 'product-number', `NO. ${cleanText(product.id, 10)}`), element('span', '', '✧'));
       const title = element('h3', '', cleanText(product.name, 80));
@@ -1555,6 +1559,7 @@
     else void pollRecentOrderStatus();
   });
 
+  window.GIMAE_SHOP_CART = Object.freeze({ addToCart });
   renderProducts(); renderShipping(); renderCart(); renderConfigNote();
   const returned = new URL(window.location.href);
   const returnedOrder = returned.searchParams.get('webpay-order');

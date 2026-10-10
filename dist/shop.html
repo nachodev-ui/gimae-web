@@ -10,9 +10,10 @@
   <link rel="stylesheet" href="styles.css?v=20261010-policy01">
   <link rel="stylesheet" href="webpay-review.css?v=20261006-review01">
   <link rel="stylesheet" href="shop-gallery.css?v=20261007-carousel01">
+  <link rel="stylesheet" href="shop-postales.css?v=20261010-postales02">
   <link rel="stylesheet" href="shop-inventory.css?v=20261007-availability01">
   <link rel="stylesheet" href="shop-cart-kawaii.css?v=20261002-cart01">
-  <script src="content.js?v=20261007-starken02" defer></script><script src="supabase-config.js" defer></script><script src="backend.js?v=20261007-carousel01" defer></script><script src="nav.js" defer></script><script src="effects.js" defer></script><script src="shop-cheki-variants.js?v=20260923-1" defer></script><script src="shop.js?v=20261007-availability01" defer></script><script src="shop-inventory.js?v=20261007-availability01" defer></script><script src="shop-gallery.js?v=20261007-availability01" defer></script><script src="avatar.js?v=20260924-final" defer></script>
+  <script src="content.js?v=20261010-policy02" defer></script><script src="supabase-config.js" defer></script><script src="backend.js?v=20261010-postales01" defer></script><script src="nav.js" defer></script><script src="effects.js" defer></script><script src="shop-cheki-variants.js?v=20260923-1" defer></script><script src="shop.js?v=20261010-postales01" defer></script><script src="shop-inventory.js?v=20261007-availability01" defer></script><script src="shop-gallery.js?v=20261007-availability01" defer></script><script src="shop-postales.js?v=20261010-postales03" defer></script><script src="avatar.js?v=20260924-final" defer></script>
   <script type="module" src="shop-lightstick-3d.js?v=20260924-1"></script>
 </head>
 <body class="tool-page shop-page">
@@ -49,6 +50,17 @@
       <div class="shop-product-grid" id="shop-product-grid"></div>
     </section>
 
+    <section class="postales-section section-shell" id="postales" aria-labelledby="postales-title">
+      <div class="section-heading"><div><p class="eyebrow">POSTALES / COLECCIONES ✦</p><h2 id="postales-title">Recuerdos para <em>guardar cerquita.</em></h2></div><p>Elige tu colección y tu integrante favorita.</p></div>
+      <div class="postales-filters" aria-label="Filtrar postales">
+        <fieldset><legend>Colección</legend><div id="postales-collections" class="postales-chips"></div></fieldset>
+        <fieldset><legend>Integrante</legend><div id="postales-members" class="postales-chips"></div></fieldset>
+      </div>
+      <div class="postales-results"><p id="postales-count" role="status" aria-live="polite"></p><button id="postales-clear" class="postales-clear" type="button">Limpiar filtros <span aria-hidden="true">↗</span></button></div>
+      <div id="postales-grid" class="postales-grid"></div>
+      <p id="postales-empty" class="postales-empty" hidden>✧ No encontramos postales con esa combinación. Prueba otra colección o integrante. ♡</p>
+    </section>
+
     <section class="shop-trust" aria-labelledby="trust-title">
       <div class="section-shell">
         <div class="section-heading"><div><p class="eyebrow">02 / ANTES DE COMPRAR</p><h2 id="trust-title">Todo claro,<br><em>sin letra chica.</em></h2></div><p>Información para comprar<br>con calma y claridad.</p></div>
@@ -67,6 +79,7 @@
   <footer class="footer section-shell"><a class="brand footer-brand" href="index.html" aria-label="Gimae, inicio"><img class="wordmark" src="images/logo-wordmark.webp" alt="Gimae!" width="220" height="88"></a><p>Hecho de música, sueños y mucho amor.<br><span>© <span id="year">2026</span> Gimae · Chile</span><br><a class="footer-policy-link" href="cambios-y-devoluciones.html">Cambios y devoluciones</a></p><a class="back-top" href="#main">Volver arriba <span aria-hidden="true">↑</span></a></footer>
 
   <dialog id="product-dialog" class="shop-dialog" aria-labelledby="product-dialog-title"><button class="dialog-close" type="button" data-close-dialog aria-label="Cerrar detalle">×</button><div id="product-dialog-content"></div></dialog>
+  <dialog id="postales-zoom" class="shop-dialog postales-zoom" aria-labelledby="postales-zoom-caption"><button class="dialog-close" type="button" data-close-dialog aria-label="Cerrar imagen ampliada">×</button><div class="postales-zoom__head"><p id="postales-zoom-caption"></p><button id="postales-zoom-toggle" type="button" aria-pressed="false">Ampliar al 100%</button></div><div class="postales-zoom__stage"><img id="postales-zoom-image" alt=""></div></dialog>
 
   <dialog id="cart-dialog" class="shop-dialog cart-dialog" aria-labelledby="cart-title">
     <button class="dialog-close" type="button" data-close-dialog aria-label="Cerrar carrito">×</button>

@@ -45,6 +45,10 @@ La tienda interpreta:
 
 Si posteriormente las cuatro variantes quedan confirmadas, `products.stock_confirmed` pasa automáticamente a `true` y `products.stock` sigue representando la suma de sus unidades confirmadas.
 
+## Postales
+
+El producto `05` **Postales** reúne los diseños de Antigua, Halloween, Traje y Verano. Cada diseño es una variante con etiqueta `Colección · Diseño` (por ejemplo, `Verano · Suki` o `Antigua · 01`), imagen, precio y stock propios. El resumen de stock del producto se calcula con la misma regla de variantes descrita arriba. Las colecciones son filtros de la tienda, no productos separados.
+
 ## Protección de base de datos
 
 La migración `202609290008_variant_inventory_source.sql` instala dos defensas:
