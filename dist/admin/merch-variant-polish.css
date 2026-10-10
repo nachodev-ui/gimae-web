@@ -173,6 +173,23 @@
   box-shadow:0 2px 0 color-mix(in srgb,var(--variant-accent) 18%,transparent);
 }
 
+.admin-page .admin-editor-card.is-merch-editor .merch-delete-variant{
+  grid-column:1/-1;
+  justify-self:end;
+  min-height:42px;
+  padding:9px 17px;
+  border:1px solid #d8a9bd;
+  border-radius:999px;
+  background:#fff9fc;
+  color:#773b59;
+  font-size:.82rem;
+  font-weight:800;
+}
+.admin-page .admin-editor-card.is-merch-editor .merch-delete-variant:hover,
+.admin-page .admin-editor-card.is-merch-editor .merch-delete-variant:active{background:#773b59;color:#fff}
+.admin-page .admin-editor-card.is-merch-editor .merch-delete-variant:focus-visible{outline:3px solid #773b59;outline-offset:3px}
+.admin-page .admin-editor-card.is-merch-editor .merch-delete-variant:disabled{opacity:.55;cursor:wait}
+
 /* Member accents make inventory scanning faster while keeping generic variants neutral. */
 .admin-editor-card.is-merch-editor .merch-variant-card[data-member="suki"]{--variant-accent:#e84694;--variant-on-accent:#fff}
 .admin-editor-card.is-merch-editor .merch-variant-card[data-member="usi"]{--variant-accent:#df4d62;--variant-on-accent:#fff}
