@@ -156,7 +156,9 @@ function enhanceVariantRows(list){
     const name=row.querySelector('strong');const numbers=[...row.querySelectorAll('input[type="number"]')];const price=numbers[0],stock=numbers[1];const confirmed=row.querySelector('input[type="checkbox"]');const save=row.querySelector('button');const remove=row.querySelector('.merch-delete-variant');
     if(!name||!price||!stock||!confirmed||!save)return;
     const title=name.textContent.trim();row.replaceChildren();
-    const head=el('div','merch-variant-head');const identity=el('div');identity.append(el('span','merch-variant-kicker','VARIANTE'),name);const state=el('span','merch-variant-state');head.append(identity,state);
+    const head=el('div','merch-variant-head');const identity=el('div');
+    if(row.dataset.postalImage){const photo=el('img','postal-variant-thumb');photo.src=row.dataset.postalImage;photo.alt=`Imagen de ${title}`;identity.append(photo)}
+    identity.append(el('span','merch-variant-kicker','VARIANTE'),name);const state=el('span','merch-variant-state');head.append(identity,state);
     const fields=el('div','merch-variant-fields');
     const priceLabel=el('label','merch-variant-field');priceLabel.append(el('span','','Precio'),price,el('small','',`Precio actual: ${money(price.value)}`));
     const stockLabel=el('label','merch-variant-field');stockLabel.append(el('span','','Stock disponible'),stock,el('small','','Unidades listas para vender'));
