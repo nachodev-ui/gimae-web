@@ -1,5 +1,4 @@
-/* Escaparate Goodies: fondos CSS, recursos originales, tres versiones.
-   No se alteran ilustraciones, rostros ni estampados con IA. */
+/* Sweet flat lay de Gimae! · prendas y fondo en CSS, imágenes originales intactas. */
 (() => {
   'use strict';
   const preview = document.getElementById('goodies-scene');
@@ -31,8 +30,8 @@
     const shirtMarkup = shirts.map(([member, key, file]) =>
       '<div class="goodies-shirt goodies-color--' + key + '">' +
       '<span class="goodies-shirt-fabric" aria-hidden="true"></span>' +
-      '<img src="' + base + file + '" loading="lazy" alt="Estampado original de ' + member + ' de Gimae, sin modificaciones generativas">' +
-      '<span class="goodies-item-name" aria-label="Integrante ' + member + '">' + member + '</span></div>').join('');
+      '<span class="goodies-shirt-print"><img src="' + base + file + '" loading="lazy" decoding="async" alt="Estampado original de ' + member + ' de Gimae"></span>' +
+      '<span class="goodies-item-name">' + member + '</span></div>').join('');
     const charmMarkup = charms.map(([member, key, file]) =>
       '<div class="goodies-charm goodies-color--' + key + '">' +
       '<img src="' + base + file + '" loading="lazy" alt="Llavero original individual de ' + member + ' de Gimae">' +
