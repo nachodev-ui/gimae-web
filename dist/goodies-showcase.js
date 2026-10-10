@@ -100,7 +100,12 @@
     }
   }
   // app.js registra primero los listeners del modal; luego sincronizamos esta vista.
-  document.getElementById('open-catalog')?.addEventListener('click', syncModal);
-  dialog.querySelectorAll('[data-catalog-view]').forEach(button => button.addEventListener('click', syncModal));
-  syncModal();
+  function installModalSync() {
+    document.getElementById('open-catalog')?.addEventListener('click', syncModal);
+    dialog.querySelectorAll('[data-catalog-view]').forEach(button => button.addEventListener('click', syncModal));
+    syncModal();
+  }
+  // app.js registra sus listeners dentro de GIMAE_READY: esperamos el mismo ciclo.
+  if (window.GIMAE_READY?.then) window.GIMAE_READY.then(installModalSync);
+  else installModalSync();
 })();
