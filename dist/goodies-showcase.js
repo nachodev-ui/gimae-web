@@ -3,10 +3,9 @@
 (() => {
   'use strict';
   const preview = document.getElementById('goodies-scene');
-  const picker = document.querySelector('[data-goodies-picker]');
   const dialog = document.getElementById('catalog-dialog');
   const dialogImage = document.getElementById('catalog-image');
-  if (!preview || !picker || !dialog || !dialogImage) return;
+  if (!preview || !dialog || !dialogImage) return;
 
   const base = 'images/goodies/';
   const shirts = [
@@ -27,18 +26,13 @@
     ['Vewe', 'postal-vewe.webp'],
     ['Vali', 'postal-vali.webp']
   ];
-  const captions = {
-    flatlay: ['KIRA KIRA', 'Nuestros pequeños tesoros ♡'],
-    ticket: ['GIMAE! FAN CLUB', 'Una colección para llevar contigo'],
-    scrapbook: ['DEAR IDOL HEART', 'Recuerdos para atesorar ✧']
-  };
   // Las etiquetas son constantes de este archivo, no contenido externo.
   function scene() {
     const shirtMarkup = shirts.map(([member, key, file]) =>
       '<div class="goodies-shirt goodies-color--' + key + '">' +
       '<span class="goodies-shirt-fabric" aria-hidden="true"></span>' +
       '<img src="' + base + file + '" loading="lazy" alt="Estampado original de ' + member + ' de Gimae, sin modificaciones generativas">' +
-      '<span class="goodies-item-name">' + member + '</span></div>').join('');
+      '<span class="goodies-item-name" aria-label="Integrante ' + member + '">' + member + '</span></div>').join('');
     const charmMarkup = charms.map(([member, key, file]) =>
       '<div class="goodies-charm goodies-color--' + key + '">' +
       '<img src="' + base + file + '" loading="lazy" alt="Llavero original individual de ' + member + ' de Gimae">' +
@@ -47,9 +41,9 @@
       '<span class="goodies-postcard"><img src="' + base + file + '" loading="lazy" alt="Postal fotográfica original de ' + member + '"></span>').join('');
     return '<div class="goodies-decoration goodies-decoration--one" aria-hidden="true">✦</div>' +
       '<div class="goodies-decoration goodies-decoration--two" aria-hidden="true">♡</div>' +
-      '<div class="goodies-scene-header"><span class="goodies-scene-kicker">OFFICIAL GIMAE! COLLECTION</span>' +
+      '<div class="goodies-scene-header"><span class="goodies-scene-spacer" aria-hidden="true"></span>' +
       '<strong class="goodies-scene-logo">gimae! <span>♡</span></strong>' +
-      '<span class="goodies-scene-serial">2026 / KAWAII CLUB</span></div>' +
+      '<span class="goodies-scene-serial">2026</span></div>' +
       '<div class="goodies-shirts" aria-label="Cuatro estampados originales de Gimae">' + shirtMarkup + '</div>' +
       '<div class="goodies-scene-bottom">' +
       '<div class="goodies-zone goodies-zone--charms"><span class="goodies-zone-label">CHARM COLLECTION ✧</span>' +
@@ -63,32 +57,15 @@
       '<div class="goodies-zone goodies-zone--light"><span class="goodies-zone-label">LIGHT UP!</span>' +
       '<img src="images/merch/lightstick.png" loading="lazy" alt="Lightstick original de Gimae"></div>' +
       '</div><div class="goodies-scene-footer"><span class="goodies-scene-tag">✿ GIMAE! GOODS ✿</span>' +
-      '<span class="goodies-scene-caption"></span><span class="goodies-scene-tag">MADE WITH LOVE ♡</span></div>';
+      '<span class="goodies-scene-caption">Nuestros pequeños tesoros ♡</span><span class="goodies-scene-spacer" aria-hidden="true"></span></div>';
   }
   preview.innerHTML = scene();
   const modalScene = document.createElement('div');
   modalScene.id = 'goodies-modal-scene';
   modalScene.className = 'goodies-scene goodies-scene--modal';
+  modalScene.dataset.goodiesStyle = 'flatlay';
   modalScene.innerHTML = scene();
   dialogImage.before(modalScene);
-
-  function setStyle(name) {
-    const selected = Object.prototype.hasOwnProperty.call(captions, name) ? name : 'flatlay';
-    for (const root of [preview, modalScene]) {
-      root.dataset.goodiesStyle = selected;
-      const caption = root.querySelector('.goodies-scene-caption');
-      if (caption) caption.textContent = captions[selected][1];
-      const kicker = root.querySelector('.goodies-scene-kicker');
-      if (kicker) kicker.textContent = captions[selected][0];
-    }
-    picker.querySelectorAll('[data-goodies-style]').forEach(button => {
-      button.setAttribute('aria-pressed', String(button.dataset.goodiesStyle === selected));
-    });
-  }
-  picker.querySelectorAll('[data-goodies-style]').forEach(button =>
-    button.addEventListener('click', () => setStyle(button.dataset.goodiesStyle)));
-  const paramStyle = new URLSearchParams(window.location.search).get('goodies');
-  setStyle(paramStyle || 'flatlay');
 
   function syncModal() {
     const original = dialog.querySelector('[data-catalog-view="original"]')?.getAttribute('aria-pressed') === 'true';
