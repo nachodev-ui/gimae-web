@@ -78,7 +78,7 @@ if (productGrid) config.merch.forEach(product => {
 });
 const catalogDialog = $('#catalog-dialog');
 const catalogImage = $('#catalog-image');
-const catalogViews = { restored: { src: 'images/merch.webp', alt: 'Colección Gimae: poleras, lightstick, llaveros, chekis y postales.' }, original: { src: 'images/catalogo-original.webp', alt: 'Catálogo original de Gimae 2026 con diseños y precios en pesos chilenos.' } };
+const catalogViews = { restored: { src: 'images/catalogo-original.webp', alt: 'Colección Gimae presentada con recursos originales.' }, original: { src: 'images/catalogo-original.webp', alt: 'Catálogo original de Gimae 2026 con diseños y precios en pesos chilenos.' } };
 function setCatalogView(view) {
   const data = catalogViews[view]; catalogImage.src = data.src; catalogImage.alt = data.alt;
   document.querySelectorAll('[data-catalog-view]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.catalogView === view)));

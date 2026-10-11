@@ -1,0 +1,81 @@
+/* GIMAE! GOODIES · Sweet flat lay, fondo y prendas construidos con CSS. */
+.catalog-preview:focus-visible{outline:3px solid #764eb1;outline-offset:3px}
+.catalog-preview--goodies{background:transparent;isolation:isolate}
+.goodies-scene{--ink:#985178;position:relative;isolation:isolate;width:100%;overflow:hidden;min-height:620px;aspect-ratio:1157/698;padding:2.1% 2.6% 1.4%;display:grid;grid-template-rows:8% 48% 37% 7%;color:var(--ink);font-family:inherit;text-align:left}
+.goodies-scene[hidden],#catalog-image[hidden]{display:none!important}
+.goodies-scene::before,.goodies-scene::after{content:"";position:absolute;pointer-events:none;z-index:-1}
+.goodies-scene::before{inset:0}
+.goodies-scene::after{inset:1.1%;border:2px solid #ffffffa3;border-radius:14px}
+.goodies-scene-header,.goodies-scene-footer{position:relative;z-index:2;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:12px;min-width:0}
+.goodies-scene-spacer{min-width:0}
+.goodies-scene-header .goodies-scene-logo,.goodies-scene-footer .goodies-scene-caption{justify-self:center}
+.goodies-scene-serial{justify-self:end;white-space:nowrap}
+.goodies-scene-tag{justify-self:start}
+.goodies-scene-header{border-bottom:1px dashed currentColor;padding-bottom:6px}
+.goodies-scene-serial,.goodies-scene-tag{font-size:clamp(.52rem,.8vw,.78rem);font-weight:800;letter-spacing:.12em}
+ .goodies-scene-logo{font-weight:900;font-size:clamp(1.25rem,2.85vw,2.6rem);line-height:1.05;font-family:inherit;letter-spacing:-.045em;color:#e5498c;text-shadow:2px 2px 0 #fff}
+.goodies-scene-logo span{color:#eeba59}
+.goodies-decoration{position:absolute;pointer-events:none;font-size:clamp(1.5rem,4vw,4rem);z-index:2;opacity:.7;text-shadow:2px 3px 0 #fff}
+.goodies-decoration--one{top:11%;left:1.5%;transform:rotate(-17deg);color:#ffd469}
+.goodies-decoration--two{right:1.5%;top:8%;color:#f18ac2;transform:rotate(19deg)}
+.goodies-shirts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));align-items:stretch;gap:1.4%;min-height:0;padding:1% 2.1% 0}
+.goodies-shirt{--shirt:#ff8596;position:relative;min-width:0;min-height:0;display:flex;justify-content:center;align-items:center;filter:drop-shadow(1px 7px 2px #6b46611b)}
+.goodies-color--usi{--shirt:#f16b79;--shade:#ba5463}
+.goodies-color--vewe{--shirt:#ffe37a;--shade:#c69e2a}
+.goodies-color--suki{--shirt:#f5a2d1;--shade:#bc619a}
+.goodies-color--vali{--shirt:#b697e9;--shade:#8960b6}
+/* La forma de cada polera es un SVG manual con mangas y cuello, no una figura geométrica recortada. */
+.goodies-shirt-vector{position:absolute;z-index:0;inset:0;width:100%;height:100%;overflow:visible;filter:drop-shadow(2px 6px 3px #6b466128)}
+.goodies-shirt-outline{fill:var(--shirt);stroke:var(--shade);stroke-opacity:.26;stroke-width:1.4;stroke-linejoin:round}
+.goodies-shirt-shoulder{fill:#fff;fill-opacity:.075}
+.goodies-shirt-sleeve,.goodies-shirt-side,.goodies-shirt-hem{fill:none;stroke:var(--shade);stroke-opacity:.20;stroke-width:2}
+.goodies-shirt-collar-back{fill:none;stroke:var(--shade);stroke-opacity:.30;stroke-width:15;stroke-linecap:round}
+.goodies-shirt-collar-front{fill:none;stroke:#fff;stroke-opacity:.70;stroke-width:9;stroke-linecap:round}
+.goodies-shirt-neck-label{fill:#fff8fc;fill-opacity:.75;stroke:var(--shade);stroke-opacity:.15}
+/* Estampado original intacto: centrado sobre el torso y limitado a la zona imprimible. */
+.goodies-shirt-print{position:absolute;z-index:1;top:27%;left:26%;width:48%;height:49%;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.goodies-shirt-print img{display:block;width:100%;height:100%;max-width:100%;max-height:100%;object-fit:contain;filter:drop-shadow(0 1px 0 #fff5)}
+/* Etiquetas pastel ancladas al dobladillo inferior, con ribete y pequeñas cintas. */
+.goodies-item-name{position:absolute;z-index:2;bottom:3%;left:50%;transform:translateX(-50%);display:inline-flex;align-items:center;justify-content:center;gap:.48em;min-width:58%;padding:.28em .55em;outline:1px dashed var(--shade);outline-offset:-5px;border:2px solid var(--shade);border-radius:7px;background:color-mix(in srgb,var(--shirt) 15%,#fff 85%);box-shadow:0 3px 0 #fff9,0 5px 8px #64425c30;text-align:center;font-size:clamp(.67rem,1.13vw,.98rem);line-height:1.35;font-weight:900;letter-spacing:.09em;text-transform:uppercase;color:var(--shade);white-space:nowrap}
+.goodies-item-name::before,.goodies-item-name::after{content:'♡';font-size:.91em;opacity:.9}
+.goodies-scene-bottom{min-height:0;display:grid;grid-template-columns:27% 17% 40% 13%;gap:1%;padding:0 1.3%;align-items:stretch}
+.goodies-zone{position:relative;min-width:0;min-height:0;background:#fff9;box-shadow:2px 5px 12px #945c6924;border:1px solid #fffd;border-radius:12px;padding:26px 5px 6px;overflow:hidden}
+.goodies-zone-label{position:absolute;left:8px;top:7px;right:6px;font-size:clamp(.48rem,.7vw,.66rem);font-weight:900;letter-spacing:.06em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#7b5a70}
+.goodies-charms{height:100%;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));align-items:center;justify-items:center;gap:1px}
+.goodies-charm{height:100%;min-width:0;display:flex;align-items:center;justify-content:center}
+.goodies-charm img{max-width:100%;max-height:96%;object-fit:contain;filter:drop-shadow(2px 4px 2px #0002)}
+.goodies-chekis{height:100%;display:flex;align-items:center;justify-content:center;gap:0}
+.goodies-cheki{width:47%;height:78%;padding:3% 3% 9%;background:#fff;box-shadow:2px 3px 6px #513c4630;transform:rotate(-7deg)}
+.goodies-cheki:nth-child(2){transform:rotate(8deg);margin-left:-8%}
+.goodies-cheki img{width:100%;height:100%;object-fit:contain;display:block}
+.goodies-postcards{height:68%;display:flex;gap:2%;align-items:stretch;justify-content:center}
+.goodies-postcard{flex:1;min-width:0;background:white;padding:3px 3px 9px;box-shadow:1px 2px 4px #64465f27;transform:rotate(-3deg)}
+.goodies-postcard:nth-child(2){transform:rotate(2deg)}.goodies-postcard:nth-child(3){transform:rotate(-1deg)}.goodies-postcard:nth-child(4){transform:rotate(4deg)}
+.goodies-postcard img{display:block;width:100%;height:100%;object-fit:contain}
+.goodies-group-postcard{position:absolute;bottom:3%;left:28%;width:44%;height:25%;padding:2px 2px 5px;background:white;box-shadow:1px 2px 5px #68445c45;transform:rotate(-2deg)}
+.goodies-group-postcard img{display:block;width:100%;height:100%;object-fit:contain}
+.goodies-zone--light{display:flex;align-items:center;justify-content:center;isolation:isolate}
+.goodies-lightstick-crop{display:block;flex:none;height:76%;width:auto;max-width:93%;aspect-ratio:190/1080;overflow:hidden;transform:rotate(-12deg);mix-blend-mode:multiply;filter:drop-shadow(4px 5px 4px #0003)}
+.goodies-scene-footer{padding:7px 5px 0}
+ .goodies-scene-caption{font-family:var(--display,Georgia,serif);font-size:clamp(.75rem,1.35vw,1.22rem);font-style:italic;color:#a04482;white-space:nowrap}
+.goodies-scene-tag{color:#7c6b83}
+.goodies-scene[data-goodies-style="flatlay"]{background:#ffe7f1;--ink:#955a7e}
+.goodies-scene[data-goodies-style="flatlay"]::before{background:radial-gradient(circle at 3% 9%,#fff9 0 1%,transparent 1.1%),radial-gradient(circle at 91% 88%,#fff 0 1.2%,transparent 1.3%),radial-gradient(circle at 50% 8%,#ffcae0 0 25%,transparent 44%),repeating-linear-gradient(135deg,#ffffff27 0 3px,transparent 3px 28px)}
+.goodies-scene[data-goodies-style="flatlay"] .goodies-zone{background:#fff9f8c9;border:2px solid white}
+.goodies-scene--modal{min-height:540px}
+#goodies-modal-scene{margin-block:18px;border-radius:14px}
+.catalog-preview--goodies:hover .goodies-scene:not([hidden]){filter:saturate(1.05)}
+@media (max-width:900px){.goodies-scene{min-height:490px}.goodies-scene-bottom{grid-template-columns:30% 19% 35% 13%}.goodies-zone{padding-top:22px}.goodies-postcard{padding-bottom:5px}.goodies-group-postcard{height:23%}}
+@media (max-width:620px){
+ .goodies-scene{aspect-ratio:auto;min-height:0;padding:16px 11px;display:block}
+ .goodies-scene-header{gap:6px;padding:0 5px 11px}.goodies-scene-serial{font-size:.59rem;letter-spacing:.03em}.goodies-scene-logo{font-size:1.35rem}
+ .goodies-shirts{height:208px;gap:1%;padding:10px 0 6px}
+ .goodies-shirt-print{left:26%;width:48%;top:27%;height:45%}
+ .goodies-item-name{bottom:5%;min-width:70%;font-size:clamp(.45rem,1.7vw,.64rem);letter-spacing:0;padding:.15em .22em;gap:.16em;border-width:1px;border-radius:4px;outline-offset:-3px}
+ .goodies-scene-bottom{grid-template-columns:1.1fr 1fr;grid-template-rows:180px 198px;gap:9px;padding:0 3px}
+ .goodies-zone{padding:24px 6px 6px}.goodies-zone-label{font-size:.55rem}
+ .goodies-scene-footer{padding-top:14px;gap:3px}.goodies-scene-caption{text-align:center;font-size:.8rem;white-space:normal}.goodies-scene-tag{font-size:.44rem}
+ .goodies-scene--modal{min-height:0}.goodies-decoration{font-size:1.4rem}
+ .goodies-lightstick-crop{height:73%;max-width:78%}
+}
+@media(prefers-reduced-motion:reduce){.catalog-preview--goodies:hover .goodies-scene{filter:none}}
